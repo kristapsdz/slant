@@ -22,10 +22,11 @@ draw(const struct node *n, size_t nsz)
 			maxsz = sz;
 	}
 
-	printf("%.*s | CPU\n", "hostname");
+	printf("%*s | %6s\n", (int)maxsz, 
+		"hostname", "CPU");
 
 	for (i = 0; i < nsz; i++) {
-		printf("%.*s | ", (int)maxsz, n[i].host);
+		printf("%*s | ", (int)maxsz, n[i].host);
 		if (NULL == n[i].recs) {
 			printf("(no data)\n");
 			continue;
@@ -33,7 +34,7 @@ draw(const struct node *n, size_t nsz)
 			printf("(no recent data)\n");
 			continue;
 		}
-		printf("%.2f%%\n", 
+		printf("%5.1f%%\n", 
 			n[i].recs->byqmin[0].value /
 			n[i].recs->byqmin[0].entries);
 	}
