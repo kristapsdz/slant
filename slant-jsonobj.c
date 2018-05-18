@@ -150,6 +150,8 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 		return 1;
 	}
 
+	n->dirty = 1;
+
 	/* Allocate, if necessary, and free existing. */
 
 	if (NULL == n->recs) {

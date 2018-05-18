@@ -4,6 +4,8 @@
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +13,14 @@
 #include <unistd.h>
 
 #include "slant.h"
+
+static	volatile sig_atomic_t sigged;
+
+static void
+dosig(int sig)
+{
+	sigged = 1;
+}
 
 static void
 nodes_free(struct node *n, size_t sz)
@@ -40,8 +50,9 @@ nodes_update(struct node *n, size_t sz)
 {
 	size_t	 i;
 	time_t	 t = time(NULL);
+	int	 dirty = 0;
 
-	for (i = 0; i < sz; i++)
+	for (i = 0; i < sz; i++) {
 		switch (n[i].state) {
 		case STATE_CONNECT_WAITING:
 			if (n[i].waitstart + 15 >= t) 
@@ -50,34 +61,47 @@ nodes_update(struct node *n, size_t sz)
 			break;
 		case STATE_CONNECT_READY:
 			if ( ! http_init_connect(&n[i]))
-				return 0;
+				return -1;
 			break;
 		case STATE_CONNECT:
 			if ( ! http_connect(&n[i]))
-				return 0;
+				return -1;
 			break;
 		case STATE_WRITE:
 			if ( ! http_write(&n[i]))
-				return 0;
+				return -1;
 			break;
 		case STATE_READ:
 			if ( ! http_read(&n[i]))
-				return 0;
+				return -1;
 			break;
 		default:
 			abort();
 		}
+		dirty += n[i].dirty;
+		n[i].dirty = 0;
+	}
 
-	return 1;
+	return dirty;
 }
 
 int
 main(int argc, char *argv[])
 {
-	int	 	 c;
+	int	 	 c, first = 1;
 	size_t		 i;
 	struct node	*nodes = NULL;
 	struct pollfd	*pfds = NULL;
+
+	if (-1 == pledge("dns inet stdio", NULL))
+		err(EXIT_FAILURE, NULL);
+
+	if (SIG_ERR == signal(SIGINT, dosig))
+		err(EXIT_FAILURE, NULL);
+	if (SIG_ERR == signal(SIGTERM, dosig))
+		err(EXIT_FAILURE, NULL);
+	if (SIG_ERR == signal(SIGQUIT, dosig))
+		err(EXIT_FAILURE, NULL);
 
 	while (-1 != (c = getopt(argc, argv, "")))
 		goto usage;
@@ -87,6 +111,8 @@ main(int argc, char *argv[])
 
 	if (0 == argc)
 		goto usage;
+	
+	/* Initialise data. */
 
 	nodes = calloc(argc, sizeof(struct node));
 	if (NULL == nodes)
@@ -114,6 +140,12 @@ main(int argc, char *argv[])
 		}
 	}
 
+	/* 
+	 * All data initialised.
+	 * We now want to do our DNS resolutions.
+	 * TODO: put this into the main loop.
+	 */
+
 	for (i = 0; i < (size_t)argc; i++) {
 		nodes[i].state = STATE_RESOLVING;
 		if ( ! dns_resolve(nodes[i].host, &nodes[i].addrs))
@@ -121,13 +153,28 @@ main(int argc, char *argv[])
 		nodes[i].state = STATE_CONNECT_READY;
 	}
 
-	for (;;) {
-		if ( ! nodes_update(nodes, argc))
-			break;
-		if (poll(pfds, argc, 5) < 0)
-			break;
-	}
+	if (-1 == pledge("inet stdio", NULL))
+		err(EXIT_FAILURE, NULL);
 
+	/*
+	 * Main loop: continue trying to pull down data from all of the
+	 * addresses we have on file.
+	 */
+
+	while ( ! sigged) {
+		if ((c = nodes_update(nodes, argc)) < 0)
+			break;
+
+		if (c || first) {
+			draw(nodes, argc);
+			first = 0;
+		}
+
+		if (poll(pfds, argc, 1) < 0 && EINTR != errno) {
+			warn("poll");
+			break;
+		}
+	}
 out:
 	nodes_free(nodes, argc);
 	free(pfds);

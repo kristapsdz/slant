@@ -11,15 +11,15 @@ slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
 
-slant: slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o
-	$(CC) -o $@ $(LDFLAGS) slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o -ltls
+slant: slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
+	$(CC) -o $@ $(LDFLAGS) slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o 
 
 clean:
 	rm -f slant.db slant.sql 
 	rm -f db.o db.c db.h json.c json.o json.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
-	rm -f slant slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o
+	rm -f slant slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
 
 slant.db: slant.sql
 	rm -f $@

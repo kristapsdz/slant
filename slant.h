@@ -58,8 +58,9 @@ struct	node {
 	size_t		 wbufpos; /* write position in wbuf */
 	char		*rbuf; /* read buffer for http */
 	size_t		 rbufsz; /* amount read over http */
-	time_t		 waitstart;
-	struct recset	*recs;
+	time_t		 waitstart; /* wait period start */
+	struct recset	*recs; /* results */
+	int		 dirty; /* new results */
 };
 
 enum	json_type_e {
@@ -117,6 +118,8 @@ int	 http_init_connect(struct node *);
 int	 http_connect(struct node *);
 int	 http_write(struct node *n);
 int	 http_read(struct node *n);
+
+void	 draw(const struct node *n, size_t sz);
 
 struct json_value_s
 	*json_parse(const void *, size_t);
