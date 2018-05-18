@@ -1,0 +1,37 @@
+# vim: set smartindent:
+# vim: set filetype=kwbp:
+
+roles { 
+	role produce;
+	role consume;
+};
+
+enum	interval {
+	item byqmin;
+	item bymin;
+	item byhour;
+};
+
+struct	record {
+	field ctime epoch;
+	field entries int;
+	field value double;
+	field interval enum interval;
+	field id int rowid;
+
+	insert;
+	list: name lister order ctime desc;
+	update ctime, entries, value: id: name updatemin;
+	update entries, value: id: name updatehour;
+
+	roles produce { 
+		insert;
+		list lister;
+		update updatemin;
+		update updatehour;
+	};
+
+	roles consume {
+		list lister;
+	};
+};

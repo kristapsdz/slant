@@ -1,0 +1,44 @@
+.Dd $Mdocdate$
+.Dt SLANT-COLLECTD 1
+.Os
+.Sh NAME
+.Nm slant-collectd
+.Nd daemon to collect system statistics
+.Sh SYNOPSIS
+.Nm slant-collectd
+.Op Fl f Ar dbfile
+.Sh DESCRIPTION
+The
+.Nm
+utility collects system statistics and records them in
+.Ar dbfile ,
+which defaults to
+.Pa /var/www/data/slant.db .
+.Pp
+To end collection, kill the process with
+.Dv SIGINT
+or
+.Dv SIGTERM ,
+which will gracefully end the collectoin sequence.
+.\" The following requests should be uncommented and used where appropriate.
+.\" .Sh CONTEXT
+.\" For section 9 functions only.
+.\" .Sh RETURN VALUES
+.\" For sections 2, 3, and 9 function return values only.
+.\" .Sh ENVIRONMENT
+.\" For sections 1, 6, 7, and 8 only.
+.\" .Sh FILES
+.\" .Sh EXIT STATUS
+.\" For sections 1, 6, and 8 only.
+.\" .Sh EXAMPLES
+.\" .Sh DIAGNOSTICS
+.\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
+.\" .Sh ERRORS
+.\" For sections 2, 3, 4, and 9 errno settings only.
+.\" .Sh SEE ALSO
+.\" .Xr foobar 1
+.\" .Sh STANDARDS
+.\" .Sh HISTORY
+.\" .Sh AUTHORS
+.\" .Sh CAVEATS
+.\" .Sh BUGS
