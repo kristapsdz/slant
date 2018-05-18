@@ -7,28 +7,46 @@ roles {
 };
 
 enum	interval {
-	item byqmin;
-	item bymin;
-	item byhour;
+	item byqmin comment "Per-quarter-minute record type.";
+	item bymin comment "Per-minute record type.";
+	item byhour comment "Per-hour record type.";
 };
 
 struct	record {
-	field ctime epoch;
-	field entries int;
-	field cpu double;
-	field interval enum interval;
-	field id int rowid;
+	field ctime epoch comment
+		"Time the record started.
+		 So for an hour record, this is the time the hourly
+		 record keeping began.";
+	field entries int comment
+		"The number of samples represented by the record, when
+		 the record is an accumulation (minute, hour, etc.).
+		 This is always non-zero.";
+	field cpu double comment
+		"The aggregate average CPU time within the current
+		 record.
+		 This is recorded across all cores/CPUs on the system.";
+	field interval enum interval comment
+		"The type of record.";
+	field id int rowid comment
+		"The unique identifier (not used except when updating
+		 the tail entry).";
 
 	insert;
-	list: name lister order ctime desc;
-	update ctime, entries, cpu: id: name updatemin;
-	update entries, cpu: id: name updatehour;
+	list: name lister order ctime desc comment
+		"List all entries, ordered by record time.";
+	update ctime, entries, cpu: id: name tail comment
+		"Take the tail of the circular queue and refresh its
+		contents, making it the new head.";
+	update entries, cpu: id: name current comment
+		"Update the current record.
+		 This is the record within the current quarter-minute
+		 (if qmin), minute (if min), or hour (if hour).";
 
 	roles produce { 
 		insert;
 		list lister;
-		update updatemin;
-		update updatehour;
+		update tail;
+		update current;
 	};
 
 	roles consume {

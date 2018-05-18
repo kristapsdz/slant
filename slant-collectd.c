@@ -78,7 +78,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 
 	if (byqmin > (4 * 5)) {
 		assert(NULL != last_byqmin);
-		db_record_update_updatemin(db, t, 1, 
+		db_record_update_tail(db, t, 1, 
 			sysinfo_get_proc_avg(p), last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
@@ -95,7 +95,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 		if (bymin > (60 * 5)) {
 			assert(NULL != first_bymin);
 			assert(NULL != last_bymin);
-			db_record_update_updatemin(db, t, 1, 
+			db_record_update_tail(db, t, 1, 
 				sysinfo_get_proc_avg(p),
 				last_bymin->id);
 		} else
@@ -103,7 +103,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 				sysinfo_get_proc_avg(p),
 				INTERVAL_bymin);
 	} else
-		db_record_update_updatehour(db, 
+		db_record_update_current(db, 
 			first_bymin->entries + 1,
 			first_bymin->cpu + 
 			 sysinfo_get_proc_avg(p),
@@ -120,7 +120,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 		if (byhour > (24 * 5)) {
 			assert(NULL != first_byhour);
 			assert(NULL != last_byhour);
-			db_record_update_updatemin(db, t, 1, 
+			db_record_update_tail(db, t, 1, 
 				sysinfo_get_proc_avg(p),
 				last_byhour->id);
 		} else
@@ -128,7 +128,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 				sysinfo_get_proc_avg(p),
 				INTERVAL_byhour);
 	} else
-		db_record_update_updatehour(db, 
+		db_record_update_current(db, 
 			first_byhour->entries + 1,
 			first_byhour->cpu + 
 			 sysinfo_get_proc_avg(p),
