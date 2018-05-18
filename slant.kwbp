@@ -15,14 +15,14 @@ enum	interval {
 struct	record {
 	field ctime epoch;
 	field entries int;
-	field value double;
+	field cpu double;
 	field interval enum interval;
 	field id int rowid;
 
 	insert;
 	list: name lister order ctime desc;
-	update ctime, entries, value: id: name updatemin;
-	update entries, value: id: name updatehour;
+	update ctime, entries, cpu: id: name updatemin;
+	update entries, cpu: id: name updatehour;
 
 	roles produce { 
 		insert;

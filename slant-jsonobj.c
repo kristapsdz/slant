@@ -52,7 +52,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	const char	*cp;
 	size_t		 i;
 	int		 has_ctime, has_entries, 
-			 has_value, has_interval,
+			 has_cpu, has_interval,
 			 has_id;
 
 	if (json_type_array != e->value->type) {
@@ -70,7 +70,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 
 	for (i = 0, are = ar->start; 
 	     NULL != are; are = are->next, i++) {
-		has_ctime = has_entries = has_value = 
+		has_ctime = has_entries = has_cpu = 
 			has_interval = has_id = 0;
 		val = are->value;
 		if (json_type_object != val->type) {
@@ -99,11 +99,11 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 				    (n, &(*recs)[i].entries, num)) 
 					goto err;
 				has_entries = 1;
-			} else if (0 == strcasecmp(cp, "value")) {
+			} else if (0 == strcasecmp(cp, "cpu")) {
 				if ( ! jsonobj_parse_real
-				    (n, &(*recs)[i].value, num)) 
+				    (n, &(*recs)[i].cpu, num)) 
 					goto err;
-				has_value = 1;
+				has_cpu = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
 				if ( ! jsonobj_parse_int
 				    (n, &(*recs)[i].interval, num)) 
@@ -118,7 +118,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 		}
 		if (0 == has_ctime ||
 		    0 == has_entries ||
-		    0 == has_value ||
+		    0 == has_cpu ||
 		    0 == has_interval ||
 		    0 == has_id) {
 			warnx("%s: missing fields", n->host);

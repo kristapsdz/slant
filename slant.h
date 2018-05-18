@@ -17,7 +17,7 @@ struct	addrset {
 struct	rec {
 	time_t	 	ctime;
 	int64_t	 	entries;
-	double	 	value;
+	double	 	cpu;
 	int64_t		interval;
 	int64_t	 	id;
 };

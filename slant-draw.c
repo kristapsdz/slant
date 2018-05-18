@@ -28,14 +28,15 @@ draw(const struct node *n, size_t nsz)
 	for (i = 0; i < nsz; i++) {
 		printf("%*s | ", (int)maxsz, n[i].host);
 		if (NULL == n[i].recs) {
-			printf("(no data)\n");
+			printf("------\n");
 			continue;
-		} else if (0 == n[i].recs->byqminsz) {
-			printf("(no recent data)\n");
+		} else if (0 == n[i].recs->byqminsz ||
+		  	   0 == n[i].recs->byqmin[0].entries) {
+			printf("------\n");
 			continue;
 		}
 		printf("%5.1f%%\n", 
-			n[i].recs->byqmin[0].value /
+			n[i].recs->byqmin[0].cpu /
 			n[i].recs->byqmin[0].entries);
 	}
 }

@@ -105,7 +105,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 	} else
 		db_record_update_updatehour(db, 
 			first_bymin->entries + 1,
-			first_bymin->value + 
+			first_bymin->cpu + 
 			 sysinfo_get_proc_avg(p),
 			first_bymin->id);
 
@@ -130,7 +130,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 	} else
 		db_record_update_updatehour(db, 
 			first_byhour->entries + 1,
-			first_byhour->value + 
+			first_byhour->cpu + 
 			 sysinfo_get_proc_avg(p),
 			first_byhour->id);
 }
