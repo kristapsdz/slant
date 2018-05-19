@@ -71,6 +71,8 @@ update(struct kwbp *db, const struct sysinfo *p,
 			break;
 		}
 
+	db_trans_open(db, 0, 0);
+
 	/* 
 	 * Start by pushing the current quarter-minute.
 	 * We keep the last five minutes (in quarter-minute intervals)
@@ -134,6 +136,8 @@ update(struct kwbp *db, const struct sysinfo *p,
 			first_byhour->cpu + 
 			 sysinfo_get_proc_avg(p),
 			first_byhour->id);
+
+	db_trans_commit(db, 0);
 }
 
 int
