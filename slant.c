@@ -19,8 +19,9 @@
 static	volatile sig_atomic_t sigged;
 
 static void
-dosig(int sig)
+dosig(int code)
 {
+
 	sigged = 1;
 }
 
@@ -94,16 +95,22 @@ main(int argc, char *argv[])
 	size_t		 i;
 	struct node	*nodes = NULL;
 	struct pollfd	*pfds = NULL;
+	struct timespec	 ts;
+	sigset_t	 mask, oldmask;
 
 	if (-1 == pledge("dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
-	if (SIG_ERR == signal(SIGINT, dosig))
-		err(EXIT_FAILURE, NULL);
-	if (SIG_ERR == signal(SIGTERM, dosig))
-		err(EXIT_FAILURE, NULL);
-	if (SIG_ERR == signal(SIGQUIT, dosig))
-		err(EXIT_FAILURE, NULL);
+	signal(SIGTERM, dosig);
+	signal(SIGQUIT, dosig);
+	signal(SIGINT, dosig);
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGTERM);
+	sigaddset(&mask, SIGQUIT);
+	sigaddset(&mask, SIGINT);
+
+	sigprocmask(SIG_BLOCK, &mask, &oldmask);
 
 	while (-1 != (c = getopt(argc, argv, "")))
 		goto usage;
@@ -163,6 +170,9 @@ main(int argc, char *argv[])
 	 * addresses we have on file.
 	 */
 
+	ts.tv_sec = 1;
+	ts.tv_nsec = 0;
+
 	while ( ! sigged) {
 		if ((c = nodes_update(nodes, argc)) < 0)
 			break;
@@ -172,7 +182,8 @@ main(int argc, char *argv[])
 			first = 0;
 		}
 
-		if (poll(pfds, argc, 1) < 0 && EINTR != errno) {
+		if (ppoll(pfds, argc, &ts, &oldmask) < 0 && 
+		    EINTR != errno) {
 			warn("poll");
 			break;
 		}
