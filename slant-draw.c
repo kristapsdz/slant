@@ -80,7 +80,7 @@ draw(const struct node *n, size_t nsz)
 
 	maxipsz = strlen("address");
 	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].addrs.addrs[n[i].curaddr].ip);
+		sz = strlen(n[i].addrs.addrs[n[i].addrs.curaddr].ip);
 		if (sz > maxipsz)
 			maxipsz = sz;
 	}
@@ -139,7 +139,7 @@ draw(const struct node *n, size_t nsz)
 			buf_appendv(&b, "%31s", "]");
 
 		buf_appendv(&b, " %*s", (int)maxipsz, 
-			n[i].addrs.addrs[n[i].curaddr].ip);
+			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
 
 		if (last) {
 			if ((span = t - last) < 0)
