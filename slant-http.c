@@ -210,8 +210,6 @@ http_connect(struct node *n)
 	int 	  error = 0;
 	socklen_t len = sizeof(error);
 
-	warnx("%s", n->url);
-
 	assert(-1 != n->pfd->fd);
 
 	if ((POLLNVAL & n->pfd->revents) ||
