@@ -1,3 +1,4 @@
+#include <sys/queue.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -12,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "extern.h"
 #include "slant.h"
 
 static	volatile sig_atomic_t sigged;

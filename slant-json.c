@@ -31,6 +31,7 @@
 
 #include <stdlib.h>
 
+#include "extern.h"
 #include "slant.h"
 
 struct json_value_s;

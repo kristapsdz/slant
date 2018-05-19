@@ -1,3 +1,4 @@
+#include <sys/queue.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -9,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "extern.h"
 #include "slant.h"
 
 static int
@@ -41,7 +43,7 @@ jsonobj_parse_real(const struct node *n,
 static int
 jsonobj_parse_recs(const struct node *n, const char *name,
 	const struct json_object_element_s *e, 
-	struct rec **recs, size_t *recsz)
+	struct record **recs, size_t *recsz)
 {
 	const struct json_array_s *ar;
 	const struct json_array_element_s *are;
@@ -49,6 +51,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	const struct json_object_s *obj;
 	const struct json_object_element_s *obje;
 	const struct json_number_s *num;
+	int64_t		 ival;
 	const char	*cp;
 	size_t		 i;
 	int		 has_ctime, has_entries, 
@@ -62,7 +65,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 
 	ar = e->value->payload;
 	*recsz = ar->length;
-	*recs = calloc(*recsz, sizeof(struct rec));
+	*recs = calloc(*recsz, sizeof(struct record));
 	if (NULL == *recs) {
 		warn(NULL);
 		return 0;
@@ -105,9 +108,9 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 					goto err;
 				has_cpu = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
-				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].interval, num)) 
+				if ( ! jsonobj_parse_int(n, &ival, num)) 
 					goto err;
+				(*recs)[i].interval = ival;		
 				has_interval = 1;
 			} else if (0 == strcasecmp(cp, "id")) {
 				if ( ! jsonobj_parse_int

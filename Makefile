@@ -16,7 +16,7 @@ slant: slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.
 
 clean:
 	rm -f slant.db slant.sql 
-	rm -f db.o db.c db.h json.c json.o json.h
+	rm -f db.o db.c db.h json.c json.o json.h extern.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
 	rm -f slant slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
@@ -30,20 +30,29 @@ slant.sql: slant.kwbp
 
 slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
 
-db.o db.o slant-cgi.o slant-collectd.o: db.h
+db.o slant-collectd.o slant-cgi.o: db.h
 
 json.o slant-cgi.o: json.h
 
 slant.o slant-dns.o slant-http.o slant-json.o slant-jsonobj.o: slant.h
 
+db.h: extern.h
+
+json.h: extern.h
+
+slant.h: extern.h
+
+extern.h: slant.kwbp
+	kwebapp-c-header -s -g EXTERN_H -Nd slant.kwbp > $@
+
 db.h: slant.kwbp
-	kwebapp-c-header -s slant.kwbp > $@
+	kwebapp-c-header -s -Nb slant.kwbp > $@
 
 json.h: slant.kwbp
 	kwebapp-c-header -s -g JSON_H -j -Nbd slant.kwbp > $@
 
 db.c: slant.kwbp
-	kwebapp-c-source -s -h db.h slant.kwbp > $@
+	kwebapp-c-source -s -h extern.h,db.h slant.kwbp > $@
 
 json.c: slant.kwbp
-	kwebapp-c-source -s -Ibj -j -Nb -h db.h,json.h slant.kwbp > $@
+	kwebapp-c-source -s -Idj -j -Nd -h extern.h,json.h slant.kwbp > $@

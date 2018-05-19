@@ -14,20 +14,12 @@ struct	addrset {
 	struct source	 addrs[MAX_SERVERS_DNS];
 };
 
-struct	rec {
-	time_t	 	ctime;
-	int64_t	 	entries;
-	double	 	cpu;
-	int64_t		interval;
-	int64_t	 	id;
-};
-
 struct	recset {
-	struct rec	*byqmin;
+	struct record	*byqmin;
 	size_t		 byqminsz;
-	struct rec	*bymin;
+	struct record	*bymin;
 	size_t		 byminsz;
-	struct rec	*byhour;
+	struct record	*byhour;
 	size_t		 byhoursz;
 };
 

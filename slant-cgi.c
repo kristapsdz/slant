@@ -13,6 +13,7 @@
 #include <kcgijson.h>
 #include <ksql.h>
 
+#include "extern.h"
 #include "db.h"
 #include "json.h"
 

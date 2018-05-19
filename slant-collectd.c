@@ -14,6 +14,7 @@
 #include <ksql.h>
 
 #include "slant-collectd.h"
+#include "extern.h"
 #include "db.h"
 
 static	sig_atomic_t	doexit = 0;
