@@ -3,6 +3,8 @@ CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
 CPPFLAGS   = -I/usr/local/opt/include -I/usr/local/include
 LDFLAGS	   = -L/usr/local/opt/lib -L/usr/local/lib
 
+SLANT_OBJS = slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
+
 all: slant.db slant-collectd slant-cgi slant
 
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
@@ -11,15 +13,15 @@ slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
 
-slant: slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
-	$(CC) -o $@ $(LDFLAGS) slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o 
+slant: $(SLANT_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls
 
 clean:
 	rm -f slant.db slant.sql 
 	rm -f db.o db.c db.h json.c json.o json.h extern.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
-	rm -f slant slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
+	rm -f slant $(SLANT_OBJS)
 
 slant.db: slant.sql
 	rm -f $@
@@ -34,7 +36,7 @@ db.o slant-collectd.o slant-cgi.o: db.h
 
 json.o slant-cgi.o: json.h
 
-slant.o slant-dns.o slant-http.o slant-json.o slant-jsonobj.o: slant.h
+$(SLANT_OBJS): slant.h
 
 db.h: extern.h
 
