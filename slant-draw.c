@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "extern.h"
 #include "slant.h"
@@ -66,6 +67,7 @@ void
 draw(const struct node *n, size_t nsz)
 {
 	size_t	 	 i, j, sz, maxhostsz, maxipsz;
+	time_t		 last, span, t = time(NULL), hr, min;
 	struct buf	 b;
 	double		 v, vv;
 
@@ -74,6 +76,13 @@ draw(const struct node *n, size_t nsz)
 		sz = strlen(n[i].host);
 		if (sz > maxhostsz)
 			maxhostsz = sz;
+	}
+
+	maxipsz = strlen("address");
+	for (i = 0; i < nsz; i++) {
+		sz = strlen(n[i].addrs.addrs[n[i].curaddr].ip);
+		if (sz > maxipsz)
+			maxipsz = sz;
 	}
 
 	memset(&b, 0, sizeof(struct buf));
@@ -85,44 +94,65 @@ draw(const struct node *n, size_t nsz)
 	 */
 
 	for (i = 0; i < nsz; i++) {
+		last = 0;
 		buf_appendv(&b, "%*s [", 
 			(int)maxhostsz, n[i].host);
-		if (NULL == n[i].recs) {
-			buf_appendv(&b, "%31s", "]\n");
-			continue;
-		} 
-		
-		if (n[i].recs->byqminsz &&
-	  	    n[i].recs->byqmin[0].entries) {
-			vv = n[i].recs->byqmin[0].cpu /
-				n[i].recs->byqmin[0].entries;
-			for (j = 1; j <= 10; j++) {
-				v = j * 10.0;
-				if (v > vv)
-					break;
-				buf_appendc(&b, '|');
-			}
-			for ( ; j <= 10; j++)
-				buf_appendc(&b, ' ');
-			buf_appendv(&b, " %4.1f%%|", vv);
-		} else
-			buf_appendv(&b, "%17s", "|");
 
-		if (n[i].recs->byminsz &&
-	  	    n[i].recs->bymin[0].entries) {
-			vv = n[i].recs->bymin[0].cpu /
-				n[i].recs->bymin[0].entries;
-			buf_appendv(&b, " %4.1f%%|", vv);
-		} else
-			buf_appendv(&b, "%7s", "|");
+		if (NULL != n[i].recs) {
+			if (n[i].recs->byqminsz &&
+			    n[i].recs->byqmin[0].entries) {
+				last = n[i].recs->byqmin[0].ctime;
+				vv = n[i].recs->byqmin[0].cpu /
+					n[i].recs->byqmin[0].entries;
+				for (j = 1; j <= 10; j++) {
+					v = j * 10.0;
+					if (v > vv)
+						break;
+					buf_appendc(&b, '|');
+				}
+				for ( ; j <= 10; j++)
+					buf_appendc(&b, ' ');
+				buf_appendv(&b, " %4.1f%%|", vv);
+			} else
+				buf_appendv(&b, "%17s", "|");
 
-		if (n[i].recs->byhoursz &&
-	  	    n[i].recs->byhour[0].entries) {
-			vv = n[i].recs->byhour[0].cpu /
-				n[i].recs->byhour[0].entries;
-			buf_appendv(&b, " %4.1f%%]", vv);
+			if (n[i].recs->byminsz &&
+			    n[i].recs->bymin[0].entries) {
+				if (0 == last)
+					last = n[i].recs->bymin[0].ctime;
+				vv = n[i].recs->bymin[0].cpu /
+					n[i].recs->bymin[0].entries;
+				buf_appendv(&b, " %4.1f%%|", vv);
+			} else
+				buf_appendv(&b, "%7s", "|");
+
+			if (n[i].recs->byhoursz &&
+			    n[i].recs->byhour[0].entries) {
+				if (0 == last)
+					last = n[i].recs->byhour[0].ctime;
+				vv = n[i].recs->byhour[0].cpu /
+					n[i].recs->byhour[0].entries;
+				buf_appendv(&b, " %4.1f%%]", vv);
+			} else
+				buf_appendv(&b, "%7s", "]");
 		} else
-			buf_appendv(&b, "%7s", "]");
+			buf_appendv(&b, "%31s", "]");
+
+		buf_appendv(&b, " %*s", (int)maxipsz, 
+			n[i].addrs.addrs[n[i].curaddr].ip);
+
+		if (last) {
+			if ((span = t - last) < 0)
+				span = 0;
+			hr = span / (60 * 60);
+			span -= hr;
+			min = span / 60;
+			span -= min;
+			buf_appendv(&b, " %3lld:%.2lld:%.2lld", 
+				(long long)hr, (long long)min, 
+				(long long)span);
+		} else
+			buf_appendv(&b, " %s", "---:--:--");
 
 		buf_appendc(&b, '\n');
 	}

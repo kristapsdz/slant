@@ -31,12 +31,12 @@ nodes_free(struct node *n, size_t sz)
 	size_t	 i;
 
 	for (i = 0; i < sz; i++) {
-		if (-1 != n[i].pfd->fd)
-			close(n[i].pfd->fd);
+		if (-1 != n[i].xfer.pfd->fd)
+			close(n[i].xfer.pfd->fd);
 		free(n[i].url);
 		free(n[i].host);
-		free(n[i].wbuf);
-		free(n[i].rbuf);
+		free(n[i].xfer.wbuf);
+		free(n[i].xfer.rbuf);
 		if (NULL != n[i].recs) {
 			free(n[i].recs->byqmin);
 			free(n[i].recs->bymin);
@@ -101,16 +101,28 @@ main(int argc, char *argv[])
 	if (-1 == pledge("dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
-	signal(SIGTERM, dosig);
-	signal(SIGQUIT, dosig);
-	signal(SIGINT, dosig);
+	/* 
+	 * Establish our signal handling: have TERM, QUIT, and INT
+	 * interrupt the poll and cause us to exit.
+	 * Otherwise, we block the signal.
+	 */
 
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGTERM);
-	sigaddset(&mask, SIGQUIT);
-	sigaddset(&mask, SIGINT);
-
-	sigprocmask(SIG_BLOCK, &mask, &oldmask);
+	if (sigemptyset(&mask) < 0)
+		err(EXIT_FAILURE, NULL);
+	if (SIG_ERR == signal(SIGTERM, dosig))
+		err(EXIT_FAILURE, NULL);
+	if (SIG_ERR == signal(SIGQUIT, dosig))
+		err(EXIT_FAILURE, NULL);
+	if (SIG_ERR == signal(SIGINT, dosig))
+		err(EXIT_FAILURE, NULL);
+	if (sigaddset(&mask, SIGTERM) < 0)
+		err(EXIT_FAILURE, NULL);
+	if (sigaddset(&mask, SIGQUIT) < 0)
+		err(EXIT_FAILURE, NULL);
+	if (sigaddset(&mask, SIGINT) < 0)
+		err(EXIT_FAILURE, NULL);
+	if (sigprocmask(SIG_BLOCK, &mask, &oldmask) < 0)
+		err(EXIT_FAILURE, NULL);
 
 	while (-1 != (c = getopt(argc, argv, "")))
 		goto usage;
@@ -135,7 +147,7 @@ main(int argc, char *argv[])
 		pfds[i].fd = -1;
 
 	for (i = 0; i < (size_t)argc; i++) {
-		nodes[i].pfd = &pfds[i];
+		nodes[i].xfer.pfd = &pfds[i];
 		nodes[i].state = STATE_STARTUP;
 		nodes[i].url = strdup(argv[i]);
 

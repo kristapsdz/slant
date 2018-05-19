@@ -18,13 +18,18 @@ dns_parse_url(struct node *n)
 	char		*cp;
 	const char 	*s = n->url;
 
-	if (0 == strncasecmp(s, "https://", 8))
+ 	n->addrs.https = 0;
+
+	if (0 == strncasecmp(s, "https://", 8)) {
+	 	n->addrs.https = 1;
 		s += 8;
-	else if (0 == strncasecmp(s, "http://", 7))
+	} else if (0 == strncasecmp(s, "http://", 7))
 		s += 7;
 
 	if (NULL == (n->host = strdup(s)))
 		return 0;
+
+	n->addrs.port = 80;
 
 	for (cp = n->host; '\0' != *cp; cp++)
 		if ('/' == *cp) {
@@ -69,13 +74,13 @@ dns_parse_url(struct node *n)
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 int
-dns_resolve(const char *host, struct addrset *vec)
+dns_resolve(const char *host, struct dns *vec)
 {
 	struct addrinfo	 hints, *res0, *res;
 	struct sockaddr	*sa;
 	int		 error;
 
-	memset(vec, 0, sizeof(struct addrset));
+	memset(vec, 0, sizeof(struct dns));
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = PF_UNSPEC;
@@ -102,14 +107,12 @@ dns_resolve(const char *host, struct addrset *vec)
 		sa = res->ai_addr;
 		if (AF_INET == res->ai_family) {
 			vec->addrs[vec->addrsz].family = 4;
-			vec->addrs[vec->addrsz].port = 80;
 			inet_ntop(AF_INET,
 				&(((struct sockaddr_in *)sa)->sin_addr),
 				vec->addrs[vec->addrsz].ip, 
 				INET6_ADDRSTRLEN);
 		} else {
 			vec->addrs[vec->addrsz].family = 6;
-			vec->addrs[vec->addrsz].port = 80;
 			inet_ntop(AF_INET6,
 				&(((struct sockaddr_in6 *)sa)->sin6_addr),
 				vec->addrs[vec->addrsz].ip, 

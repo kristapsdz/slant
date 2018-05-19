@@ -21,9 +21,9 @@ static int
 http_err_connect(struct node *n)
 {
 
-	close(n->pfd->fd);
-	n->pfd->fd = -1;
-	n->curaddr = (n->curaddr + 1) % n->addrs.addrsz;
+	close(n->xfer.pfd->fd);
+	n->xfer.pfd->fd = -1;
+	n->addrs.curaddr = (n->addrs.curaddr + 1) % n->addrs.addrsz;
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = time(NULL);
 	return 1;
@@ -32,12 +32,12 @@ http_err_connect(struct node *n)
 static int
 http_done(struct node *n)
 {
-	char	*end, *sv, *start = n->rbuf;
-	size_t	 len, sz = n->rbufsz;
+	char	*end, *sv, *start = n->xfer.rbuf;
+	size_t	 len, sz = n->xfer.rbufsz;
 	int	 rc, httpok = 0;
 
-	close(n->pfd->fd);
-	n->pfd->fd = -1;
+	close(n->xfer.pfd->fd);
+	n->xfer.pfd->fd = -1;
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = time(NULL);
 
@@ -66,9 +66,9 @@ http_done(struct node *n)
 	} else
 		rc = jsonobj_parse(n, start, sz);
 
-	free(n->rbuf);
-	n->rbuf = NULL;
-	n->rbufsz = 0;
+	free(n->xfer.rbuf);
+	n->xfer.rbuf = NULL;
+	n->xfer.rbufsz = 0;
 	return rc;
 }
 
@@ -83,11 +83,11 @@ http_write_ready(struct node *n)
 
 	warnx("%s: ready for writes", n->host);
 
-	n->wbufsz = n->wbufpos = 0;
-	free(n->wbuf);
-	n->wbuf = NULL;
+	n->xfer.wbufsz = n->xfer.wbufpos = 0;
+	free(n->xfer.wbuf);
+	n->xfer.wbuf = NULL;
 
-	c = asprintf(&n->wbuf,
+	c = asprintf(&n->xfer.wbuf,
 		"GET %s HTTP/1.0\r\n"
 		"Host: %s\r\n"
 		"\r\n",
@@ -98,9 +98,9 @@ http_write_ready(struct node *n)
 		return 0;
 	}
 
-	n->wbufsz = c;
+	n->xfer.wbufsz = c;
 	n->state = STATE_WRITE;
-	n->pfd->events = POLLOUT;
+	n->xfer.pfd->events = POLLOUT;
 	return 1;
 }
 
@@ -114,86 +114,78 @@ int
 http_init_connect(struct node *n)
 {
 	int		 family, c, flags;
+	socklen_t	 sslen;
 
-	warnx("%s: setting up: %s", n->host, 
-		n->addrs.addrs[n->curaddr].ip);
+	memset(&n->xfer.ss, 0, sizeof(struct sockaddr_storage));
 
-	memset(&n->ss, 0, sizeof(struct sockaddr_storage));
-
-	if (4 == n->addrs.addrs[n->curaddr].family) {
+	if (4 == n->addrs.addrs[n->addrs.curaddr].family) {
 		family = PF_INET;
-		((struct sockaddr_in *)&n->ss)->sin_family = AF_INET;
-		((struct sockaddr_in *)&n->ss)->sin_port = 
-			htons(n->addrs.addrs[n->curaddr].port);
+		((struct sockaddr_in *)&n->xfer.ss)->sin_family = AF_INET;
+		((struct sockaddr_in *)&n->xfer.ss)->sin_port = 
+			htons(n->addrs.port);
 		c = inet_pton(AF_INET, 
-			n->addrs.addrs[n->curaddr].ip,
-			&((struct sockaddr_in *)&n->ss)->sin_addr);
-		n->sslen = sizeof(struct sockaddr_in);
+			n->addrs.addrs[n->addrs.curaddr].ip,
+			&((struct sockaddr_in *)&n->xfer.ss)->sin_addr);
+		sslen = sizeof(struct sockaddr_in);
 	} else {
 		family = PF_INET6;
-		((struct sockaddr_in6 *)&n->ss)->sin6_family = AF_INET6;
-		((struct sockaddr_in6 *)&n->ss)->sin6_port =
-			htons(n->addrs.addrs[n->curaddr].port);
+		((struct sockaddr_in6 *)&n->xfer.ss)->sin6_family = AF_INET6;
+		((struct sockaddr_in6 *)&n->xfer.ss)->sin6_port =
+			htons(n->addrs.port);
 		c = inet_pton(AF_INET6, 
-			n->addrs.addrs[n->curaddr].ip,
-			&((struct sockaddr_in6 *)&n->ss)->sin6_addr);
-		n->sslen = sizeof(struct sockaddr_in6);
+			n->addrs.addrs[n->addrs.curaddr].ip,
+			&((struct sockaddr_in6 *)&n->xfer.ss)->sin6_addr);
+		sslen = sizeof(struct sockaddr_in6);
 	} 
 
 	if (c < 0) {
-		warn("%s: cannot convert: %s", 
-			n->host, n->addrs.addrs[n->curaddr].ip);
+		warn("%s: cannot convert: %s", n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == c) {
-		warnx("%s: cannot convert: %s", 
-			n->host, n->addrs.addrs[n->curaddr].ip);
+		warnx("%s: cannot convert: %s", n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	}
 
-	n->pfd->events = POLLOUT;
-	n->pfd->fd = socket(family, SOCK_STREAM, 0);
+	n->xfer.pfd->events = POLLOUT;
+	n->xfer.pfd->fd = socket(family, SOCK_STREAM, 0);
 
-	if (-1 == n->pfd->fd) {
+	if (-1 == n->xfer.pfd->fd) {
 		warn("socket");
 		return 0;
 	}
 
 	/* Set up non-blocking mode. */
 
-	if (-1 == (flags = fcntl(n->pfd->fd, F_GETFL, 0))) {
+	if (-1 == (flags = fcntl(n->xfer.pfd->fd, F_GETFL, 0))) {
 		warn("fcntl");
 		return 0;
 	}
-	if (-1 == fcntl(n->pfd->fd, F_SETFL, flags | O_NONBLOCK)) {
+	if (-1 == fcntl(n->xfer.pfd->fd, F_SETFL, flags|O_NONBLOCK)) {
 		warn("fcntl");
 		return 0;
 	}
 
-	warnx("%s: ready: %s", n->host, 
-		n->addrs.addrs[n->curaddr].ip);
 	n->state = STATE_CONNECT;
 
 	/* This is from connect(2): asynchronous connection. */
 
-	c = connect(n->pfd->fd, (struct sockaddr *)&n->ss, n->sslen);
-	if (c && (EINTR == errno || EINPROGRESS == errno)) {
-		warnx("%s: asynchronous connect: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+	c = connect(n->xfer.pfd->fd, 
+		(struct sockaddr *)&n->xfer.ss, sslen);
+	if (c && (EINTR == errno || EINPROGRESS == errno))
 		return 1;
-	} else if (c == 0)
+	else if (c == 0)
 		return http_write_ready(n);
 
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
-	    ENETUNREACH == errno) {
-		warnx("%s: address not reached: %s", 
-			n->host, n->addrs.addrs[n->curaddr].ip);
+	    ENETUNREACH == errno)
 		return http_err_connect(n);
-	}
 
 	warn("%s: connect: %s", n->host, 
-		n->addrs.addrs[n->curaddr].ip);
+		n->addrs.addrs[n->addrs.curaddr].ip);
 	return 0;
 }
 
@@ -210,21 +202,19 @@ http_connect(struct node *n)
 	int 	  error = 0;
 	socklen_t len = sizeof(error);
 
-	assert(-1 != n->pfd->fd);
+	assert(-1 != n->xfer.pfd->fd);
 
-	if ((POLLNVAL & n->pfd->revents) ||
-	    (POLLERR & n->pfd->revents)) {
+	if ((POLLNVAL & n->xfer.pfd->revents) ||
+	    (POLLERR & n->xfer.pfd->revents)) {
 		warn("%s: poll: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if (POLLHUP & n->pfd->revents) {
-		warnx("%s: hangup: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+	} else if (POLLHUP & n->xfer.pfd->revents) {
 		return http_err_connect(n);
-	} else if ( ! (POLLOUT & n->pfd->revents))
+	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
-	c = getsockopt(n->pfd->fd, 
+	c = getsockopt(n->xfer.pfd->fd, 
 		SOL_SOCKET, SO_ERROR, &error, &len);
 
 	if (c < 0) {
@@ -237,11 +227,9 @@ http_connect(struct node *n)
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
-	    ENETUNREACH == errno) {
-		warnx("%s: address not reached: %s", 
-			n->host, n->addrs.addrs[n->curaddr].ip);
+	    ENETUNREACH == errno)
 		return http_err_connect(n);
-	}
+
 	warn(NULL);
 	return 0;
 }
@@ -259,45 +247,40 @@ http_write(struct node *n)
 {
 	ssize_t	 ssz;
 
-	assert(-1 != n->pfd->fd);
-	assert(NULL != n->wbuf);
-	assert(n->wbufsz > 0);
+	assert(-1 != n->xfer.pfd->fd);
+	assert(NULL != n->xfer.wbuf);
+	assert(n->xfer.wbufsz > 0);
 
-	if ((POLLNVAL & n->pfd->revents) ||
-	    (POLLERR & n->pfd->revents)) {
+	if ((POLLNVAL & n->xfer.pfd->revents) ||
+	    (POLLERR & n->xfer.pfd->revents)) {
 		warn("%s: poll errors: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if (POLLHUP & n->pfd->revents) {
-		warnx("%s: hangup: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+	} else if (POLLHUP & n->xfer.pfd->revents) {
 		return http_err_connect(n);
-	} else if ( ! (POLLOUT & n->pfd->revents))
+	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
-	ssz = write(n->pfd->fd, 
-		n->wbuf + n->wbufpos, n->wbufsz);
+	ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
+		n->xfer.wbufpos, n->xfer.wbufsz);
 	if (ssz < 0) {
 		warn("%s: write: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	}
-	n->wbufsz -= ssz;
-	n->wbufpos += ssz;
+	n->xfer.wbufsz -= ssz;
+	n->xfer.wbufpos += ssz;
 
-	if (n->wbufsz > 0)
+	if (n->xfer.wbufsz > 0)
 		return 1;
 
-	warnx("%s: finished writing: %s", n->host, 
-		n->addrs.addrs[n->curaddr].ip);
-
-	free(n->wbuf);
-	n->wbuf = NULL;
+	free(n->xfer.wbuf);
+	n->xfer.wbuf = NULL;
 	n->state = STATE_READ;
-	free(n->rbuf);
-	n->rbuf = NULL;
-	n->rbufsz = 0;
-	n->pfd->events = POLLIN;
+	free(n->xfer.rbuf);
+	n->xfer.rbuf = NULL;
+	n->xfer.rbufsz = 0;
+	n->xfer.pfd->events = POLLIN;
 	return 1;
 }
 
@@ -315,41 +298,38 @@ http_read(struct node *n)
 	void	*pp;
 
 	assert(STATE_READ == n->state);
-	assert(-1 != n->pfd->fd);
+	assert(-1 != n->xfer.pfd->fd);
 
 	/* Check for poll(2) errors and readability. */
 
-	if ((POLLNVAL & n->pfd->revents) ||
-	    (POLLERR & n->pfd->revents)) {
+	if ((POLLNVAL & n->xfer.pfd->revents) ||
+	    (POLLERR & n->xfer.pfd->revents)) {
 		warnx("%s: poll errors: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if ( ! (POLLIN & n->pfd->revents))
+	} else if ( ! (POLLIN & n->xfer.pfd->revents))
 		return 1;
 
 	/* Read into a static buffer. */
 
-	ssz = read(n->pfd->fd, buf, sizeof(buf));
+	ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
 	if (ssz < 0) {
 		warn("%s: read: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if (0 == ssz) {
-		warnx("%s: finished reading: %s", n->host, 
-			n->addrs.addrs[n->curaddr].ip);
+	} else if (0 == ssz)
 		return http_done(n);
-	}
 
 	/* Copy static into dynamic buffer. */
 
-	pp = realloc(n->rbuf, n->rbufsz + ssz);
+	pp = realloc(n->xfer.rbuf, n->xfer.rbufsz + ssz);
 	if (NULL == pp) {
 		warn(NULL);
 		return 0;
 	}
-	n->rbuf = pp;
-	memcpy(n->rbuf + n->rbufsz, buf, ssz);
-	n->rbufsz += ssz;
+	n->xfer.rbuf = pp;
+	memcpy(n->xfer.rbuf + n->xfer.rbufsz, buf, ssz);
+	n->xfer.rbufsz += ssz;
 	return 1;
 }
 

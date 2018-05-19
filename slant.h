@@ -4,14 +4,16 @@
 struct	source {
 	int	 family; /* 4 (PF_INET) or 6 (PF_INET6) */
 	char	 ip[INET6_ADDRSTRLEN]; /* IPV4 or IPV6 address */
-	short	 port;
 };
 
 #define MAX_SERVERS_DNS 8
 
-struct	addrset {
-	size_t	 	 addrsz;
-	struct source	 addrs[MAX_SERVERS_DNS];
+struct	dns {
+	size_t	 	 addrsz; /* num addrs (<= MAX_SERVERS_DNS) */
+	struct source	 addrs[MAX_SERVERS_DNS]; /* ip addresses */
+	short	 	 port; /* port */
+	int		 https; /* non-zero if https, else zero */
+	size_t		 curaddr; /* current working address */
 };
 
 struct	recset {
@@ -35,25 +37,29 @@ enum	state {
 	STATE_DONE,
 };
 
-struct	node {
-	enum state	 state; /* state of node */
-	char		*url; /* full URL for connect */
-	char		*host; /* just hostname of connect */
-	char		*path; /* path of connect */
-	struct addrset	 addrs; /* all possible IP addresses */
-	size_t		 curaddr; /* current working address */
-	struct pollfd	*pfd; /* pollfd descriptor */
-	struct sockaddr_storage ss; /* socket */
-	socklen_t	 sslen; /* socket length */
+struct	xfer {
 	char		*wbuf; /* write buffer for http */
 	size_t		 wbufsz; /* amount left to write */
 	size_t		 wbufpos; /* write position in wbuf */
 	char		*rbuf; /* read buffer for http */
 	size_t		 rbufsz; /* amount read over http */
+	struct sockaddr_storage ss; /* socket */
+	struct pollfd	*pfd; /* pollfd descriptor */
+};
+
+struct	node {
+	enum state	 state; /* state of node */
+	char		*url; /* full URL for connect */
+	char		*host; /* just hostname of connect */
+	char		*path; /* path of connect */
+	struct xfer	 xfer; /* transfer information */
+	struct dns	 addrs; /* all possible IP addresses */
 	time_t		 waitstart; /* wait period start */
 	struct recset	*recs; /* results */
 	int		 dirty; /* new results */
 };
+
+/* All of this is from json.h. */
 
 enum	json_type_e {
 	json_type_string,
@@ -104,19 +110,14 @@ struct	json_object_s {
 __BEGIN_DECLS
 
 int	 dns_parse_url(struct node *);
-int	 dns_resolve(const char *, struct addrset *);
-
+int	 dns_resolve(const char *, struct dns *);
 int	 http_init_connect(struct node *);
 int	 http_connect(struct node *);
 int	 http_write(struct node *n);
 int	 http_read(struct node *n);
-
-void	 draw(const struct node *n, size_t sz);
-
-struct json_value_s
-	*json_parse(const void *, size_t);
-
-int	 jsonobj_parse(struct node *n, const char *, size_t);
+void 	 draw(const struct node *n, size_t sz);
+struct json_value_s *json_parse(const void *, size_t);
+int 	 jsonobj_parse(struct node *n, const char *, size_t);
 
 __END_DECLS
 
