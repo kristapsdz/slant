@@ -112,9 +112,9 @@ draw(const struct node *n, size_t nsz)
 				}
 				for ( ; j <= 10; j++)
 					buf_appendc(&b, ' ');
-				buf_appendv(&b, " %4.1f%%|", vv);
+				buf_appendv(&b, " %5.1f%%|", vv);
 			} else
-				buf_appendv(&b, "%17s", "|");
+				buf_appendv(&b, "%18s", "|");
 
 			if (n[i].recs->byminsz &&
 			    n[i].recs->bymin[0].entries) {
@@ -122,9 +122,9 @@ draw(const struct node *n, size_t nsz)
 					last = n[i].recs->bymin[0].ctime;
 				vv = n[i].recs->bymin[0].cpu /
 					n[i].recs->bymin[0].entries;
-				buf_appendv(&b, " %4.1f%%|", vv);
+				buf_appendv(&b, " %5.1f%%|", vv);
 			} else
-				buf_appendv(&b, "%7s", "|");
+				buf_appendv(&b, "%8s", "|");
 
 			if (n[i].recs->byhoursz &&
 			    n[i].recs->byhour[0].entries) {
@@ -132,11 +132,11 @@ draw(const struct node *n, size_t nsz)
 					last = n[i].recs->byhour[0].ctime;
 				vv = n[i].recs->byhour[0].cpu /
 					n[i].recs->byhour[0].entries;
-				buf_appendv(&b, " %4.1f%%]", vv);
+				buf_appendv(&b, " %5.1f%%]", vv);
 			} else
-				buf_appendv(&b, "%7s", "]");
+				buf_appendv(&b, "%8s", "]");
 		} else
-			buf_appendv(&b, "%31s", "]");
+			buf_appendv(&b, "%34s", "]");
 
 		buf_appendv(&b, " %*s", (int)maxipsz, 
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
