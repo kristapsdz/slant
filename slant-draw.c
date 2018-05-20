@@ -145,9 +145,9 @@ draw(const struct node *n, size_t nsz)
 			if ((span = t - last) < 0)
 				span = 0;
 			hr = span / (60 * 60);
-			span -= hr;
+			span -= hr * 60 * 60;
 			min = span / 60;
-			span -= min;
+			span -= min * 60;
 			buf_appendv(&b, " %3lld:%.2lld:%.2lld", 
 				(long long)hr, (long long)min, 
 				(long long)span);
