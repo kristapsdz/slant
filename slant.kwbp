@@ -29,8 +29,8 @@ struct	record {
 		 current record.
 		 This is recorded across all cores/CPUs on the system.";
 	field mem double comment
-		"Percentage of total used memory over available
-		 memory.";
+		"Percentage of active memory over available memory
+		 (active over npages, in uvmexp.h terms).";
 	field interval enum interval comment
 		"The type of record.";
 	field id int rowid comment
