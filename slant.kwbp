@@ -10,6 +10,9 @@ enum	interval {
 	item byqmin comment "Per-quarter-minute record type.";
 	item bymin comment "Per-minute record type.";
 	item byhour comment "Per-hour record type.";
+	item byday comment "Per-day record type.";
+	item byweek comment "Per-week record type.";
+	item byyear comment "Per-year record type.";
 };
 
 struct	record {

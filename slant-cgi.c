@@ -75,6 +75,30 @@ sendindex(struct kreq *r, const struct record_q *q)
 			kjson_obj_close(&req);
 		}
 	kjson_array_close(&req);
+	kjson_arrayp_open(&req, "day");
+	TAILQ_FOREACH(rr, q, _entries)
+		if (INTERVAL_byday == rr->interval) {
+			kjson_obj_open(&req);
+			json_record_data(&req, rr);
+			kjson_obj_close(&req);
+		}
+	kjson_array_close(&req);
+	kjson_arrayp_open(&req, "week");
+	TAILQ_FOREACH(rr, q, _entries)
+		if (INTERVAL_byweek == rr->interval) {
+			kjson_obj_open(&req);
+			json_record_data(&req, rr);
+			kjson_obj_close(&req);
+		}
+	kjson_array_close(&req);
+	kjson_arrayp_open(&req, "year");
+	TAILQ_FOREACH(rr, q, _entries)
+		if (INTERVAL_byyear == rr->interval) {
+			kjson_obj_open(&req);
+			json_record_data(&req, rr);
+			kjson_obj_close(&req);
+		}
+	kjson_array_close(&req);
 
 	kjson_obj_close(&req);
 	kjson_close(&req);
