@@ -19,17 +19,17 @@ dns_parse_url(struct node *n)
 	const char 	*s = n->url;
 
  	n->addrs.https = 0;
+	n->addrs.port = 80;
 
 	if (0 == strncasecmp(s, "https://", 8)) {
 	 	n->addrs.https = 1;
+		n->addrs.port = 443;
 		s += 8;
 	} else if (0 == strncasecmp(s, "http://", 7))
 		s += 7;
 
 	if (NULL == (n->host = strdup(s)))
 		return 0;
-
-	n->addrs.port = 80;
 
 	for (cp = n->host; '\0' != *cp; cp++)
 		if ('/' == *cp) {
@@ -51,7 +51,8 @@ dns_parse_url(struct node *n)
 		if (NULL == (n->path = strdup("")))
 			return 0;
 
-	warnx("%s: parsed: %s, %s", n->url, n->host, n->path);
+	warnx("%s: parsed: %s:%hd, %s", 
+		n->url, n->host, n->addrs.port, n->path);
 	return 1;
 }
 
@@ -79,8 +80,6 @@ dns_resolve(const char *host, struct dns *vec)
 	struct addrinfo	 hints, *res0, *res;
 	struct sockaddr	*sa;
 	int		 error;
-
-	memset(vec, 0, sizeof(struct dns));
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = PF_UNSPEC;

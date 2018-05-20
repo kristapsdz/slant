@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <tls.h>
 #include <unistd.h>
 
 #include "extern.h"
@@ -31,8 +32,11 @@ nodes_free(struct node *n, size_t sz)
 	size_t	 i;
 
 	for (i = 0; i < sz; i++) {
+		if (NULL != n[i].xfer.tls)
+			tls_close(n[i].xfer.tls);
 		if (-1 != n[i].xfer.pfd->fd)
 			close(n[i].xfer.pfd->fd);
+		tls_free(n[i].xfer.tls);
 		free(n[i].url);
 		free(n[i].host);
 		free(n[i].xfer.wbuf);
@@ -74,6 +78,14 @@ nodes_update(struct node *n, size_t sz)
 			if ( ! http_write(&n[i]))
 				return -1;
 			break;
+		case STATE_CLOSE_ERR:
+			if ( ! http_close_err(&n[i]))
+				return -1;
+			break;
+		case STATE_CLOSE_DONE:
+			if ( ! http_close_done(&n[i]))
+				return -1;
+			break;
 		case STATE_READ:
 			if ( ! http_read(&n[i]))
 				return -1;
@@ -98,7 +110,10 @@ main(int argc, char *argv[])
 	struct timespec	 ts;
 	sigset_t	 mask, oldmask;
 
-	if (-1 == pledge("dns inet stdio", NULL))
+	if (tls_init() < 0)
+		err(EXIT_FAILURE, NULL);
+
+	if (-1 == pledge("rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
 	/* 
@@ -174,7 +189,9 @@ main(int argc, char *argv[])
 		nodes[i].state = STATE_CONNECT_READY;
 	}
 
-	if (-1 == pledge("inet stdio", NULL))
+	/* FIXME: rpath needed by libressl. */
+
+	if (-1 == pledge("rpath inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
 	/*

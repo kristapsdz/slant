@@ -31,6 +31,8 @@ enum	state {
 	STATE_CONNECT_WAITING,
 	STATE_CONNECT_READY,
 	STATE_CONNECT,
+	STATE_CLOSE_DONE,
+	STATE_CLOSE_ERR,
 	STATE_WRITE,
 	STATE_READ,
 	STATE_WAITING,
@@ -45,6 +47,7 @@ struct	xfer {
 	size_t		 rbufsz; /* amount read over http */
 	struct sockaddr_storage ss; /* socket */
 	struct pollfd	*pfd; /* pollfd descriptor */
+	struct tls	*tls; /* tls context, if needed */
 };
 
 struct	node {
@@ -112,6 +115,8 @@ __BEGIN_DECLS
 int	 dns_parse_url(struct node *);
 int	 dns_resolve(const char *, struct dns *);
 int	 http_init_connect(struct node *);
+int	 http_close_done(struct node *);
+int	 http_close_err(struct node *);
 int	 http_connect(struct node *);
 int	 http_write(struct node *n);
 int	 http_read(struct node *n);

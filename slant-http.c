@@ -12,32 +12,78 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <tls.h>
 #include <unistd.h>
 
 #include "extern.h"
 #include "slant.h"
 
 static int
-http_err_connect(struct node *n)
+http_close_inner(struct node *n)
 {
+	int	 c;
+
+	if ( ! n->addrs.https) {
+		close(n->xfer.pfd->fd);
+		n->xfer.pfd->fd = -1;
+		return 1;
+	}
+
+	c = tls_close(n->xfer.tls);
+	if (TLS_WANT_POLLIN == c) {
+		n->xfer.pfd->events = POLLIN;
+		return 0;
+	} else if (TLS_WANT_POLLOUT == c) {
+		n->xfer.pfd->events = POLLOUT;
+		return 0;
+	} 
+	
+#if 0
+	/* This almost always reports superfluous errors. */
+	if (c < 0) {
+		warnx("%s: tls_close: %s", n->host,
+			tls_error(n->xfer.tls));
+		return -1;
+	}
+#endif
 
 	close(n->xfer.pfd->fd);
 	n->xfer.pfd->fd = -1;
-	n->addrs.curaddr = (n->addrs.curaddr + 1) % n->addrs.addrsz;
+	return 1;
+}
+
+static int
+http_close_err_ok(struct node *n)
+{
+
+	n->addrs.curaddr = 
+		(n->addrs.curaddr + 1) % n->addrs.addrsz;
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = time(NULL);
 	return 1;
 }
 
+int
+http_close_err(struct node *n)
+{
+	int	 c;
+
+	if ((c = http_close_inner(n)) < 0)
+		return 0;
+	else if (c > 0)
+		return http_close_err_ok(n);
+
+	n->state = STATE_CLOSE_ERR;
+	return 1;
+}
+
 static int
-http_done(struct node *n)
+http_close_done_ok(struct node *n)
 {
 	char	*end, *sv, *start = n->xfer.rbuf;
 	size_t	 len, sz = n->xfer.rbufsz;
 	int	 rc, httpok = 0;
 
-	close(n->xfer.pfd->fd);
-	n->xfer.pfd->fd = -1;
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = time(NULL);
 
@@ -72,6 +118,20 @@ http_done(struct node *n)
 	return rc;
 }
 
+int
+http_close_done(struct node *n)
+{
+	int	 c;
+
+	if ((c = http_close_inner(n)) < 0)
+		return 0;
+	else if (c > 0)
+		return http_close_done_ok(n);
+
+	n->state = STATE_CLOSE_DONE;
+	return 1;
+}
+
 /*
  * Prepare the write buffer. 
  * Return zero on failure, non-zero on success.
@@ -81,7 +141,14 @@ http_write_ready(struct node *n)
 {
 	int	 c;
 
-	warnx("%s: ready for writes", n->host);
+	if (n->addrs.https) {
+		c = tls_connect_socket(n->xfer.tls, 
+			n->xfer.pfd->fd, n->host);
+		if (c < 0) {
+			warnx("%s: tls_connect_socket: %s", 
+				n->host, tls_error(n->xfer.tls));
+		}
+	}
 
 	n->xfer.wbufsz = n->xfer.wbufpos = 0;
 	free(n->xfer.wbuf);
@@ -100,23 +167,49 @@ http_write_ready(struct node *n)
 
 	n->xfer.wbufsz = c;
 	n->state = STATE_WRITE;
-	n->xfer.pfd->events = POLLOUT;
+	if (n->addrs.https)
+		n->xfer.pfd->events = POLLOUT|POLLIN;
+	else
+		n->xfer.pfd->events = POLLOUT;
 	return 1;
 }
 
 /*
  * Initialise a socket descriptor to the current endpoint.
  * Moves into STATE_CONNECT for async connection, STATE_WRITE on
- * success, or calls http_err_connect() on connection failure.
+ * success, or calls http_close_err() on connection failure.
  * Returns zero on system failure, non-zero on success.
  */
 int
 http_init_connect(struct node *n)
 {
-	int		 family, c, flags;
-	socklen_t	 sslen;
+	int		   family, c, flags;
+	socklen_t	   sslen;
+	struct tls_config *cfg;
 
 	memset(&n->xfer.ss, 0, sizeof(struct sockaddr_storage));
+
+	if (NULL == n->xfer.tls) {
+		if (NULL == (n->xfer.tls = tls_client())) {
+			warn(NULL);
+			return 0;
+		}
+	} else
+		tls_reset(n->xfer.tls);
+
+	if (NULL != n->xfer.tls) {
+		if (NULL == (cfg = tls_config_new())) {
+			warn(NULL);
+			return 0;
+		}
+		tls_config_set_protocols(cfg, TLS_PROTOCOLS_ALL);
+		if (-1 == tls_configure(n->xfer.tls, cfg)) {
+			warnx("%s: tls_configure: %s", n->host,
+				tls_error(n->xfer.tls));
+			return 0;
+		}
+		tls_config_free(cfg);
+	}
 
 	if (4 == n->addrs.addrs[n->addrs.curaddr].family) {
 		family = PF_INET;
@@ -182,7 +275,7 @@ http_init_connect(struct node *n)
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno)
-		return http_err_connect(n);
+		return http_close_err(n);
 
 	warn("%s: connect: %s", n->host, 
 		n->addrs.addrs[n->addrs.curaddr].ip);
@@ -192,7 +285,7 @@ http_init_connect(struct node *n)
 /*
  * Check for asynchronous connect(2).
  * Returns zero on system failure, non-zero on success.
- * Calls http_err_connect() if connection fails or transitions to
+ * Calls http_close_err() if connection fails or transitions to
  * STATE_WRITE on success.
  */
 int
@@ -210,7 +303,7 @@ http_connect(struct node *n)
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
-		return http_err_connect(n);
+		return http_close_err(n);
 	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
@@ -220,7 +313,7 @@ http_connect(struct node *n)
 	if (c < 0) {
 		warn(NULL);
 		return 0;
-	} else if (0 == error) 
+	} else if (0 == error)
 		return http_write_ready(n);
 
 	errno = error;
@@ -228,7 +321,7 @@ http_connect(struct node *n)
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno)
-		return http_err_connect(n);
+		return http_close_err(n);
 
 	warn(NULL);
 	return 0;
@@ -239,7 +332,7 @@ http_connect(struct node *n)
  * Returns zero on system failure, non-zero on success.
  * When the request has been written, update state to be
  * STATE_READ.
- * On connect/write requests, calls http_err_connect() for further
+ * On connect/write requests, calls http_close_err() for further
  * changing of state.
  */
 int
@@ -256,17 +349,37 @@ http_write(struct node *n)
 		warn("%s: poll errors: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if (POLLHUP & n->xfer.pfd->revents) {
-		return http_err_connect(n);
-	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
+	} else if (POLLHUP & n->xfer.pfd->revents)
+		return http_close_err(n);
+	
+	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
+	     ! (POLLIN & n->xfer.pfd->revents))
 		return 1;
 
-	ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
-		n->xfer.wbufpos, n->xfer.wbufsz);
-	if (ssz < 0) {
-		warn("%s: write: %s", n->host, 
-			n->addrs.addrs[n->addrs.curaddr].ip);
-		return 0;
+	if (n->addrs.https) {
+		ssz = tls_write(n->xfer.tls,
+			n->xfer.wbuf + n->xfer.wbufpos, 
+			n->xfer.wbufsz);
+		if (TLS_WANT_POLLOUT == ssz) {
+			n->xfer.pfd->events = POLLOUT;
+			return 1;
+		} else if (TLS_WANT_POLLIN == ssz) {
+			n->xfer.pfd->events = POLLIN;
+			return 1;
+		} else if (ssz < 0) {
+			warnx("%s: tls_write: %s: %s", n->host, 
+				n->addrs.addrs[n->addrs.curaddr].ip,
+				tls_error(n->xfer.tls));
+			return 0;
+		}
+	} else {
+		ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
+			n->xfer.wbufpos, n->xfer.wbufsz);
+		if (ssz < 0) {
+			warn("%s: write: %s", n->host, 
+				n->addrs.addrs[n->addrs.curaddr].ip);
+			return 0;
+		}
 	}
 	n->xfer.wbufsz -= ssz;
 	n->xfer.wbufpos += ssz;
@@ -280,7 +393,10 @@ http_write(struct node *n)
 	free(n->xfer.rbuf);
 	n->xfer.rbuf = NULL;
 	n->xfer.rbufsz = 0;
-	n->xfer.pfd->events = POLLIN;
+	if (n->addrs.https)
+		n->xfer.pfd->events = POLLOUT|POLLIN;
+	else
+		n->xfer.pfd->events = POLLIN;
 	return 1;
 }
 
@@ -307,18 +423,39 @@ http_read(struct node *n)
 		warnx("%s: poll errors: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if ( ! (POLLIN & n->xfer.pfd->revents))
+	} 
+
+	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
+	     ! (POLLIN & n->xfer.pfd->revents))
 		return 1;
 
 	/* Read into a static buffer. */
 
-	ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
-	if (ssz < 0) {
-		warn("%s: read: %s", n->host, 
-			n->addrs.addrs[n->addrs.curaddr].ip);
-		return 0;
-	} else if (0 == ssz)
-		return http_done(n);
+	if (n->addrs.https) {
+		ssz = tls_read(n->xfer.tls, buf, sizeof(buf));
+		if (TLS_WANT_POLLOUT == ssz) {
+			n->xfer.pfd->events = POLLOUT;
+			return 1;
+		} else if (TLS_WANT_POLLIN == ssz) {
+			n->xfer.pfd->events = POLLIN;
+			return 1;
+		} else if (ssz < 0) {
+			warnx("%s: tls_read: %s: %s", n->host, 
+				n->addrs.addrs[n->addrs.curaddr].ip,
+				tls_error(n->xfer.tls));
+			return 0;
+		}
+	} else {
+		ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
+		if (ssz < 0) {
+			warn("%s: read: %s", n->host, 
+				n->addrs.addrs[n->addrs.curaddr].ip);
+			return 0;
+		}
+	}
+
+	if (0 == ssz)
+		return http_close_done(n);
 
 	/* Copy static into dynamic buffer. */
 
