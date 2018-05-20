@@ -1,11 +1,19 @@
-CFLAGS	  += -O0 -g -W -Wall -Wextra -Wmissing-prototypes
+# XXX: for debugging of coredumps.
+CFLAGS	  += -O0
+
+CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
 CPPFLAGS   = -I/usr/local/opt/include -I/usr/local/include
 LDFLAGS	   = -L/usr/local/opt/lib -L/usr/local/lib
+CGIBIN	   = /var/www/cgi-bin
 
 SLANT_OBJS = slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
 
 all: slant.db slant-collectd slant-cgi slant
+
+installcgi: slant-cgi
+	mkdir -p $(DESTDIR)$(CGIBIN)
+	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
 
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
