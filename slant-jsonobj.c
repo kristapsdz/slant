@@ -56,7 +56,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	size_t		 i;
 	int		 has_ctime, has_entries, 
 			 has_cpu, has_interval,
-			 has_id;
+			 has_id, has_mem;
 
 	if (json_type_array != e->value->type) {
 		warnx("%s: non-array child of %s", n->host, name);
@@ -107,6 +107,11 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 				    (n, &(*recs)[i].cpu, num)) 
 					goto err;
 				has_cpu = 1;
+			} else if (0 == strcasecmp(cp, "mem")) {
+				if ( ! jsonobj_parse_real
+				    (n, &(*recs)[i].mem, num)) 
+					goto err;
+				has_mem = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
 				if ( ! jsonobj_parse_int(n, &ival, num)) 
 					goto err;
@@ -122,6 +127,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 		if (0 == has_ctime ||
 		    0 == has_entries ||
 		    0 == has_cpu ||
+		    0 == has_mem ||
 		    0 == has_interval ||
 		    0 == has_id) {
 			warnx("%s: missing fields", n->host);
@@ -165,28 +171,48 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 			return 0;
 		}
 	} 
+
 	free(n->recs->byqmin);
 	free(n->recs->bymin);
 	free(n->recs->byhour);
+	free(n->recs->byday);
+	free(n->recs->byweek);
+	free(n->recs->byyear);
+
 	n->recs->byqminsz =
 		n->recs->byminsz =
-		n->recs->byhoursz = 0;
+		n->recs->byhoursz = 
+		n->recs->bydaysz = 
+		n->recs->byweeksz = 
+		n->recs->byyearsz = 0;
 
 	obj = s->payload;
 	for (e = obj->start; NULL != e; e = e->next) {
-		if (0 == strcasecmp(e->name->string, "qmin")) {
+		if (0 == strcasecmp(e->name->string, "qmin")) 
 			rc = jsonobj_parse_recs(n, "qmin", e,
 				&n->recs->byqmin,
 				&n->recs->byqminsz);
-		} else if (0 == strcasecmp(e->name->string, "min")) {
+		else if (0 == strcasecmp(e->name->string, "min"))
 			rc = jsonobj_parse_recs(n, "min", e,
 				&n->recs->bymin,
 				&n->recs->byminsz);
-		} else if (0 == strcasecmp(e->name->string, "hour")) {
+		else if (0 == strcasecmp(e->name->string, "hour"))
 			rc = jsonobj_parse_recs(n, "hour", e,
 				&n->recs->byhour,
 				&n->recs->byhoursz);
-		} else
+		else if (0 == strcasecmp(e->name->string, "day"))
+			rc = jsonobj_parse_recs(n, "day", e,
+				&n->recs->byday,
+				&n->recs->bydaysz);
+		else if (0 == strcasecmp(e->name->string, "week"))
+			rc = jsonobj_parse_recs(n, "week", e,
+				&n->recs->byweek,
+				&n->recs->byweeksz);
+		else if (0 == strcasecmp(e->name->string, "year"))
+			rc = jsonobj_parse_recs(n, "year", e,
+				&n->recs->byyear,
+				&n->recs->byyearsz);
+		else
 			continue;
 
 		if (0 == rc) {

@@ -42,15 +42,19 @@ update_interval(struct kwbp *db, time_t span,
 		assert(NULL != last);
 		db_record_update_current(db, 
 			first->entries + 1, 
-			first->cpu + r->cpu, first->id);
+			first->cpu + r->cpu, 
+			first->mem + r->mem, 
+			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
 		assert(NULL != first);
 		assert(NULL != last);
-		db_record_update_tail(db, now, 1, r->cpu, last->id);
+		db_record_update_tail(db, now, 1, 
+			r->cpu, r->mem, last->id);
 	} else {
 		/* New entry. */
-		db_record_insert(db, now, 1, r->cpu, ival);
+		db_record_insert(db, now, 1, 
+			r->cpu, r->mem, ival);
 	}
 }
 
@@ -75,7 +79,8 @@ update(struct kwbp *db, const struct sysinfo *p,
 			*first_byyear = NULL, *last_byyear = NULL;
 
 	memset(&rr, 0, sizeof(struct record));
-	rr.cpu = sysinfo_get_proc_avg(p);
+	rr.cpu = sysinfo_get_cpu_avg(p);
+	rr.mem = sysinfo_get_mem_avg(p);
 
 	/* 
 	 * First count what we have.
@@ -133,10 +138,10 @@ update(struct kwbp *db, const struct sysinfo *p,
 		assert(NULL != last_byqmin);
 		assert(NULL != first_byqmin);
 		db_record_update_tail(db, t, 1, 
-			rr.cpu, last_byqmin->id);
+			rr.cpu, rr.mem, last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
-			rr.cpu, INTERVAL_byqmin);
+			rr.cpu, rr.mem, INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */
 
@@ -187,7 +192,7 @@ main(int argc, char *argv[])
 	 */
 
 	if (-1 == pledge
-	    ("ps stdio rpath cpath wpath flock proc fattr", NULL))
+	    ("ps vminfo stdio rpath cpath wpath flock proc fattr", NULL))
 		err(EXIT_FAILURE, "pledge");
 
 	while (-1 != (c = getopt(argc, argv, "f:")))
@@ -210,7 +215,7 @@ main(int argc, char *argv[])
 	if (NULL == db)
 		errx(EXIT_FAILURE, "%s", dbfile);
 
-	if (-1 == pledge("ps stdio", NULL))
+	if (-1 == pledge("ps vminfo stdio", NULL))
 		err(EXIT_FAILURE, "pledge");
 
 	db_role(db, ROLE_produce);

@@ -38,16 +38,19 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "slant-collectd.h"
 
-/*
- * Most of this file is from OpenBSD's top(1), specifically machine.c.
- * Its license is as follows.
+/* 
+ * Define pagetok in terms of pageshift.
  */
-
+#define PAGETOK(size, pageshift) ((size) << (pageshift))
 
 struct	sysinfo {
+	int		 pageshift;
+	double		 mem_avg;
 	int64_t         *cpu_states;
 	double		 cpu_avg;
 	int64_t        **cp_time;
@@ -133,6 +136,7 @@ sysinfo_alloc(void)
 {
 	struct sysinfo	*p;
 	size_t		 i;
+	int		 pagesize;
 
 	p = calloc(1, sizeof(struct sysinfo));
 	if (NULL == p) {
@@ -176,11 +180,45 @@ sysinfo_alloc(void)
 		}
 	}
 
+	/*
+	 * get the page size with "getpagesize" and calculate pageshift
+	 * from it
+	 */
+
+	pagesize = getpagesize();
+	p->pageshift = 0;
+	while (pagesize > 1) {
+		p->pageshift++;
+		pagesize >>= 1;
+	}
+
+	/* we only need the amount of log(2)1024 for our conversion */
+
+	p->pageshift -= 10;
+
 	return p;
 }
 
-void
-sysinfo_update(struct sysinfo *p)
+static void
+sysinfo_update_mem(struct sysinfo *p)
+{
+	int	 	uvmexp_mib[] = { CTL_VM, VM_UVMEXP };
+	struct uvmexp 	uvmexp;
+	size_t	 	size;
+
+	size = sizeof(uvmexp);
+	if (sysctl(uvmexp_mib, 2, &uvmexp, &size, NULL, 0) < 0) {
+		warn("sysctl: CTL_VM, VM_UVMEXP");
+		memset(&uvmexp, 0, sizeof(struct uvmexp));
+	}
+
+	p->mem_avg = 100.0 *
+		PAGETOK(uvmexp.active, p->pageshift) /
+		(double)PAGETOK(uvmexp.npages, p->pageshift);
+}
+
+static void
+sysinfo_update_cpu(struct sysinfo *p)
 {
 	size_t	 i, pos, size;
 	long 	 cp_time_tmp[CPUSTATES];
@@ -233,9 +271,24 @@ sysinfo_update(struct sysinfo *p)
 	p->cpu_avg = sum / p->ncpu;
 }
 
+void
+sysinfo_update(struct sysinfo *p)
+{
+
+	sysinfo_update_cpu(p);
+	sysinfo_update_mem(p);
+}
+
 double
-sysinfo_get_proc_avg(const struct sysinfo *p)
+sysinfo_get_cpu_avg(const struct sysinfo *p)
 {
 
 	return p->cpu_avg;
+}
+
+double
+sysinfo_get_mem_avg(const struct sysinfo *p)
+{
+
+	return p->mem_avg;
 }

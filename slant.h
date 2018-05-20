@@ -23,6 +23,12 @@ struct	recset {
 	size_t		 byminsz;
 	struct record	*byhour;
 	size_t		 byhoursz;
+	struct record	*byday;
+	size_t		 bydaysz;
+	struct record	*byweek;
+	size_t		 byweeksz;
+	struct record	*byyear;
+	size_t		 byyearsz;
 };
 
 enum	state {

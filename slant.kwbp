@@ -25,9 +25,12 @@ struct	record {
 		 the record is an accumulation (minute, hour, etc.).
 		 This is always non-zero.";
 	field cpu double comment
-		"The aggregate average CPU time within the current
-		 record.
+		"The percentage aggregate average CPU time within the
+		 current record.
 		 This is recorded across all cores/CPUs on the system.";
+	field mem double comment
+		"Percentage of total used memory over available
+		 memory.";
 	field interval enum interval comment
 		"The type of record.";
 	field id int rowid comment
@@ -37,10 +40,10 @@ struct	record {
 	insert;
 	list: name lister order ctime desc comment
 		"List all entries, ordered by record time.";
-	update ctime, entries, cpu: id: name tail comment
+	update ctime, entries, cpu, mem: id: name tail comment
 		"Take the tail of the circular queue and refresh its
 		contents, making it the new head.";
-	update entries, cpu: id: name current comment
+	update entries, cpu, mem: id: name current comment
 		"Update the current record.
 		 This is the record within the current quarter-minute
 		 (if qmin), minute (if min), or hour (if hour).";
