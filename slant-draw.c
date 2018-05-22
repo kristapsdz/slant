@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <wchar.h>
 
 #include "extern.h"
 #include "slant.h"
@@ -45,6 +46,20 @@ get_last(const struct node *n)
 }
 
 static void
+draw_main_separator(void)
+{
+
+	printw("%lc", L'\x2502');
+}
+
+static void
+draw_sub_separator(void)
+{
+
+	printw("%lc", L'\x250a');
+}
+
+static void
 draw_bars(double vv)
 {
 	size_t	 i;
@@ -70,7 +85,7 @@ draw_bars(double vv)
 }
 
 static void
-draw_pct(double vv, char tail)
+draw_pct(double vv)
 {
 	if (vv >= 80.0)
 		attron(COLOR_PAIR(2));
@@ -81,7 +96,6 @@ draw_pct(double vv, char tail)
 		attroff(COLOR_PAIR(2));
 	else if (vv >= 50.0)
 		attroff(COLOR_PAIR(1));
-	addch(tail);
 }
 
 static void
@@ -124,36 +138,50 @@ draw_mem(const struct node *n)
 	double	 vv;
 
 	if (NULL == n->recs) {
-		printw("[%32s", "]");
+		draw_main_separator();
+		printw("%31s", " ");
+		draw_main_separator();
 		return;
 	}
 
-	addch('[');
+	draw_main_separator();
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].mem /
 			n->recs->byqmin[0].entries;
 		draw_bars(vv);
-		draw_pct(vv, '|');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%18s", "|");
+		printw("%17s", " ");
+
+	draw_sub_separator();
 
 	if (n->recs->byhoursz &&
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].mem /
 			n->recs->byhour[0].entries;
-		draw_pct(vv, '|');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%7s", "|");
+		printw("%6s", " ");
+
+	draw_sub_separator();
 
 	if (n->recs->bydaysz &&
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].mem /
 			n->recs->byday[0].entries;
-		draw_pct(vv, ']');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%7s", "]");
+		printw("%6s", " ");
+
+	draw_main_separator();
 }
 
 static void
@@ -162,36 +190,50 @@ draw_cpu(const struct node *n)
 	double	 vv;
 
 	if (NULL == n->recs) {
-		printw("[%32s", "]");
+		draw_main_separator();
+		printw("%31s", " ");
+		draw_main_separator();
 		return;
 	}
 
-	addch('[');
+	draw_main_separator();
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].cpu /
 			n->recs->byqmin[0].entries;
 		draw_bars(vv);
-		draw_pct(vv, '|');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%18s", "|");
+		printw("%17s", " ");
+
+	draw_sub_separator();
 
 	if (n->recs->byhoursz &&
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].cpu /
 			n->recs->byhour[0].entries;
-		draw_pct(vv, '|');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%7s", "|");
+		printw("%6s", " ");
+
+	draw_sub_separator();
 
 	if (n->recs->bydaysz &&
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].cpu /
 			n->recs->byday[0].entries;
-		draw_pct(vv, ']');
+		attron(A_BOLD);
+		draw_pct(vv);
+		attroff(A_BOLD);
 	} else
-		printw("%7s", "]");
+		printw("%6s", " ");
+
+	draw_main_separator();
 }
 
 void
@@ -225,7 +267,9 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 	for (i = 0; i < nsz; i++) {
 		move(i, 0);
 		clrtoeol();
+		attron(A_BOLD);
 		printw("%*s ", (int)maxhostsz, n[i].host);
+		attroff(A_BOLD);
 		draw_cpu(&n[i]);
 		addch(' ');
 		draw_mem(&n[i]);
