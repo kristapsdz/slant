@@ -16,6 +16,20 @@ struct	dns {
 	size_t		 curaddr; /* current working address */
 };
 
+/*
+ * We use this structure to keep track of key parts of our UI.
+ * It lets us optimise repainting the screen per second to keep track of
+ * our last-seen intervals.
+ */
+struct	draw {
+	size_t		 lastseenpos; /* location of last seen stamp */
+	size_t		 intervalpos; /* location of interval stamp */
+};
+
+/*
+ * The full set of records of a particular host.
+ * This can be totally empty: we have no constraints.
+ */
 struct	recset {
 	struct record	*byqmin;
 	size_t		 byqminsz;
@@ -127,7 +141,8 @@ int	 http_close_err(struct node *);
 int	 http_connect(struct node *);
 int	 http_write(struct node *n);
 int	 http_read(struct node *n);
-void	 draw(const struct node *n, size_t sz);
+void	 draw(struct draw *, const struct node *, size_t, time_t);
+void	 drawtimes(const struct draw *, const struct node *, size_t, time_t);
 struct json_value_s *json_parse(const void *, size_t);
 int 	 jsonobj_parse(struct node *n, const char *, size_t);
 

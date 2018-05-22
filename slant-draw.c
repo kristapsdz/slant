@@ -195,10 +195,9 @@ draw_cpu(const struct node *n)
 }
 
 void
-draw(const struct node *n, size_t nsz)
+draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i, sz, maxhostsz, maxipsz;
-	time_t	 t = time(NULL);
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
@@ -216,10 +215,11 @@ draw(const struct node *n, size_t nsz)
 
 	/*
 	 * hostname                          (maxhostsz)
-	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=31)
-	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=31)
-	 * hh:mm:ss                          (last entry)
-	 * hh:mm:ss                          (last seen)
+	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
+	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
+	 * ip                                (maxipsz)
+	 * hh:mm:ss                          (last entry=9)
+	 * hh:mm:ss                          (last seen=9)
 	 */
 
 	for (i = 0; i < nsz; i++) {
@@ -233,6 +233,30 @@ draw(const struct node *n, size_t nsz)
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
 		draw_interval(get_last(&n[i]), t);
 		addch(' ');
+		draw_interval(n[i].lastseen, t);
+	}
+
+	/* Remember for updating times. */
+
+	d->intervalpos = 
+		maxhostsz + 1 + 33 + 1 + 33 + 1 + maxipsz + 1;
+	d->lastseenpos = 
+		d->intervalpos + 9 + 1;
+}
+
+void
+drawtimes(const struct draw *d, 
+	const struct node *n, size_t nsz, time_t t)
+{
+	size_t	 i;
+
+	if (0 == d->intervalpos || 0 == d->lastseenpos)
+		return;
+
+	for (i = 0; i < nsz; i++) {
+		move(i, d->intervalpos);
+		draw_interval(get_last(&n[i]), t);
+		move(i, d->lastseenpos);
 		draw_interval(n[i].lastseen, t);
 	}
 }

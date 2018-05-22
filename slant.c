@@ -114,7 +114,9 @@ main(int argc, char *argv[])
 	struct node	*nodes = NULL;
 	struct pollfd	*pfds = NULL;
 	struct timespec	 ts;
+	struct draw	 d;
 	sigset_t	 mask, oldmask;
+	time_t		 last, now;
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
@@ -184,6 +186,7 @@ main(int argc, char *argv[])
 	    ERR == nonl())
 		exit(EXIT_FAILURE);
 
+	memset(&d, 0, sizeof(struct draw));
 	curs_set(0);
 
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
@@ -237,16 +240,34 @@ main(int argc, char *argv[])
 
 	ts.tv_sec = 1;
 	ts.tv_nsec = 0;
+	last = 0;
 
 	while ( ! sigged) {
 		if ((c = nodes_update(nodes, argc)) < 0)
 			break;
 
+		now = time(NULL);
+
+		/*
+		 * Update if our data is dirty (c > 0) or if we're on
+		 * the first iteration, just to show something.
+		 * If we've nothing to show but more than one second has
+		 * passed, then simply update the time displays.
+		 * FIXME: we should only do this once a second at most,
+		 * so multiple updates in <1 second granularity doesn't
+		 * cause too many updates.
+		 */
+
 		if (c || first) {
-			draw(nodes, argc);
+			draw(&d, nodes, argc, now);
 			refresh();
 			first = 0;
+		} else if (now > last) {
+			drawtimes(&d, nodes, argc, now);
+			refresh();
 		}
+
+		last = now;
 
 		if (ppoll(pfds, argc, &ts, &oldmask) < 0 && 
 		    EINTR != errno) {
