@@ -28,8 +28,10 @@ dns_parse_url(struct node *n)
 	} else if (0 == strncasecmp(s, "http://", 7))
 		s += 7;
 
-	if (NULL == (n->host = strdup(s)))
+	if (NULL == (n->host = strdup(s))) {
+		warn(NULL);
 		return 0;
+	}
 
 	for (cp = n->host; '\0' != *cp; cp++)
 		if ('/' == *cp) {
@@ -48,11 +50,11 @@ dns_parse_url(struct node *n)
 		}
 
 	if (NULL == n->path)
-		if (NULL == (n->path = strdup("")))
+		if (NULL == (n->path = strdup(""))) {
+			warn(NULL);
 			return 0;
+		}
 
-	warnx("%s: parsed: %s:%hd, %s", 
-		n->url, n->host, n->addrs.port, n->path);
 	return 1;
 }
 

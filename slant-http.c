@@ -101,7 +101,7 @@ http_close_done_ok(struct node *n)
 				httpok = 1;
 				continue;
 			}
-			warnx("%s: bad response: %.3s", n->host, sv);
+			/*warnx("%s: bad response: %.3s", n->host, sv);*/
 			return 1;
 		}
 	}
@@ -109,8 +109,10 @@ http_close_done_ok(struct node *n)
 	if ( ! httpok) {
 		warnx("%s: no HTTP response code", n->host);
 		rc = 1;
-	} else
-		rc = jsonobj_parse(n, start, sz);
+	} else if ((rc = jsonobj_parse(n, start, sz))) {
+		n->dirty = 1;
+		n->lastseen = time(NULL);
+	}
 
 	free(n->xfer.rbuf);
 	n->xfer.rbuf = NULL;

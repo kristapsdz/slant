@@ -27,7 +27,7 @@ slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
 
 slant: $(SLANT_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses
 
 clean:
 	rm -f slant.db slant.sql 

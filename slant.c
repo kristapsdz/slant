@@ -4,8 +4,10 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
+#include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <locale.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +67,7 @@ nodes_update(struct node *n, size_t sz)
 			if (n[i].waitstart + 15 >= t) 
 				break;
 			n[i].state = STATE_CONNECT_READY;
+			n[i].dirty = 1;
 			break;
 		case STATE_CONNECT_READY:
 			if ( ! http_init_connect(&n[i]))
@@ -93,8 +96,11 @@ nodes_update(struct node *n, size_t sz)
 		default:
 			abort();
 		}
-		dirty += n[i].dirty;
-		n[i].dirty = 0;
+
+		if (n[i].dirty) {
+			dirty++;
+			n[i].dirty = 0;
+		}
 	}
 
 	return dirty;
@@ -110,10 +116,12 @@ main(int argc, char *argv[])
 	struct timespec	 ts;
 	sigset_t	 mask, oldmask;
 
-	if (tls_init() < 0)
+	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
-	if (-1 == pledge("rpath dns inet stdio", NULL))
+	/* Start up TLS handling really early. */
+
+	if (tls_init() < 0)
 		err(EXIT_FAILURE, NULL);
 
 	/* 
@@ -161,6 +169,32 @@ main(int argc, char *argv[])
 	for (i = 0; i < (size_t)argc; i++)
 		pfds[i].fd = -1;
 
+	/* 
+	 * All data initialised.
+	 * Get our window system ready to roll.
+	 */
+
+	if (NULL == setlocale(LC_ALL, ""))
+		err(EXIT_FAILURE, NULL);
+
+	if (NULL == initscr() ||
+	    ERR == start_color() ||
+	    ERR == cbreak() ||
+	    ERR == noecho() ||
+	    ERR == nonl())
+		exit(EXIT_FAILURE);
+
+	curs_set(0);
+
+	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(2, COLOR_RED, COLOR_BLACK);
+
+	/*
+	 * All terminal windows initialised.
+	 * From here on out, we want to use ncurses for reporting
+	 * whatever we can.
+	 */
+
 	for (i = 0; i < (size_t)argc; i++) {
 		nodes[i].xfer.pfd = &pfds[i];
 		nodes[i].state = STATE_STARTUP;
@@ -176,10 +210,9 @@ main(int argc, char *argv[])
 		}
 	}
 
-	/* 
-	 * All data initialised.
-	 * We now want to do our DNS resolutions.
-	 * TODO: put this into the main loop.
+	/*
+	 * Initialise DNS stuff.
+	 * TODO: put DNS init into the main loop.
 	 */
 
 	for (i = 0; i < (size_t)argc; i++) {
@@ -189,9 +222,12 @@ main(int argc, char *argv[])
 		nodes[i].state = STATE_CONNECT_READY;
 	}
 
-	/* FIXME: rpath needed by libressl. */
+	/* 
+	 * FIXME: rpath needed by libressl.
+	 * We can relieve this by pre-loading our certs.
+	 */
 
-	if (-1 == pledge("rpath inet stdio", NULL))
+	if (-1 == pledge("tty rpath inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
 	/*
@@ -208,6 +244,7 @@ main(int argc, char *argv[])
 
 		if (c || first) {
 			draw(nodes, argc);
+			refresh();
 			first = 0;
 		}
 
@@ -217,7 +254,9 @@ main(int argc, char *argv[])
 			break;
 		}
 	}
+
 out:
+	endwin();
 	nodes_free(nodes, argc);
 	free(pfds);
 	return EXIT_SUCCESS;

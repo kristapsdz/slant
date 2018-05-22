@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
+#include <curses.h>
 #include <err.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -13,55 +14,6 @@
 
 #include "extern.h"
 #include "slant.h"
-
-struct	buf {
-	char	*buf;
-	size_t	 bufsz;
-};
-
-static void
-buf_appendv(struct buf *, const char *, ...)
-	__attribute__((format(printf, 2, 3)));
-
-static void
-buf_appendc(struct buf *b, char c)
-{
-
-	b->buf = realloc(b->buf, b->bufsz + 2);
-	if (NULL == b->buf) 
-		err(EXIT_FAILURE, "realloc");
-
-	b->buf[b->bufsz] = c;
-	b->buf[b->bufsz + 1] = '\0';
-	b->bufsz++;
-}
-
-static void
-buf_appendv(struct buf *b, const char *fmt, ...)
-{
-	int	 len;
-	va_list	 ap;
-	
-	va_start(ap, fmt);
-
-	/* Get length of variable string. */
-
-	if ((len = vsnprintf(NULL, 0, fmt, ap)) < 0)
-		err(EXIT_FAILURE, "vsnprintf");
-
-	va_end(ap);
-	va_start(ap, fmt);
-
-	/* Reallocate and fill to new buffer + NUL. */
-
-	b->buf = realloc(b->buf, b->bufsz + len + 1);
-	if (NULL == b->buf) 
-		err(EXIT_FAILURE, "realloc");
-	vsnprintf(b->buf + b->bufsz, len + 1, fmt, ap);
-	b->bufsz += len;
-	va_end(ap);
-
-}
 
 static time_t
 get_last(const struct node *n)
@@ -93,103 +45,160 @@ get_last(const struct node *n)
 }
 
 static void
-draw_mem(struct buf *b, const struct node *n)
+draw_bars(double vv)
 {
-	size_t	 j;
-	double	 v, vv;
+	size_t	 i;
+	double	 v;
 
-	if (NULL == n->recs) {
-		buf_appendv(b, "[%34s", "]");
+	for (i = 1; i <= 10; i++) {
+		v = i * 10.0;
+		if (v > vv)
+			break;
+		if (i >= 8)
+			attron(COLOR_PAIR(2));
+		else if (i >= 5)
+			attron(COLOR_PAIR(1));
+		addch('|');
+		if (i >= 8)
+			attroff(COLOR_PAIR(2));
+		else if (i >= 5)
+			attroff(COLOR_PAIR(1));
+	}
+	for ( ; i <= 10; i++)
+		addch(' ');
+	addch(' ');
+}
+
+static void
+draw_pct(double vv, char tail)
+{
+	if (vv >= 80.0)
+		attron(COLOR_PAIR(2));
+	else if (vv >= 50.0)
+		attron(COLOR_PAIR(1));
+	printw("%5.1f%%", vv);
+	if (vv >= 80.0)
+		attroff(COLOR_PAIR(2));
+	else if (vv >= 50.0)
+		attroff(COLOR_PAIR(1));
+	addch(tail);
+}
+
+static void
+draw_interval(time_t last, time_t now)
+{
+	time_t	 ospan, span, hr, min;
+
+	if (0 == last) {
+		addstr("---:--:--");
 		return;
 	}
 
-	buf_appendc(b, '[');
+	if ((span = now - last) < 0)
+		span = 0;
+	
+	ospan = span;
+
+	if (ospan >= 120)
+		attron(COLOR_PAIR(2));
+	else if (ospan >= 60)
+		attron(COLOR_PAIR(1));
+
+	hr = span / (60 * 60);
+	span -= hr * 60 * 60;
+	min = span / 60;
+	span -= min * 60;
+	printw("%3lld:%.2lld:%.2lld", 
+		(long long)hr, (long long)min, 
+		(long long)span);
+
+	if (ospan >= 120)
+		attroff(COLOR_PAIR(2));
+	else if (ospan >= 60)
+		attroff(COLOR_PAIR(1));
+}
+
+static void
+draw_mem(const struct node *n)
+{
+	double	 vv;
+
+	if (NULL == n->recs) {
+		printw("[%32s", "]");
+		return;
+	}
+
+	addch('[');
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].mem /
 			n->recs->byqmin[0].entries;
-		for (j = 1; j <= 10; j++) {
-			v = j * 10.0;
-			if (v > vv)
-				break;
-			buf_appendc(b, '|');
-		}
-		for ( ; j <= 10; j++)
-			buf_appendc(b, ' ');
-		buf_appendv(b, " %5.1f%%|", vv);
+		draw_bars(vv);
+		draw_pct(vv, '|');
 	} else
-		buf_appendv(b, "%18s", "|");
+		printw("%18s", "|");
 
 	if (n->recs->byhoursz &&
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].mem /
 			n->recs->byhour[0].entries;
-		buf_appendv(b, " %5.1f%%|", vv);
+		draw_pct(vv, '|');
 	} else
-		buf_appendv(b, "%8s", "|");
+		printw("%7s", "|");
 
 	if (n->recs->bydaysz &&
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].mem /
 			n->recs->byday[0].entries;
-		buf_appendv(b, " %5.1f%%]", vv);
+		draw_pct(vv, ']');
 	} else
-		buf_appendv(b, "%8s", "]");
+		printw("%7s", "]");
 }
 
 static void
-draw_cpu(struct buf *b, const struct node *n)
+draw_cpu(const struct node *n)
 {
-	size_t	 j;
-	double	 v, vv;
+	double	 vv;
 
 	if (NULL == n->recs) {
-		buf_appendv(b, "[%34s", "]");
+		printw("[%32s", "]");
 		return;
 	}
 
-	buf_appendc(b, '[');
+	addch('[');
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].cpu /
 			n->recs->byqmin[0].entries;
-		for (j = 1; j <= 10; j++) {
-			v = j * 10.0;
-			if (v > vv)
-				break;
-			buf_appendc(b, '|');
-		}
-		for ( ; j <= 10; j++)
-			buf_appendc(b, ' ');
-		buf_appendv(b, " %5.1f%%|", vv);
+		draw_bars(vv);
+		draw_pct(vv, '|');
 	} else
-		buf_appendv(b, "%18s", "|");
+		printw("%18s", "|");
 
 	if (n->recs->byhoursz &&
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].cpu /
 			n->recs->byhour[0].entries;
-		buf_appendv(b, " %5.1f%%|", vv);
+		draw_pct(vv, '|');
 	} else
-		buf_appendv(b, "%8s", "|");
+		printw("%7s", "|");
 
 	if (n->recs->bydaysz &&
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].cpu /
 			n->recs->byday[0].entries;
-		buf_appendv(b, " %5.1f%%]", vv);
+		draw_pct(vv, ']');
 	} else
-		buf_appendv(b, "%8s", "]");
+		printw("%7s", "]");
 }
 
 void
 draw(const struct node *n, size_t nsz)
 {
-	size_t	 	 i, sz, maxhostsz, maxipsz;
-	time_t		 last, span, t = time(NULL), hr, min;
-	struct buf	 b;
+	size_t	 i, sz, maxhostsz, maxipsz;
+	time_t	 t = time(NULL);
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
@@ -205,39 +214,25 @@ draw(const struct node *n, size_t nsz)
 			maxipsz = sz;
 	}
 
-	memset(&b, 0, sizeof(struct buf));
-
 	/*
 	 * hostname                          (maxhostsz)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=31)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=31)
-	 * hh:mm:ss o
+	 * hh:mm:ss                          (last entry)
+	 * hh:mm:ss                          (last seen)
 	 */
 
 	for (i = 0; i < nsz; i++) {
-		buf_appendv(&b, "%*s ", 
-			(int)maxhostsz, n[i].host);
-		draw_cpu(&b, &n[i]);
-		buf_appendc(&b, ' ');
-		draw_mem(&b, &n[i]);
-		buf_appendv(&b, " %*s", (int)maxipsz, 
+		move(i, 0);
+		clrtoeol();
+		printw("%*s ", (int)maxhostsz, n[i].host);
+		draw_cpu(&n[i]);
+		addch(' ');
+		draw_mem(&n[i]);
+		printw(" %*s ", (int)maxipsz,
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
-		if ((last = get_last(&n[i]))) {
-			if ((span = t - last) < 0)
-				span = 0;
-			hr = span / (60 * 60);
-			span -= hr * 60 * 60;
-			min = span / 60;
-			span -= min * 60;
-			buf_appendv(&b, " %3lld:%.2lld:%.2lld", 
-				(long long)hr, (long long)min, 
-				(long long)span);
-		} else
-			buf_appendv(&b, " %s", "---:--:--");
-
-		buf_appendc(&b, '\n');
+		draw_interval(get_last(&n[i]), t);
+		addch(' ');
+		draw_interval(n[i].lastseen, t);
 	}
-
-	printf("%s", b.buf);
-	free(b.buf);
 }

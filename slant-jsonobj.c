@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "extern.h"
 #include "slant.h"
@@ -158,8 +159,6 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 		warnx("%s: json_parse", n->host);
 		return 1;
 	}
-
-	n->dirty = 1;
 
 	/* Allocate, if necessary, and free existing. */
 

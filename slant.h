@@ -64,6 +64,7 @@ struct	node {
 	struct xfer	 xfer; /* transfer information */
 	struct dns	 addrs; /* all possible IP addresses */
 	time_t		 waitstart; /* wait period start */
+	time_t		 lastseen; /* last data received */
 	struct recset	*recs; /* results */
 	int		 dirty; /* new results */
 };
@@ -126,7 +127,7 @@ int	 http_close_err(struct node *);
 int	 http_connect(struct node *);
 int	 http_write(struct node *n);
 int	 http_read(struct node *n);
-void 	 draw(const struct node *n, size_t sz);
+void	 draw(const struct node *n, size_t sz);
 struct json_value_s *json_parse(const void *, size_t);
 int 	 jsonobj_parse(struct node *n, const char *, size_t);
 
