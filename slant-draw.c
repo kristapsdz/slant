@@ -60,10 +60,37 @@ draw_sub_separator(void)
 }
 
 static void
+draw_open_circle(void)
+{
+	printw("%lc", L'\x25CB');
+}
+
+static void
+draw_half_circle(void)
+{
+	printw("%lc", L'\x25D0');
+}
+
+static void
+draw_closed_circle(void)
+{
+	printw("%lc", L'\x25CF');
+}
+
+static void
 draw_bars(double vv)
 {
 	size_t	 i;
 	double	 v;
+
+	/* 
+	 * First we draw solid circles that show we're at least at this
+	 * percentage of usage.
+	 * 10%  = |x         |
+	 * 15%  = |x         |
+	 * 50%  = |xxxxx     |
+	 * 100% = |xxxxxxxxxx|
+	 */
 
 	for (i = 1; i <= 10; i++) {
 		v = i * 10.0;
@@ -73,15 +100,41 @@ draw_bars(double vv)
 			attron(COLOR_PAIR(2));
 		else if (i >= 5)
 			attron(COLOR_PAIR(1));
-		addch('|');
+		draw_closed_circle();
 		if (i >= 8)
 			attroff(COLOR_PAIR(2));
 		else if (i >= 5)
 			attroff(COLOR_PAIR(1));
 	}
-	for ( ; i <= 10; i++)
+
+	/* If we're at 100%, bail. */
+
+	if (i > 10)
+		return;
+
+	/*
+	 * Now add either an empty circle or half-circle depending on
+	 * how much is in the remainder.
+	 */
+
+	if (i >= 8)
+		attron(COLOR_PAIR(2));
+	else if (i >= 5)
+		attron(COLOR_PAIR(1));
+
+	v = i * 10.0;
+	assert(v > vv);
+	if (v - vv < 5.0)
+		draw_half_circle();
+	else
+		draw_open_circle();
+	if (i >= 8)
+		attroff(COLOR_PAIR(2));
+	else if (i >= 5)
+		attroff(COLOR_PAIR(1));
+
+	for (++i; i <= 10; i++)
 		addch(' ');
-	addch(' ');
 }
 
 static void
@@ -223,19 +276,22 @@ draw_mem(const struct node *n)
 	double	 vv;
 
 	if (NULL == n->recs) {
-		draw_main_separator();
-		printw("%31s", " ");
-		draw_main_separator();
+		printw("%10s", " ");
+		addch(' ');
+		printw("------%");
+		draw_sub_separator();
+		printw("------%");
+		draw_sub_separator();
+		printw("------%");
 		return;
 	}
-
-	draw_main_separator();
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].mem /
 			n->recs->byqmin[0].entries;
 		draw_bars(vv);
+		addch(' ');
 		attron(A_BOLD);
 		draw_pct(vv);
 		attroff(A_BOLD);
@@ -265,8 +321,6 @@ draw_mem(const struct node *n)
 		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
-
-	draw_main_separator();
 }
 
 static void
@@ -275,19 +329,22 @@ draw_cpu(const struct node *n)
 	double	 vv;
 
 	if (NULL == n->recs) {
-		draw_main_separator();
-		printw("%31s", " ");
-		draw_main_separator();
+		printw("%10s", " ");
+		addch(' ');
+		printw("------%");
+		draw_sub_separator();
+		printw("------%");
+		draw_sub_separator();
+		printw("------%");
 		return;
 	}
-
-	draw_main_separator();
 
 	if (n->recs->byqminsz &&
 	    n->recs->byqmin[0].entries) {
 		vv = n->recs->byqmin[0].cpu /
 			n->recs->byqmin[0].entries;
 		draw_bars(vv);
+		addch(' ');
 		attron(A_BOLD);
 		draw_pct(vv);
 		attroff(A_BOLD);
@@ -317,8 +374,6 @@ draw_cpu(const struct node *n)
 		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
-
-	draw_main_separator();
 }
 
 static void
@@ -330,18 +385,26 @@ draw_header(struct draw *d, size_t maxhostsz, size_t maxipsz)
 	printw("%*s", (int)maxhostsz, "hostname");
 	addch(' ');
 	draw_main_separator();
+	addch(' ');
 	printw("%31s", "CPU");
-	draw_main_separator();
 	addch(' ');
 	draw_main_separator();
+	addch(' ');
 	printw("%31s", "memory");
+	addch(' ');
 	draw_main_separator();
 	addch(' ');
 	printw("%41s", "net rx/tx");
 	addch(' ');
+	draw_main_separator();
+	addch(' ');
 	printw("%*s", (int)maxipsz, "address");
 	addch(' ');
+	draw_main_separator();
+	addch(' ');
 	printw("%9s", "last");
+	addch(' ');
+	draw_main_separator();
 	addch(' ');
 	printw("%9s", "ping");
 }
@@ -352,6 +415,7 @@ draw(struct draw *d, const struct node *n,
 {
 	size_t	 i, sz, maxhostsz, maxipsz,
 		 lastseenpos, intervalpos, chhead;
+	int	 x, y;
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
@@ -368,8 +432,8 @@ draw(struct draw *d, const struct node *n,
 	}
 
 	/*
-	 * hostname                          (maxhostsz)
-	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
+	 * hostname |                        (maxhostsz + 2)
+	 * |||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
 	 * rx:tx|rx:tx|rx:tx                 (6 1 6|13|13=41)
 	 * ip                                (maxipsz)
@@ -381,27 +445,40 @@ draw(struct draw *d, const struct node *n,
 		move(i + 1, 0);
 		clrtoeol();
 		attron(A_BOLD);
-		printw("%*s ", (int)maxhostsz, n[i].host);
+		printw("%*s", (int)maxhostsz, n[i].host);
 		attroff(A_BOLD);
+		addch(' ');
+		draw_main_separator();
+		addch(' ');
 		draw_cpu(&n[i]);
+		addch(' ');
+		draw_main_separator();
 		addch(' ');
 		draw_mem(&n[i]);
 		addch(' ');
+		draw_main_separator();
+		addch(' ');
 		draw_inet(&n[i]);
-		printw(" %*s ", (int)maxipsz,
+		addch(' ');
+		draw_main_separator();
+		addch(' ');
+		printw("%*s", (int)maxipsz,
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
+		addch(' ');
+		draw_main_separator();
+		addch(' ');
+		getyx(stdscr, y, x);
+		intervalpos = x;
 		draw_interval(get_last(&n[i]), t);
 		addch(' ');
+		draw_main_separator();
+		addch(' ');
+		getyx(stdscr, y, x);
+		lastseenpos = x;
 		draw_interval(n[i].lastseen, t);
 	}
 
 	/* Remember for updating times. */
-
-	intervalpos = 
-		maxhostsz + 1 + 33 + 1 + 33 + 1 + 
-		41 + 1 + maxipsz + 1;
-	lastseenpos = 
-		intervalpos + 9 + 1;
 
 	chhead = intervalpos != d->intervalpos ||
 		lastseenpos != d->lastseenpos;

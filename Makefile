@@ -1,12 +1,11 @@
-# XXX: for debugging of coredumps.
-CFLAGS	  += -O0
-
 CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
 CPPFLAGS   = -I/usr/local/opt/include -I/usr/local/include
 LDFLAGS	   = -L/usr/local/opt/lib -L/usr/local/lib
 CGIBIN	   = /var/www/cgi-bin
 DATADIR	   = /var/www/data
+
+sinclude Makefile.local
 
 SLANT_OBJS = slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
 
