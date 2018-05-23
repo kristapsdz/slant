@@ -1,5 +1,5 @@
 /*
- * Most of this file is a restatement of OpenBSD's top(1) machine.c.
+ * A lot of this file is a restatement of OpenBSD's top(1) machine.c.
  * Its copyright and license file is retained below.
  */
 /*-
@@ -29,9 +29,32 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*
+ * Other parts are from OpenBSD's systat(1) if.c.
+ * Its copyright and license file is retained below.
+ */
+/*
+ * Copyright (c) 2004 Markus Friedl <markus@openbsd.org>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
 #include <sys/param.h>
 #include <sys/sched.h>
+#include <sys/socket.h>
 #include <sys/sysctl.h>
+#include <net/if.h>
+#include <net/route.h>
+#include <sys/ioctl.h>
 
 #include <assert.h>
 #include <err.h>
@@ -43,20 +66,43 @@
 
 #include "slant-collectd.h"
 
+struct 	ifcount {
+	u_int64_t	ifc_ib;			/* input bytes */
+	u_int64_t	ifc_ip;			/* input packets */
+	u_int64_t	ifc_ie;			/* input errors */
+	u_int64_t	ifc_ob;			/* output bytes */
+	u_int64_t	ifc_op;			/* output packets */
+	u_int64_t	ifc_oe;			/* output errors */
+	u_int64_t	ifc_co;			/* collisions */
+	int		ifc_flags;		/* up / down */
+	int		ifc_state;		/* link state */
+};
+
+struct	ifstat {
+	struct ifcount	ifs_cur;
+	struct ifcount	ifs_old;
+	struct ifcount	ifs_now;
+	char		ifs_flag;
+};
+
 /* 
  * Define pagetok in terms of pageshift.
  */
 #define PAGETOK(size, pageshift) ((size) << (pageshift))
 
 struct	sysinfo {
-	int		 pageshift;
-	double		 mem_avg;
-	int64_t         *cpu_states;
-	double		 cpu_avg;
-	int64_t        **cp_time;
-	int64_t        **cp_old;
-	int64_t        **cp_diff;
-	size_t		 ncpu;
+	size_t		 sample; /* sample number */
+	int		 pageshift; /* used for memory pages */
+	double		 mem_avg; /* average memory */
+	int64_t         *cpu_states; /* used for cpu compute */
+	double		 cpu_avg; /* average cpu */
+	int64_t        **cp_time; /* used for cpu compute */
+	int64_t        **cp_old; /* used for cpu compute */
+	int64_t        **cp_diff; /* used for cpu compute */
+	size_t		 ncpu; /* number cpus */
+	struct ifstat	*ifstats; /* used for inet compute */
+	size_t		 ifstatsz; /* used for inet compute */
+	struct ifcount	 ifsum; /* average inet */
 };
 
 static int
@@ -77,14 +123,15 @@ getncpu(size_t *p)
 }
 
 static void
-percentages(int cnt, int64_t *out, int64_t *new, int64_t *old, int64_t *diffs)
+percentages(int cnt, int64_t *out, 
+	int64_t *new, int64_t *old, int64_t *diffs)
 {
-	int64_t	 change, total_change, *dp, half_total;
+	int64_t	 change, tot, *dp, half_total;
 	int 	 i;
 
 	/* initialization */
 
-	total_change = 0;
+	tot = 0;
 	dp = diffs;
 
 	/* calculate changes for each state and the overall change */
@@ -94,20 +141,20 @@ percentages(int cnt, int64_t *out, int64_t *new, int64_t *old, int64_t *diffs)
 			/* this only happens when the counter wraps */
 			change = INT64_MAX - *old + *new;
 		}
-		total_change += (*dp++ = change);
+		tot += (*dp++ = change);
 		*old++ = *new++;
 	}
 
 	/* avoid divide by zero potential */
 
-	if (total_change == 0)
-		total_change = 1;
+	if (tot == 0)
+		tot = 1;
 
 	/* calculate percentages based on overall change, rounding up */
 
-	half_total = total_change / 2l;
+	half_total = tot / 2l;
 	for (i = 0; i < cnt; i++)
-		*out++ = ((*diffs++ * 1000 + half_total) / total_change);
+		*out++ = ((*diffs++ * 1000 + half_total) / tot);
 }
 
 void
@@ -128,6 +175,7 @@ sysinfo_free(struct sysinfo *p)
 	free(p->cp_old);
 	free(p->cp_diff);
 	free(p->cpu_states);
+	free(p->ifstats);
 	free(p);
 }
 
@@ -199,7 +247,7 @@ sysinfo_alloc(void)
 	return p;
 }
 
-static void
+static int
 sysinfo_update_mem(struct sysinfo *p)
 {
 	int	 	uvmexp_mib[] = { CTL_VM, VM_UVMEXP };
@@ -209,15 +257,16 @@ sysinfo_update_mem(struct sysinfo *p)
 	size = sizeof(uvmexp);
 	if (sysctl(uvmexp_mib, 2, &uvmexp, &size, NULL, 0) < 0) {
 		warn("sysctl: CTL_VM, VM_UVMEXP");
-		memset(&uvmexp, 0, sizeof(struct uvmexp));
+		return 0;
 	}
 
 	p->mem_avg = 100.0 *
 		PAGETOK(uvmexp.active, p->pageshift) /
 		(double)PAGETOK(uvmexp.npages, p->pageshift);
+	return 1;
 }
 
-static void
+static int
 sysinfo_update_cpu(struct sysinfo *p)
 {
 	size_t	 i, pos, size;
@@ -235,18 +284,23 @@ sysinfo_update_cpu(struct sysinfo *p)
 			cp_time_mib[2] = i;
 			tmpstate = p->cpu_states + (CPUSTATES * i);
 			if (sysctl(cp_time_mib, 3, 
-			    p->cp_time[i], &size, NULL, 0) < 0)
+			    p->cp_time[i], &size, NULL, 0) < 0) {
 				warn("sysctl: CTL_KERN, KERN_CPTIME2");
+				return 0;
+			}
 			percentages(CPUSTATES, tmpstate, 
-				p->cp_time[i], p->cp_old[i], p->cp_diff[i]);
+				p->cp_time[i], p->cp_old[i], 
+				p->cp_diff[i]);
 		}
 	} else {
 		int cp_time_mib[] = { CTL_KERN, KERN_CPTIME };
 		size = sizeof(cp_time_tmp);
 
 		if (sysctl(cp_time_mib, 2, 
-		    cp_time_tmp, &size, NULL, 0) < 0)
+		    cp_time_tmp, &size, NULL, 0) < 0) {
 			warn("sysctl: CTL_KERN, KERN_CPTIME");
+			return 0;
+		}
 		for (i = 0; i < CPUSTATES; i++)
 			p->cp_time[0][i] = cp_time_tmp[i];
 		percentages(CPUSTATES, p->cpu_states, p->cp_time[0],
@@ -269,14 +323,112 @@ sysinfo_update_cpu(struct sysinfo *p)
 	}
 
 	p->cpu_avg = sum / p->ncpu;
+	return 1;
 }
 
-void
+#define UPDATE(x, y, up) \
+	do { \
+		ifs->ifs_now.x = ifm.y; \
+		ifs->ifs_cur.x = ifs->ifs_now.x - ifs->ifs_old.x; \
+		ifs->ifs_old.x = ifs->ifs_now.x; \
+		ifs->ifs_cur.x /= 15; \
+		if ((up)) \
+			p->ifsum.x += ifs->ifs_cur.x; \
+	} while(0)
+
+static int
+sysinfo_update_if(struct sysinfo *p)
+{
+	struct ifstat 	*newstats, *ifs;
+	struct if_msghdr ifm;
+	char 		*buf, *next, *lim;
+	int 		 mib[6];
+	size_t 		 need, up;
+
+	mib[0] = CTL_NET;
+	mib[1] = PF_ROUTE;
+	mib[2] = 0;
+	mib[3] = 0;
+	mib[4] = NET_RT_IFLIST;
+	mib[5] = 0;
+
+	if (-1 == sysctl(mib, 6, NULL, &need, NULL, 0)) {
+		warn("sysctl: CTL_NET, PF_ROUTE, NET_RT_IFLIST");
+		return 0;
+	} else if (NULL == (buf = malloc(need))) {
+		warn(NULL);
+		return 0;
+	} else if (-1 == sysctl(mib, 6, buf, &need, NULL, 0)) {
+		warn("sysctl: CTL_NET, PF_ROUTE, NET_RT_IFLIST");
+		free(buf);
+		return 0;
+	}
+
+	memset(&p->ifsum, 0, sizeof(p->ifsum));
+
+	lim = buf + need;
+	for (next = buf; next < lim; next += ifm.ifm_msglen) {
+		memcpy(&ifm, next, sizeof(ifm));
+
+		if (ifm.ifm_version != RTM_VERSION ||
+		    ifm.ifm_type != RTM_IFINFO ||
+		    ! (ifm.ifm_addrs & RTA_IFP))
+			continue;
+
+		if (ifm.ifm_index >= p->ifstatsz) {
+			newstats = reallocarray
+				(p->ifstats, ifm.ifm_index + 4,
+				 sizeof(struct ifstat));
+			if (NULL == newstats) {
+				warn(NULL);
+				free(buf);
+				return 0;
+			}
+			p->ifstats = newstats;
+			while (p->ifstatsz < ifm.ifm_index + 4) {
+				memset(&p->ifstats[p->ifstatsz], 
+					0, sizeof(*p->ifstats));
+				p->ifstatsz++;
+			}
+		}
+
+		ifs = &p->ifstats[ifm.ifm_index];
+
+		/* Only consider non-loopback up addresses. */
+
+		up = (ifs->ifs_cur.ifc_flags & IFF_UP) &&
+			! (ifs->ifs_cur.ifc_flags & IFF_LOOPBACK);
+
+		UPDATE(ifc_ip, ifm_data.ifi_ipackets, up);
+		UPDATE(ifc_ib, ifm_data.ifi_ibytes, up);
+		UPDATE(ifc_ie, ifm_data.ifi_ierrors, up);
+		UPDATE(ifc_op, ifm_data.ifi_opackets, up);
+		UPDATE(ifc_ob, ifm_data.ifi_obytes, up);
+		UPDATE(ifc_oe, ifm_data.ifi_oerrors, up);
+		UPDATE(ifc_co, ifm_data.ifi_collisions, up);
+
+		ifs->ifs_cur.ifc_flags = ifm.ifm_flags;
+		ifs->ifs_cur.ifc_state = ifm.ifm_data.ifi_link_state;
+		ifs->ifs_flag++;
+	}
+
+	free(buf);
+	return 1;
+}
+
+int
 sysinfo_update(struct sysinfo *p)
 {
 
-	sysinfo_update_cpu(p);
-	sysinfo_update_mem(p);
+	if ( ! sysinfo_update_cpu(p))
+		return 0;
+	if ( ! sysinfo_update_mem(p))
+		return 0;
+	if ( ! sysinfo_update_if(p))
+		return 0;
+
+	p->sample++;
+	return 1;
 }
 
 double
@@ -291,4 +443,22 @@ sysinfo_get_mem_avg(const struct sysinfo *p)
 {
 
 	return p->mem_avg;
+}
+
+int64_t
+sysinfo_get_nettx_avg(const struct sysinfo *p)
+{
+
+	if (1 == p->sample)
+		return 0;
+	return p->ifsum.ifc_ob;
+}
+
+int64_t
+sysinfo_get_netrx_avg(const struct sysinfo *p)
+{
+
+	if (1 == p->sample)
+		return 0;
+	return p->ifsum.ifc_ib;
 }

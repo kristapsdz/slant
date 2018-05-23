@@ -44,17 +44,21 @@ update_interval(struct kwbp *db, time_t span,
 			first->entries + 1, 
 			first->cpu + r->cpu, 
 			first->mem + r->mem, 
+			first->nettx + r->nettx, 
+			first->netrx + r->netrx, 
 			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
 		assert(NULL != first);
 		assert(NULL != last);
 		db_record_update_tail(db, now, 1, 
-			r->cpu, r->mem, last->id);
+			r->cpu, r->mem, r->nettx, r->netrx,
+			last->id);
 	} else {
 		/* New entry. */
 		db_record_insert(db, now, 1, 
-			r->cpu, r->mem, ival);
+			r->cpu, r->mem, r->nettx, r->netrx,
+			ival);
 	}
 }
 
@@ -81,6 +85,8 @@ update(struct kwbp *db, const struct sysinfo *p,
 	memset(&rr, 0, sizeof(struct record));
 	rr.cpu = sysinfo_get_cpu_avg(p);
 	rr.mem = sysinfo_get_mem_avg(p);
+	rr.nettx = sysinfo_get_nettx_avg(p);
+	rr.netrx = sysinfo_get_netrx_avg(p);
 
 	/* 
 	 * First count what we have.
@@ -138,10 +144,12 @@ update(struct kwbp *db, const struct sysinfo *p,
 		assert(NULL != last_byqmin);
 		assert(NULL != first_byqmin);
 		db_record_update_tail(db, t, 1, 
-			rr.cpu, rr.mem, last_byqmin->id);
+			rr.cpu, rr.mem, rr.nettx, rr.netrx,
+			last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
-			rr.cpu, rr.mem, INTERVAL_byqmin);
+			rr.cpu, rr.mem, rr.nettx, rr.netrx,
+			INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */
 
@@ -182,17 +190,21 @@ main(int argc, char *argv[])
 	struct kwbp	*db;
 	struct record_q	*rq;
 	struct sysinfo	*info;
-	int		 c;
+	int		 c, rc = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
 
 	/*
 	 * Pre-pledge, establishing a reasonable baseline.
 	 * Then open our database in a protected process.
 	 * After that, drop us to minimum privilege/role.
+	 *
+	 *  ps, inet, vminfo: stat collection
+	 *  rpath, cpath, wpath, flock, proc, fattr: ksql(3)
 	 */
 
 	if (-1 == pledge
-	    ("ps vminfo stdio rpath cpath wpath flock proc fattr", NULL))
+	    ("inet ps vminfo stdio rpath "
+	     "cpath wpath flock proc fattr", NULL))
 		err(EXIT_FAILURE, "pledge");
 
 	while (-1 != (c = getopt(argc, argv, "f:")))
@@ -215,7 +227,9 @@ main(int argc, char *argv[])
 	if (NULL == db)
 		errx(EXIT_FAILURE, "%s", dbfile);
 
-	if (-1 == pledge("ps vminfo stdio", NULL))
+	/* Re-drop privileges after database fork. */
+
+	if (-1 == pledge("inet ps vminfo stdio", NULL))
 		err(EXIT_FAILURE, "pledge");
 
 	db_role(db, ROLE_produce);
@@ -245,18 +259,20 @@ main(int argc, char *argv[])
 	 */
 
 	while ( ! doexit) {
-		if (sleep(15 - ((time(NULL) + 1) % 15)))
-			break;
-		sysinfo_update(info);
+		if ( ! sysinfo_update(info))
+			goto out;
 		rq = db_record_list_lister(db);
 		update(db, info, rq);
 		db_record_freeq(rq);
+		if (sleep(15))
+			break;
 	}
 
+	rc = 1;
 out:
 	sysinfo_free(info);
 	db_close(db);
-	return EXIT_SUCCESS;
+	return rc ? EXIT_SUCCESS : EXIT_FAILURE;
 usage:
 	fprintf(stderr, "usage: %s [-f dbfile]\n", getprogname());
 	return EXIT_FAILURE;

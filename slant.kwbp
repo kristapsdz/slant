@@ -31,6 +31,12 @@ struct	record {
 	field mem double comment
 		"Percentage of active memory over available memory
 		 (active over npages, in uvmexp.h terms).";
+	field nettx int comment
+		"Transmitted bytes per second over all interfaces. 
+		 Only non-loopback devices in up mode are counted.";
+	field netrx int comment
+		"Received bytes per second over all interfaces. 
+		 Only non-loopback devices in up mode are counted.";
 	field interval enum interval comment
 		"The type of record.";
 	field id int rowid comment
@@ -40,10 +46,10 @@ struct	record {
 	insert;
 	list: name lister order ctime desc comment
 		"List all entries, ordered by record time.";
-	update ctime, entries, cpu, mem: id: name tail comment
+	update ctime, entries, cpu, mem, nettx, netrx: id: name tail comment
 		"Take the tail of the circular queue and refresh its
 		contents, making it the new head.";
-	update entries, cpu, mem: id: name current comment
+	update entries, cpu, mem, nettx, netrx: id: name current comment
 		"Update the current record.
 		 This is the record within the current quarter-minute
 		 (if qmin), minute (if min), or hour (if hour).";

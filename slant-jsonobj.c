@@ -57,7 +57,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	size_t		 i;
 	int		 has_ctime, has_entries, 
 			 has_cpu, has_interval,
-			 has_id, has_mem;
+			 has_id, has_mem,
+			 has_nettx, has_netrx;
 
 	if (json_type_array != e->value->type) {
 		warnx("%s: non-array child of %s", n->host, name);
@@ -75,7 +76,9 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	for (i = 0, are = ar->start; 
 	     NULL != are; are = are->next, i++) {
 		has_ctime = has_entries = has_cpu = 
-			has_interval = has_id = 0;
+			has_interval = has_id = 
+			has_nettx = has_netrx = 0;
+
 		val = are->value;
 		if (json_type_object != val->type) {
 			warnx("%s: non-object array "
@@ -113,6 +116,16 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 				    (n, &(*recs)[i].mem, num)) 
 					goto err;
 				has_mem = 1;
+			} else if (0 == strcasecmp(cp, "nettx")) {
+				if ( ! jsonobj_parse_int
+				    (n, &(*recs)[i].nettx, num)) 
+					goto err;
+				has_nettx = 1;
+			} else if (0 == strcasecmp(cp, "netrx")) {
+				if ( ! jsonobj_parse_int
+				    (n, &(*recs)[i].netrx, num)) 
+					goto err;
+				has_netrx = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
 				if ( ! jsonobj_parse_int(n, &ival, num)) 
 					goto err;
@@ -129,6 +142,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 		    0 == has_entries ||
 		    0 == has_cpu ||
 		    0 == has_mem ||
+		    0 == has_nettx ||
+		    0 == has_netrx ||
 		    0 == has_interval ||
 		    0 == has_id) {
 			warnx("%s: missing fields", n->host);

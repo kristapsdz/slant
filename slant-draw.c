@@ -133,6 +133,53 @@ draw_interval(time_t last, time_t now)
 }
 
 static void
+draw_xfer(double vv, int left)
+{
+	char	 nbuf[16];
+
+	if (vv >= 1024 * 1024 * 1024)
+		snprintf(nbuf, sizeof(nbuf), "%.1fG", 
+			vv / (1024 * 1024 * 1024));
+	else if (vv >= 1024 * 1024)
+		snprintf(nbuf, sizeof(nbuf), 
+			"%.1fM", vv / (1024 * 1024));
+	else if (vv >= 1024)
+		snprintf(nbuf, sizeof(nbuf), "%.1fK", vv / 1024);
+	else if (vv < 0.001)
+		snprintf(nbuf, sizeof(nbuf), "%gB", 0.0);
+	else 
+		snprintf(nbuf, sizeof(nbuf), "%.0fB", vv);
+
+	if (left)
+		printw("%-6s", nbuf);
+	else
+		printw("%6s", nbuf);
+}
+
+static void
+draw_inet(const struct node *n)
+{
+	double	 vv;
+
+	if (NULL != n->recs &&
+	    n->recs->byqminsz &&
+	    n->recs->byqmin[0].entries) {
+		vv = n->recs->byqmin[0].netrx /
+			n->recs->byqmin[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 0);
+		attroff(A_BOLD);
+		addch('/');
+		vv = n->recs->byqmin[0].nettx /
+			n->recs->byqmin[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 1);
+		attroff(A_BOLD);
+	} else
+		addstr("------/------");
+}
+
+static void
 draw_mem(const struct node *n)
 {
 	double	 vv;
@@ -259,6 +306,7 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 	 * hostname                          (maxhostsz)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
+	 * rx:tx                             (6 1 6=13)
 	 * ip                                (maxipsz)
 	 * hh:mm:ss                          (last entry=9)
 	 * hh:mm:ss                          (last seen=9)
@@ -273,6 +321,8 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 		draw_cpu(&n[i]);
 		addch(' ');
 		draw_mem(&n[i]);
+		addch(' ');
+		draw_inet(&n[i]);
 		printw(" %*s ", (int)maxipsz,
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
 		draw_interval(get_last(&n[i]), t);
@@ -283,7 +333,9 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 	/* Remember for updating times. */
 
 	d->intervalpos = 
-		maxhostsz + 1 + 33 + 1 + 33 + 1 + maxipsz + 1;
+		maxhostsz + 1 + 33 + 1 + 33 + 1 + 
+		13 + 1 + 
+		maxipsz + 1;
 	d->lastseenpos = 
 		d->intervalpos + 9 + 1;
 }
