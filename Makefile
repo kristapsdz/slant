@@ -6,6 +6,7 @@ BINDIR     = /usr/local/bin
 MANDIR	   = /usr/local/man
 CGIBIN	   = /var/www/cgi-bin
 DATADIR	   = /var/www/data
+DBFILE	   = /data/slant.db
 
 sinclude Makefile.local
 
@@ -34,15 +35,20 @@ installdb: slant.db
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
 
+config.h:
+	echo "#define DBFILE \"$(DBFILE)\"" > config.h
+
 slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
+
+slant-cgi.o: config.h
 
 slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses
 
 clean:
 	rm -f slant.db slant.sql 
-	rm -f db.o db.c db.h json.c json.o json.h extern.h
+	rm -f db.o db.c db.h json.c json.o json.h extern.h config.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
 	rm -f slant $(SLANT_OBJS)

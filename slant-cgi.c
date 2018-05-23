@@ -13,6 +13,7 @@
 #include <kcgijson.h>
 #include <ksql.h>
 
+#include "config.h"
 #include "extern.h"
 #include "db.h"
 #include "json.h"
@@ -140,7 +141,7 @@ main(void)
 		return EXIT_SUCCESS;
 	}
 
-	if (NULL == (r.arg = db_open("/data/slant.db"))) {
+	if (NULL == (r.arg = db_open(DBFILE))) {
 		khttp_free(&r);
 		return EXIT_SUCCESS;
 	}
