@@ -2,6 +2,8 @@ CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
 CPPFLAGS   = -I/usr/local/opt/include -I/usr/local/include
 LDFLAGS	   = -L/usr/local/opt/lib -L/usr/local/lib
+BINDIR     = /usr/local/bin
+MANDIR	   = /usr/local/man
 CGIBIN	   = /var/www/cgi-bin
 DATADIR	   = /var/www/data
 
@@ -10,6 +12,16 @@ sinclude Makefile.local
 SLANT_OBJS = slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
 
 all: slant.db slant-collectd slant-cgi slant
+
+server: slant.db slant-collectd slant-cgi
+
+installserver: installcgi installdb installdaemon
+
+installdaemon: slant-collectd
+	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	install -m 0555 slant-collectd $(DESTDIR)$(BINDIR)
+	install -m 0444 slant-collectd.1 $(DESTDIR)$(MANDIR)/man1
 
 installcgi: slant-cgi
 	mkdir -p $(DESTDIR)$(CGIBIN)
