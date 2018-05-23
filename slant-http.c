@@ -109,7 +109,7 @@ http_close_done_ok(struct node *n)
 	if ( ! httpok) {
 		warnx("%s: no HTTP response code", n->host);
 		rc = 1;
-	} else if ((rc = jsonobj_parse(n, start, sz))) {
+	} else if ((rc = jsonobj_parse(n, start, sz)) > 0) {
 		n->dirty = 1;
 		n->lastseen = time(NULL);
 	}
@@ -117,7 +117,7 @@ http_close_done_ok(struct node *n)
 	free(n->xfer.rbuf);
 	n->xfer.rbuf = NULL;
 	n->xfer.rbufsz = 0;
-	return rc;
+	return rc >= 0;
 }
 
 int

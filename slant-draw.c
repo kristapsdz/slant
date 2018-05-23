@@ -114,9 +114,9 @@ draw_interval(time_t last, time_t now)
 	ospan = span;
 
 	if (ospan >= 120)
-		attron(COLOR_PAIR(2));
+		attron(A_BOLD | COLOR_PAIR(2));
 	else if (ospan >= 60)
-		attron(COLOR_PAIR(1));
+		attron(A_BOLD | COLOR_PAIR(1));
 
 	hr = span / (60 * 60);
 	span -= hr * 60 * 60;
@@ -127,9 +127,9 @@ draw_interval(time_t last, time_t now)
 		(long long)span);
 
 	if (ospan >= 120)
-		attroff(COLOR_PAIR(2));
+		attroff(A_BOLD | COLOR_PAIR(2));
 	else if (ospan >= 60)
-		attroff(COLOR_PAIR(1));
+		attroff(A_BOLD | COLOR_PAIR(1));
 }
 
 static void
@@ -172,6 +172,44 @@ draw_inet(const struct node *n)
 		addch('/');
 		vv = n->recs->byqmin[0].nettx /
 			n->recs->byqmin[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 1);
+		attroff(A_BOLD);
+	} else
+		addstr("------/------");
+
+	draw_sub_separator();
+
+	if (NULL != n->recs &&
+	    n->recs->byhoursz &&
+	    n->recs->byhour[0].entries) {
+		vv = n->recs->byhour[0].netrx /
+			n->recs->byhour[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 0);
+		attroff(A_BOLD);
+		addch('/');
+		vv = n->recs->byhour[0].nettx /
+			n->recs->byhour[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 1);
+		attroff(A_BOLD);
+	} else
+		addstr("------/------");
+
+	draw_sub_separator();
+
+	if (NULL != n->recs &&
+	    n->recs->bydaysz &&
+	    n->recs->byday[0].entries) {
+		vv = n->recs->byday[0].netrx /
+			n->recs->byday[0].entries;
+		attron(A_BOLD);
+		draw_xfer(vv, 0);
+		attroff(A_BOLD);
+		addch('/');
+		vv = n->recs->byday[0].nettx /
+			n->recs->byday[0].entries;
 		attron(A_BOLD);
 		draw_xfer(vv, 1);
 		attroff(A_BOLD);
@@ -283,10 +321,37 @@ draw_cpu(const struct node *n)
 	draw_main_separator();
 }
 
-void
-draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
+static void
+draw_header(struct draw *d, size_t maxhostsz, size_t maxipsz)
 {
-	size_t	 i, sz, maxhostsz, maxipsz;
+
+	move(0, 0);
+	clrtoeol();
+	printw("%*s", (int)maxhostsz, "hostname");
+	addch(' ');
+	draw_main_separator();
+	printw("%31s", "CPU");
+	draw_main_separator();
+	addch(' ');
+	draw_main_separator();
+	printw("%31s", "memory");
+	draw_main_separator();
+	addch(' ');
+	printw("%41s", "net rx/tx");
+	addch(' ');
+	printw("%*s", (int)maxipsz, "address");
+	addch(' ');
+	printw("%9s", "last");
+	addch(' ');
+	printw("%9s", "ping");
+}
+
+void
+draw(struct draw *d, const struct node *n, 
+	size_t nsz, time_t t)
+{
+	size_t	 i, sz, maxhostsz, maxipsz,
+		 lastseenpos, intervalpos, chhead;
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
@@ -306,14 +371,14 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 	 * hostname                          (maxhostsz)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
 	 * [|||||||||| xxx.x%|xxx.x%|xxx.x%] ([10 6|6|6]=33)
-	 * rx:tx                             (6 1 6=13)
+	 * rx:tx|rx:tx|rx:tx                 (6 1 6|13|13=41)
 	 * ip                                (maxipsz)
 	 * hh:mm:ss                          (last entry=9)
 	 * hh:mm:ss                          (last seen=9)
 	 */
 
 	for (i = 0; i < nsz; i++) {
-		move(i, 0);
+		move(i + 1, 0);
 		clrtoeol();
 		attron(A_BOLD);
 		printw("%*s ", (int)maxhostsz, n[i].host);
@@ -332,12 +397,20 @@ draw(struct draw *d, const struct node *n, size_t nsz, time_t t)
 
 	/* Remember for updating times. */
 
-	d->intervalpos = 
+	intervalpos = 
 		maxhostsz + 1 + 33 + 1 + 33 + 1 + 
-		13 + 1 + 
-		maxipsz + 1;
-	d->lastseenpos = 
-		d->intervalpos + 9 + 1;
+		41 + 1 + maxipsz + 1;
+	lastseenpos = 
+		intervalpos + 9 + 1;
+
+	chhead = intervalpos != d->intervalpos ||
+		lastseenpos != d->lastseenpos;
+
+	d->intervalpos = intervalpos;
+	d->lastseenpos = lastseenpos;
+
+	if (chhead)
+		draw_header(d, maxhostsz, maxipsz);
 }
 
 void
@@ -350,9 +423,9 @@ drawtimes(const struct draw *d,
 		return;
 
 	for (i = 0; i < nsz; i++) {
-		move(i, d->intervalpos);
+		move(i + 1, d->intervalpos);
 		draw_interval(get_last(&n[i]), t);
-		move(i, d->lastseenpos);
+		move(i + 1, d->lastseenpos);
 		draw_interval(n[i].lastseen, t);
 	}
 }

@@ -70,7 +70,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	*recs = calloc(*recsz, sizeof(struct record));
 	if (NULL == *recs) {
 		warn(NULL);
-		return 0;
+		return -1;
 	}
 
 	for (i = 0, are = ar->start; 
@@ -160,7 +160,7 @@ err:
 }
 
 /*
- * Parse the full response 
+ * Parse the full response.
  */
 int
 jsonobj_parse(struct node *n, const char *str, size_t sz)
@@ -170,9 +170,11 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 	struct json_object_element_s *e;
 	int	 rc;
 
+	/* Consider this a recoverable error. */
+
 	if (NULL == (s = json_parse(str, sz))) {
 		warnx("%s: json_parse", n->host);
-		return 1;
+		return 0;
 	}
 
 	/* Allocate, if necessary, and free existing. */
@@ -182,7 +184,7 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 		if (NULL == n->recs) {
 			warn(NULL);
 			free(s);
-			return 0;
+			return -1;
 		}
 	} 
 
@@ -229,9 +231,9 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 		else
 			continue;
 
-		if (0 == rc) {
+		if (rc <= 0) {
 			free(s);
-			return 0;
+			return rc;
 		}
 	}
 
