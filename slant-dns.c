@@ -120,7 +120,6 @@ dns_resolve(const char *host, struct dns *vec)
 				INET6_ADDRSTRLEN);
 		}
 		
-		warnx("%s: resolved: %s", host, vec->addrs[vec->addrsz].ip);
 		vec->addrsz++;
 	}
 
