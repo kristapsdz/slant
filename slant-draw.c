@@ -16,6 +16,13 @@
 #include "extern.h"
 #include "slant.h"
 
+/*
+ * Return the last time for which we have some data.
+ * This can come from any of the intervals.
+ * Return zero if there's no last time.
+ * We can legitimately return zero if that's what we're getting from the
+ * server, which of course would be bogus.
+ */
 static time_t
 get_last(const struct node *n)
 {
@@ -60,21 +67,24 @@ draw_sub_separator(void)
 }
 
 static void
-draw_open_circle(void)
+draw_bar_light(void)
 {
-	printw("%lc", L'\x25CB');
+
+	printw("%lc", L'\x2758');
 }
 
 static void
-draw_half_circle(void)
+draw_bar_medium(void)
 {
-	printw("%lc", L'\x25D0');
+
+	printw("%lc", L'\x2759');
 }
 
 static void
-draw_closed_circle(void)
+draw_bar_heavy(void)
 {
-	printw("%lc", L'\x25CF');
+
+	printw("%lc", L'\x275A');
 }
 
 static void
@@ -100,7 +110,7 @@ draw_bars(double vv)
 			attron(COLOR_PAIR(2));
 		else if (i >= 5)
 			attron(COLOR_PAIR(1));
-		draw_closed_circle();
+		draw_bar_heavy();
 		if (i >= 8)
 			attroff(COLOR_PAIR(2));
 		else if (i >= 5)
@@ -125,9 +135,9 @@ draw_bars(double vv)
 	v = i * 10.0;
 	assert(v > vv);
 	if (v - vv < 5.0)
-		draw_half_circle();
+		draw_bar_medium();
 	else
-		draw_open_circle();
+		draw_bar_light();
 	if (i >= 8)
 		attroff(COLOR_PAIR(2));
 	else if (i >= 5)
@@ -222,14 +232,14 @@ draw_inet(const struct node *n)
 		attron(A_BOLD);
 		draw_xfer(vv, 0);
 		attroff(A_BOLD);
-		addch('/');
+		addch(':');
 		vv = n->recs->byqmin[0].nettx /
 			n->recs->byqmin[0].entries;
 		attron(A_BOLD);
 		draw_xfer(vv, 1);
 		attroff(A_BOLD);
 	} else
-		addstr("------/------");
+		addstr("------:------");
 
 	draw_sub_separator();
 
@@ -241,14 +251,14 @@ draw_inet(const struct node *n)
 		attron(A_BOLD);
 		draw_xfer(vv, 0);
 		attroff(A_BOLD);
-		addch('/');
+		addch(':');
 		vv = n->recs->byhour[0].nettx /
 			n->recs->byhour[0].entries;
 		attron(A_BOLD);
 		draw_xfer(vv, 1);
 		attroff(A_BOLD);
 	} else
-		addstr("------/------");
+		addstr("------:------");
 
 	draw_sub_separator();
 
@@ -260,14 +270,14 @@ draw_inet(const struct node *n)
 		attron(A_BOLD);
 		draw_xfer(vv, 0);
 		attroff(A_BOLD);
-		addch('/');
+		addch(':');
 		vv = n->recs->byday[0].nettx /
 			n->recs->byday[0].entries;
 		attron(A_BOLD);
 		draw_xfer(vv, 1);
 		attroff(A_BOLD);
 	} else
-		addstr("------/------");
+		addstr("------:------");
 }
 
 static void
@@ -377,24 +387,42 @@ draw_cpu(const struct node *n)
 }
 
 static void
+draw_centre(const char *v, size_t sz)
+{
+	size_t	 vsz = strlen(v), left, i;
+
+	assert(vsz <= sz);
+
+	left = (sz - vsz) / 2;
+
+	for (i = 0; i < left; i++)
+		addch(' ');
+	addstr(v);
+	i += vsz;
+	for ( ; i < sz; i++)
+		addch(' ');
+
+}
+
+static void
 draw_header(struct draw *d, size_t maxhostsz, size_t maxipsz)
 {
 
-	move(0, 0);
+	move(0, 1);
 	clrtoeol();
 	printw("%*s", (int)maxhostsz, "hostname");
 	addch(' ');
 	draw_main_separator();
 	addch(' ');
-	printw("%31s", "CPU");
+	draw_centre("processor", 31);
 	addch(' ');
 	draw_main_separator();
 	addch(' ');
-	printw("%31s", "memory");
+	draw_centre("memory", 31);
 	addch(' ');
 	draw_main_separator();
 	addch(' ');
-	printw("%41s", "net rx/tx");
+	draw_centre("network rx:tx", 41);
 	addch(' ');
 	draw_main_separator();
 	addch(' ');
@@ -442,7 +470,7 @@ draw(struct draw *d, const struct node *n,
 	 */
 
 	for (i = 0; i < nsz; i++) {
-		move(i + 1, 0);
+		move(i + 1, 1);
 		clrtoeol();
 		attron(A_BOLD);
 		printw("%*s", (int)maxhostsz, n[i].host);
