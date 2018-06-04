@@ -4,6 +4,7 @@
 
 #include <err.h>
 #include <netdb.h>
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

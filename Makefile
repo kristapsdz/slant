@@ -16,6 +16,8 @@ all: slant.db slant-collectd slant-cgi slant
 
 server: slant.db slant-collectd slant-cgi
 
+client: slant
+
 installserver: installcgi installdb installdaemon
 
 installdaemon: slant-collectd

@@ -46,6 +46,8 @@ update_interval(struct kwbp *db, time_t span,
 			first->mem + r->mem, 
 			first->nettx + r->nettx, 
 			first->netrx + r->netrx, 
+			first->discread + r->discread, 
+			first->discwrite + r->discwrite, 
 			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
@@ -53,13 +55,29 @@ update_interval(struct kwbp *db, time_t span,
 		assert(NULL != last);
 		db_record_update_tail(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
+			r->discread, r->discwrite,
 			last->id);
 	} else {
 		/* New entry. */
 		db_record_insert(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
-			ival);
+			r->discread, r->discwrite, ival);
 	}
+}
+
+static void
+print(const struct sysinfo *p)
+{
+
+	printf("%9.1f%% %9.1f%% "
+		"%10" PRId64 " %10" PRId64 " "
+		"%10" PRId64 " %10" PRId64 "\n",
+		sysinfo_get_cpu_avg(p),
+		sysinfo_get_mem_avg(p),
+		sysinfo_get_nettx_avg(p),
+		sysinfo_get_netrx_avg(p),
+		sysinfo_get_discread_avg(p),
+		sysinfo_get_discwrite_avg(p));
 }
 
 /*
@@ -87,6 +105,8 @@ update(struct kwbp *db, const struct sysinfo *p,
 	rr.mem = sysinfo_get_mem_avg(p);
 	rr.nettx = sysinfo_get_nettx_avg(p);
 	rr.netrx = sysinfo_get_netrx_avg(p);
+	rr.discread = sysinfo_get_discread_avg(p);
+	rr.discwrite = sysinfo_get_discwrite_avg(p);
 
 	/* 
 	 * First count what we have.
@@ -145,10 +165,12 @@ update(struct kwbp *db, const struct sysinfo *p,
 		assert(NULL != first_byqmin);
 		db_record_update_tail(db, t, 1, 
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
+			rr.discread, rr.discwrite,
 			last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
+			rr.discread, rr.discwrite,
 			INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */
@@ -187,11 +209,14 @@ update(struct kwbp *db, const struct sysinfo *p,
 int
 main(int argc, char *argv[])
 {
-	struct kwbp	*db;
+	struct kwbp	*db = NULL;
 	struct record_q	*rq;
 	struct sysinfo	*info;
-	int		 c, rc = 0;
+	int		 c, rc = 0, noop = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
+	struct syscfg	 cfg;
+
+	memset(&cfg, 0, sizeof(struct syscfg));
 
 	/*
 	 * Pre-pledge, establishing a reasonable baseline.
@@ -202,15 +227,18 @@ main(int argc, char *argv[])
 	 *  rpath, cpath, wpath, flock, proc, fattr: ksql(3)
 	 */
 
-	if (-1 == pledge
-	    ("inet ps vminfo stdio rpath "
+	/*if (-1 == pledge
+	    ("vminfo inet ps vminfo stdio rpath "
 	     "cpath wpath flock proc fattr", NULL))
-		err(EXIT_FAILURE, "pledge");
+		err(EXIT_FAILURE, "pledge");*/
 
-	while (-1 != (c = getopt(argc, argv, "f:")))
+	while (-1 != (c = getopt(argc, argv, "nf:")))
 		switch (c) {
 		case 'f':
 			dbfile = optarg;
+			break;
+		case 'n':
+			noop = 1;
 			break;
 		default:
 			goto usage;
@@ -223,16 +251,16 @@ main(int argc, char *argv[])
 	if (SIG_ERR == signal(SIGTERM, SIG_IGN))
 		err(EXIT_FAILURE, "signal");
 
-	db = db_open(dbfile);
-	if (NULL == db)
+	if ( ! noop && NULL == (db = db_open(dbfile)))
 		errx(EXIT_FAILURE, "%s", dbfile);
 
 	/* Re-drop privileges after database fork. */
 
-	if (-1 == pledge("inet ps vminfo stdio", NULL))
-		err(EXIT_FAILURE, "pledge");
+	/*if (-1 == pledge("vminfo inet ps vminfo stdio", NULL))
+		err(EXIT_FAILURE, "pledge");*/
 
-	db_role(db, ROLE_produce);
+	if (NULL != db)
+		db_role(db, ROLE_produce);
 
 	/*
 	 * From here on our, use the "out" label for bailing on errors,
@@ -259,11 +287,14 @@ main(int argc, char *argv[])
 	 */
 
 	while ( ! doexit) {
-		if ( ! sysinfo_update(info))
+		if ( ! sysinfo_update(&cfg, info))
 			goto out;
-		rq = db_record_list_lister(db);
-		update(db, info, rq);
-		db_record_freeq(rq);
+		if (NULL != db) {
+			rq = db_record_list_lister(db);
+			update(db, info, rq);
+			db_record_freeq(rq);
+		} else
+			print(info);
 		if (sleep(15))
 			break;
 	}
@@ -274,6 +305,6 @@ out:
 	db_close(db);
 	return rc ? EXIT_SUCCESS : EXIT_FAILURE;
 usage:
-	fprintf(stderr, "usage: %s [-f dbfile]\n", getprogname());
+	fprintf(stderr, "usage: %s [-n] [-f dbfile]\n", getprogname());
 	return EXIT_FAILURE;
 }

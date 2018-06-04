@@ -55,11 +55,13 @@
 #include <net/if.h>
 #include <net/route.h>
 #include <sys/ioctl.h>
+#include <sys/disk.h>
 
 #include <assert.h>
 #include <err.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -103,6 +105,10 @@ struct	sysinfo {
 	struct ifstat	*ifstats; /* used for inet compute */
 	size_t		 ifstatsz; /* used for inet compute */
 	struct ifcount	 ifsum; /* average inet */
+	u_int64_t	 disc_rbytes; /* last disc total read */
+	u_int64_t	 disc_wbytes; /* last disc total write */
+	int64_t	 	 disc_ravg; /* average reads/sec */
+	int64_t	 	 disc_wavg; /* average reads/sec */
 };
 
 static int
@@ -416,8 +422,64 @@ sysinfo_update_if(struct sysinfo *p)
 	return 1;
 }
 
+static int
+sysinfo_update_disc(const struct syscfg *cfg, struct sysinfo *p)
+{
+	struct diskstats  q;
+	size_t		  i, need;
+	int		  mib[2];
+	char		 *buf, *lim, *next;
+	u_int64_t	  rb = 0, wb = 0;
+
+	mib[0] = CTL_HW;
+	mib[1] = HW_DISKSTATS;
+
+	if (sysctl(mib, 2, NULL, &need, NULL, 0) < 0) {
+		warn("sysctl: CTL_HW, HW_DISKSTATS");
+		return 0;
+	} else if (NULL == (buf = malloc(need))) {
+		warn(NULL);
+		return 0;
+	} else if (-1 == sysctl(mib, 2, buf, &need, NULL, 0)) {
+		warn("sysctl: CTL_HW, HW_DISKSTATS");
+		free(buf);
+		return 0;
+	}
+
+	lim = buf + need;
+	for (next = buf; next < lim; next += sizeof(q)) {
+		memcpy(&q, next, sizeof(q));
+		for (i = 0; i < cfg->discsz; i++)
+			if (0 == strcmp(cfg->discs[i], q.ds_name))
+				break;
+		if (cfg->discsz && i == cfg->discsz)
+			continue;
+		rb += q.ds_rbytes;
+		wb += q.ds_wbytes;
+	}
+
+	if (rb > p->disc_rbytes) {
+		p->disc_ravg = (rb - p->disc_rbytes) / 15; 
+		p->disc_rbytes = rb;
+	} else {
+		p->disc_ravg = 0;
+		p->disc_rbytes = rb;
+	}
+
+	if (wb > p->disc_wbytes) {
+		p->disc_wavg = (wb - p->disc_wbytes) / 15; 
+		p->disc_wbytes = wb;
+	} else {
+		p->disc_wavg = 0;
+		p->disc_wbytes = wb;
+	}
+
+	free(buf);
+	return 1;
+}
+
 int
-sysinfo_update(struct sysinfo *p)
+sysinfo_update(const struct syscfg *cfg, struct sysinfo *p)
 {
 
 	if ( ! sysinfo_update_cpu(p))
@@ -425,6 +487,8 @@ sysinfo_update(struct sysinfo *p)
 	if ( ! sysinfo_update_mem(p))
 		return 0;
 	if ( ! sysinfo_update_if(p))
+		return 0;
+	if ( ! sysinfo_update_disc(cfg, p))
 		return 0;
 
 	p->sample++;
@@ -461,4 +525,22 @@ sysinfo_get_netrx_avg(const struct sysinfo *p)
 	if (1 == p->sample)
 		return 0;
 	return p->ifsum.ifc_ib;
+}
+
+int64_t
+sysinfo_get_discread_avg(const struct sysinfo *p)
+{
+
+	if (1 == p->sample)
+		return 0;
+	return p->disc_ravg;
+}
+
+int64_t
+sysinfo_get_discwrite_avg(const struct sysinfo *p)
+{
+
+	if (1 == p->sample)
+		return 0;
+	return p->disc_wavg;
 }

@@ -7,6 +7,7 @@
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
+#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -58,7 +59,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	int		 has_ctime, has_entries, 
 			 has_cpu, has_interval,
 			 has_id, has_mem,
-			 has_nettx, has_netrx;
+			 has_nettx, has_netrx,
+			 has_discwrite, has_discread;
 
 	if (json_type_array != e->value->type) {
 		warnx("%s: non-array child of %s", n->host, name);
@@ -126,6 +128,16 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 				    (n, &(*recs)[i].netrx, num)) 
 					goto err;
 				has_netrx = 1;
+			} else if (0 == strcasecmp(cp, "discread")) {
+				if ( ! jsonobj_parse_int
+				    (n, &(*recs)[i].discread, num)) 
+					goto err;
+				has_discread = 1;
+			} else if (0 == strcasecmp(cp, "discwrite")) {
+				if ( ! jsonobj_parse_int
+				    (n, &(*recs)[i].discwrite, num)) 
+					goto err;
+				has_discwrite = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
 				if ( ! jsonobj_parse_int(n, &ival, num)) 
 					goto err;
@@ -144,6 +156,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 		    0 == has_mem ||
 		    0 == has_nettx ||
 		    0 == has_netrx ||
+		    0 == has_discread ||
+		    0 == has_discwrite ||
 		    0 == has_interval ||
 		    0 == has_id) {
 			warnx("%s: missing fields", n->host);

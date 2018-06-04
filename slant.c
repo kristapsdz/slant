@@ -259,11 +259,11 @@ main(int argc, char *argv[])
 		 */
 
 		if (c || first) {
-			draw(&d, nodes, argc, now);
+			draw(stdscr, &d, nodes, argc, now);
 			refresh();
 			first = 0;
 		} else if (now > last) {
-			drawtimes(&d, nodes, argc, now);
+			drawtimes(stdscr, &d, nodes, argc, now);
 			refresh();
 		}
 

@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include <ncurses.h>
 #include <stdlib.h>
 
 #include "extern.h"
