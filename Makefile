@@ -64,7 +64,8 @@ install: slant-collectd slant-cgi slant slant-upgrade
 	install -m 0444 slant-collectd.1 slant.1 $(DESTDIR)$(MANDIR)/man1
 
 slant-upgrade: slant-upgrade.in.sh
-	sed "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
+	sed -e "s!@DATADIR@!$(DATADIR)!g" \
+	    -e "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
 
 # Only run these for development.
 # Real systems will install the SQL from SHAREDIR/slant.
