@@ -1,38 +1,73 @@
 CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
-CPPFLAGS   = -I/usr/local/opt/include -I/usr/local/include
-LDFLAGS	   = -L/usr/local/opt/lib -L/usr/local/lib
+CPPFLAGS   = -I/usr/local/include
+LDFLAGS	   = -L/usr/local/lib
 BINDIR     = /usr/local/bin
 MANDIR	   = /usr/local/man
 CGIBIN	   = /var/www/cgi-bin
 DATADIR	   = /var/www/data
 DBFILE	   = /data/slant.db
+VERSION	   = 0.0.1
+SHAREDIR   = /usr/local/share
+WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-SLANT_OBJS = slant.o slant-http.o slant-dns.o slant-json.o slant-jsonobj.o slant-draw.o
+DOTAR	   = Makefile \
+	     slant-cgi.c \
+	     slant-collectd-openbsd.c \
+	     slant-collectd.1 \
+	     slant-collectd.c \
+	     slant-collectd.h \
+	     slant-dns.c \
+	     slant-draw.c \
+	     slant-http.c \
+	     slant-json.c \
+	     slant-jsonobj.c \
+	     slant.c \
+	     slant.h \
+	     slant.kwbp
+SLANT_OBJS = slant.o \
+	     slant-dns.o \
+	     slant-draw.o \
+	     slant-http.o \
+	     slant-json.o \
+	     slant-jsonobj.o
 
 all: slant.db slant-collectd slant-cgi slant
 
-server: slant.db slant-collectd slant-cgi
+www: slant.tar.gz
 
-client: slant
+installwww: www
+	mkdir -p $(WWWDIR)
+	mkdir -p $(WWWDIR)/snapshots
+	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots/slant-$(VERSION).tar.gz
+	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots
 
-installserver: installcgi installdb installdaemon
+slant.tar.gz:
+	mkdir -p .dist/slant-$(VERSION)/
+	install -m 0644 $(DOTAR) .dist/slant-$(VERSION)
+	( cd .dist/ && tar zcf ../$@ ./ )
+	rm -rf .dist/
 
-installdaemon: slant-collectd
+install: slant-collectd slant-cgi slant
+	mkdir -p $(DESTDIR)$(SHAREDIR)/slant
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(CGIBIN)
+	install -m 0444 slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
+	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
 	install -m 0555 slant-collectd $(DESTDIR)$(BINDIR)
+	install -m 0555 slant $(DESTDIR)$(BINDIR)
 	install -m 0444 slant-collectd.1 $(DESTDIR)$(MANDIR)/man1
 
-installcgi: slant-cgi
-	mkdir -p $(DESTDIR)$(CGIBIN)
-	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
+# Only run these for development.
+# Real systems will install the SQL from SHAREDIR/slant.
 
 installdb: slant.db
 	mkdir -p $(DESTDIR)$(DATADIR)
 	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
+	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
@@ -49,7 +84,7 @@ slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses
 
 clean:
-	rm -f slant.db slant.sql 
+	rm -f slant.db slant.sql slant.tar.gz
 	rm -f db.o db.c db.h json.c json.o json.h extern.h config.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
