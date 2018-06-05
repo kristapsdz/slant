@@ -97,21 +97,67 @@ nodes_update(struct node *n, size_t sz)
 			abort();
 		}
 
-		if (n[i].dirty) {
+		if (n[i].dirty)
 			dirty++;
-			n[i].dirty = 0;
-		}
 	}
 
 	return dirty;
+}
+
+static int
+cmp_mem(const void *p1, const void *p2)
+{
+	const struct node *n1 = p1, *n2 = p2;
+
+	if (NULL == n1->recs ||
+	    0 == n1->recs->byqminsz)
+		return 1;
+	if (NULL == n2->recs ||
+	    0 == n2->recs->byqminsz)
+		return -1;
+	if (n1->recs->byqmin[0].mem <
+	    n2->recs->byqmin[0].mem)
+		return 1;
+	if (n1->recs->byqmin[0].mem >
+	    n2->recs->byqmin[0].mem)
+		return -1;
+	return 0;
+}
+
+static int
+cmp_cpu(const void *p1, const void *p2)
+{
+	const struct node *n1 = p1, *n2 = p2;
+
+	if (NULL == n1->recs ||
+	    0 == n1->recs->byqminsz)
+		return 1;
+	if (NULL == n2->recs ||
+	    0 == n2->recs->byqminsz)
+		return -1;
+	if (n1->recs->byqmin[0].cpu <
+	    n2->recs->byqmin[0].cpu)
+		return 1;
+	if (n1->recs->byqmin[0].cpu >
+	    n2->recs->byqmin[0].cpu)
+		return -1;
+	return 0;
+}
+
+static int
+cmp_host(const void *p1, const void *p2)
+{
+	const struct node *n1 = p1, *n2 = p2;
+
+	return strcmp(n1->host, n2->host);
 }
 
 int
 main(int argc, char *argv[])
 {
 	int	 	 c, first = 1;
-	size_t		 i;
-	struct node	*nodes = NULL;
+	size_t		 i, nsz;
+	struct node	*n = NULL;
 	struct pollfd	*pfds = NULL;
 	struct timespec	 ts;
 	struct draw	 d;
@@ -120,6 +166,8 @@ main(int argc, char *argv[])
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
+
+	memset(&d, 0, sizeof(struct draw));
 
 	/* Start up TLS handling really early. */
 
@@ -149,8 +197,23 @@ main(int argc, char *argv[])
 	if (sigprocmask(SIG_BLOCK, &mask, &oldmask) < 0)
 		err(EXIT_FAILURE, NULL);
 
-	while (-1 != (c = getopt(argc, argv, "")))
-		goto usage;
+	while (-1 != (c = getopt(argc, argv, "o:"))) 
+		switch (c) {
+		case 'o':
+			if (0 == strcmp(optarg, "host"))
+				d.order = DRAWORD_HOST;
+			else if (0 == strcmp(optarg, "cmdline"))
+				d.order = DRAWORD_CMDLINE;
+			else if (0 == strcmp(optarg, "cpu"))
+				d.order = DRAWORD_CPU;
+			else if (0 == strcmp(optarg, "mem"))
+				d.order = DRAWORD_MEM;
+			else
+				goto usage;
+			break;
+		default:
+			goto usage;
+		}
 
 	argc -= optind;
 	argv += optind;
@@ -160,15 +223,16 @@ main(int argc, char *argv[])
 	
 	/* Initialise data. */
 
-	nodes = calloc(argc, sizeof(struct node));
-	if (NULL == nodes)
+	nsz = argc;
+	n = calloc(nsz, sizeof(struct node));
+	if (NULL == n)
 		err(EXIT_FAILURE, NULL);
 
-	pfds = calloc(argc, sizeof(struct pollfd));
+	pfds = calloc(nsz, sizeof(struct pollfd));
 	if (NULL == pfds)
 		err(EXIT_FAILURE, NULL);
 
-	for (i = 0; i < (size_t)argc; i++)
+	for (i = 0; i < nsz; i++)
 		pfds[i].fd = -1;
 
 	/* 
@@ -186,7 +250,6 @@ main(int argc, char *argv[])
 	    ERR == nonl())
 		exit(EXIT_FAILURE);
 
-	memset(&d, 0, sizeof(struct draw));
 	curs_set(0);
 
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
@@ -198,16 +261,16 @@ main(int argc, char *argv[])
 	 * whatever we can.
 	 */
 
-	for (i = 0; i < (size_t)argc; i++) {
-		nodes[i].xfer.pfd = &pfds[i];
-		nodes[i].state = STATE_STARTUP;
-		nodes[i].url = strdup(argv[i]);
+	for (i = 0; i < nsz; i++) {
+		n[i].xfer.pfd = &pfds[i];
+		n[i].state = STATE_STARTUP;
+		n[i].url = strdup(argv[i]);
 
-		if ( ! dns_parse_url(&nodes[i]))
+		if ( ! dns_parse_url(&n[i]))
 			goto out;
-		if (NULL == nodes[i].url ||
-		    NULL == nodes[i].path ||
-		    NULL == nodes[i].host) {
+		if (NULL == n[i].url ||
+		    NULL == n[i].path ||
+		    NULL == n[i].host) {
 			warn(NULL);
 			goto out;
 		}
@@ -218,11 +281,11 @@ main(int argc, char *argv[])
 	 * TODO: put DNS init into the main loop.
 	 */
 
-	for (i = 0; i < (size_t)argc; i++) {
-		nodes[i].state = STATE_RESOLVING;
-		if ( ! dns_resolve(nodes[i].host, &nodes[i].addrs))
+	for (i = 0; i < nsz; i++) {
+		n[i].state = STATE_RESOLVING;
+		if ( ! dns_resolve(n[i].host, &n[i].addrs))
 			goto out;
-		nodes[i].state = STATE_CONNECT_READY;
+		n[i].state = STATE_CONNECT_READY;
 	}
 
 	/* 
@@ -243,8 +306,25 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		if ((c = nodes_update(nodes, argc)) < 0)
+		if ((c = nodes_update(n, nsz)) < 0)
 			break;
+
+		switch (d.order) {
+		case DRAWORD_CMDLINE:
+			break;
+		case DRAWORD_CPU:
+			qsort(n, nsz, sizeof(struct node), cmp_cpu);
+			break;
+		case DRAWORD_HOST:
+			/* Only do this once. */
+			if (0 == first)
+				break;
+			qsort(n, nsz, sizeof(struct node), cmp_host);
+			break;
+		case DRAWORD_MEM:
+			qsort(n, nsz, sizeof(struct node), cmp_mem);
+			break;
+		}
 
 		now = time(NULL);
 
@@ -253,23 +333,22 @@ main(int argc, char *argv[])
 		 * the first iteration, just to show something.
 		 * If we've nothing to show but more than one second has
 		 * passed, then simply update the time displays.
-		 * FIXME: we should only do this once a second at most,
-		 * so multiple updates in <1 second granularity doesn't
-		 * cause too many updates.
 		 */
 
-		if (c || first) {
-			draw(stdscr, &d, nodes, argc, now);
+		if ((c || first) && now > last) {
+			draw(stdscr, &d, n, nsz, now);
+			for (i = 0; i < nsz; i++) 
+				n[i].dirty = 0;
 			refresh();
 			first = 0;
 		} else if (now > last) {
-			drawtimes(stdscr, &d, nodes, argc, now);
+			drawtimes(stdscr, &d, n, nsz, now);
 			refresh();
 		}
 
 		last = now;
 
-		if (ppoll(pfds, argc, &ts, &oldmask) < 0 && 
+		if (ppoll(pfds, nsz, &ts, &oldmask) < 0 && 
 		    EINTR != errno) {
 			warn("poll");
 			break;
@@ -278,10 +357,10 @@ main(int argc, char *argv[])
 
 out:
 	endwin();
-	nodes_free(nodes, argc);
+	nodes_free(n, nsz);
 	free(pfds);
 	return EXIT_SUCCESS;
 usage:
-	fprintf(stderr, "usage: %s addr...\n", getprogname());
+	fprintf(stderr, "usage: %s [-o order] addr...\n", getprogname());
 	return EXIT_FAILURE;
 }

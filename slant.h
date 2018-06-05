@@ -16,6 +16,13 @@ struct	dns {
 	size_t		 curaddr; /* current working address */
 };
 
+enum	draword {
+	DRAWORD_CMDLINE = 0,
+	DRAWORD_CPU,
+	DRAWORD_HOST,
+	DRAWORD_MEM,
+};
+
 /*
  * We use this structure to keep track of key parts of our UI.
  * It lets us optimise repainting the screen per second to keep track of
@@ -24,6 +31,7 @@ struct	dns {
 struct	draw {
 	size_t		 lastseenpos; /* location of last seen stamp */
 	size_t		 intervalpos; /* location of interval stamp */
+	enum draword	 order;
 };
 
 /*
