@@ -214,6 +214,7 @@ main(int argc, char *argv[])
 	struct sysinfo	*info;
 	int		 c, rc = 0, noop = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
+	char		*d, *discs = NULL;
 	struct syscfg	 cfg;
 
 	memset(&cfg, 0, sizeof(struct syscfg));
@@ -232,8 +233,11 @@ main(int argc, char *argv[])
 	     "cpath wpath flock proc fattr", NULL))
 		err(EXIT_FAILURE, "pledge");*/
 
-	while (-1 != (c = getopt(argc, argv, "nf:")))
+	while (-1 != (c = getopt(argc, argv, "d:nf:")))
 		switch (c) {
+		case 'd':
+			discs = optarg;
+			break;
 		case 'f':
 			dbfile = optarg;
 			break;
@@ -242,6 +246,21 @@ main(int argc, char *argv[])
 			break;
 		default:
 			goto usage;
+		}
+
+	argc -= optind;
+	argv += optind;
+
+	if (NULL != discs)
+		while (NULL != (d = strsep(&discs, ","))) {
+			cfg.discs = reallocarray
+				(cfg.discs, 
+				 cfg.discsz + 1,
+				 sizeof(char *));
+			cfg.discs[cfg.discsz] = strdup(d);
+			if (NULL == cfg.discs[cfg.discsz]) 
+				err(EXIT_FAILURE, NULL);
+			cfg.discsz++;
 		}
 
 	/* XXX: hack around ksql(3) exit when receives signal. */
@@ -305,6 +324,9 @@ out:
 	db_close(db);
 	return rc ? EXIT_SUCCESS : EXIT_FAILURE;
 usage:
-	fprintf(stderr, "usage: %s [-n] [-f dbfile]\n", getprogname());
+	fprintf(stderr, "usage: %s "
+		"[-n] "
+		"[-d discs] "
+		"[-f dbfile]\n", getprogname());
 	return EXIT_FAILURE;
 }
