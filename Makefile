@@ -34,7 +34,7 @@ SLANT_OBJS = slant.o \
 	     slant-json.o \
 	     slant-jsonobj.o
 
-all: slant.db slant-collectd slant-cgi slant
+all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
 www: slant.tar.gz
 
@@ -50,16 +50,19 @@ slant.tar.gz:
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
-install: slant-collectd slant-cgi slant
+install: slant-collectd slant-cgi slant slant-upgrade
 	mkdir -p $(DESTDIR)$(SHAREDIR)/slant
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(CGIBIN)
 	install -m 0444 slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
 	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
-	install -m 0555 slant-collectd $(DESTDIR)$(BINDIR)
+	install -m 0555 slant-collectd slant-upgrade $(DESTDIR)$(BINDIR)
 	install -m 0555 slant $(DESTDIR)$(BINDIR)
 	install -m 0444 slant-collectd.1 $(DESTDIR)$(MANDIR)/man1
+
+slant-upgrade: slant-upgrade.in.sh
+	cp -f slant-upgrade.in.sh $@
 
 # Only run these for development.
 # Real systems will install the SQL from SHAREDIR/slant.
@@ -84,7 +87,7 @@ slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses
 
 clean:
-	rm -f slant.db slant.sql slant.tar.gz
+	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
 	rm -f db.o db.c db.h json.c json.o json.h extern.h config.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
