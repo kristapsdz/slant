@@ -24,6 +24,8 @@ DOTAR	   = Makefile \
 	     slant-http.c \
 	     slant-json.c \
 	     slant-jsonobj.c \
+	     slant-upgrade.in.sh \
+	     slant.1 \
 	     slant.c \
 	     slant.h \
 	     slant.kwbp
@@ -59,10 +61,10 @@ install: slant-collectd slant-cgi slant slant-upgrade
 	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
 	install -m 0555 slant-collectd slant-upgrade $(DESTDIR)$(BINDIR)
 	install -m 0555 slant $(DESTDIR)$(BINDIR)
-	install -m 0444 slant-collectd.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0444 slant-collectd.1 slant.1 $(DESTDIR)$(MANDIR)/man1
 
 slant-upgrade: slant-upgrade.in.sh
-	cp -f slant-upgrade.in.sh $@
+	sed "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
 
 # Only run these for development.
 # Real systems will install the SQL from SHAREDIR/slant.
