@@ -280,15 +280,11 @@ draw_disc(const struct node *n)
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].discread /
 			(double)n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 0);
-		attroff(A_BOLD);
 		addch(':');
 		vv = n->recs->byhour[0].discwrite /
 			(double)n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 1);
-		attroff(A_BOLD);
 	} else
 		addstr("------:------");
 
@@ -299,15 +295,11 @@ draw_disc(const struct node *n)
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].discread /
 			(double)n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 0);
-		attroff(A_BOLD);
 		addch(':');
 		vv = n->recs->byday[0].discwrite /
 			(double)n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 1);
-		attroff(A_BOLD);
 	} else
 		addstr("------:------");
 }
@@ -341,15 +333,11 @@ draw_inet(const struct node *n)
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].netrx /
 			n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 0);
-		attroff(A_BOLD);
 		addch(':');
 		vv = n->recs->byhour[0].nettx /
 			n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 1);
-		attroff(A_BOLD);
 	} else
 		addstr("------:------");
 
@@ -360,15 +348,11 @@ draw_inet(const struct node *n)
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].netrx /
 			n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 0);
-		attroff(A_BOLD);
 		addch(':');
 		vv = n->recs->byday[0].nettx /
 			n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_xfer(vv, 1);
-		attroff(A_BOLD);
 	} else
 		addstr("------:------");
 }
@@ -407,9 +391,7 @@ draw_mem(const struct node *n)
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].mem /
 			n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_pct(vv);
-		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
 
@@ -419,9 +401,7 @@ draw_mem(const struct node *n)
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].mem /
 			n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_pct(vv);
-		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
 }
@@ -460,9 +440,7 @@ draw_cpu(const struct node *n)
 	    n->recs->byhour[0].entries) {
 		vv = n->recs->byhour[0].cpu /
 			n->recs->byhour[0].entries;
-		attron(A_BOLD);
 		draw_pct(vv);
-		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
 
@@ -472,9 +450,7 @@ draw_cpu(const struct node *n)
 	    n->recs->byday[0].entries) {
 		vv = n->recs->byday[0].cpu /
 			n->recs->byday[0].entries;
-		attron(A_BOLD);
 		draw_pct(vv);
-		attroff(A_BOLD);
 	} else
 		printw("%6s", " ");
 }
