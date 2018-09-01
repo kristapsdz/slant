@@ -7,6 +7,7 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <locale.h>
 #include <signal.h>
 #include <stdio.h>
@@ -55,7 +56,7 @@ nodes_free(struct node *n, size_t sz)
 }
 
 static int
-nodes_update(struct node *n, size_t sz)
+nodes_update(time_t waittime, struct node *n, size_t sz)
 {
 	size_t	 i;
 	time_t	 t = time(NULL);
@@ -64,7 +65,7 @@ nodes_update(struct node *n, size_t sz)
 	for (i = 0; i < sz; i++) {
 		switch (n[i].state) {
 		case STATE_CONNECT_WAITING:
-			if (n[i].waitstart + 15 >= t) 
+			if (n[i].waitstart + waittime >= t) 
 				break;
 			n[i].state = STATE_CONNECT_READY;
 			n[i].dirty = 1;
@@ -157,12 +158,14 @@ main(int argc, char *argv[])
 {
 	int	 	 c, first = 1;
 	size_t		 i, nsz;
+	const char	*er;
 	struct node	*n = NULL;
 	struct pollfd	*pfds = NULL;
 	struct timespec	 ts;
 	struct draw	 d;
 	sigset_t	 mask, oldmask;
 	time_t		 last, now;
+	time_t		 waittime = 15;
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
@@ -197,7 +200,7 @@ main(int argc, char *argv[])
 	if (sigprocmask(SIG_BLOCK, &mask, &oldmask) < 0)
 		err(EXIT_FAILURE, NULL);
 
-	while (-1 != (c = getopt(argc, argv, "o:"))) 
+	while (-1 != (c = getopt(argc, argv, "o:w:"))) 
 		switch (c) {
 		case 'o':
 			if (0 == strcmp(optarg, "host"))
@@ -210,6 +213,11 @@ main(int argc, char *argv[])
 				d.order = DRAWORD_MEM;
 			else
 				goto usage;
+			break;
+		case 'w':
+			waittime = strtonum(optarg, 15, INT_MAX, &er);
+			if (NULL != er)
+				errx(EXIT_FAILURE, "-w: %s", er);
 			break;
 		default:
 			goto usage;
@@ -306,7 +314,7 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		if ((c = nodes_update(n, nsz)) < 0)
+		if ((c = nodes_update(waittime, n, nsz)) < 0)
 			break;
 
 		switch (d.order) {

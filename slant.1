@@ -7,15 +7,17 @@
 .Sh SYNOPSIS
 .Nm slant
 .Op Fl o Ar order
+.Op Fl w Ar waittime
 .Ar url...
 .Sh DESCRIPTION
 The
 .Nm
 utility displays system statistics gathered from
 .Ar url .
-The hosts must be running
-.Xr slant-collectd 1 ,
-whose statistics must be available from the CGI script.
+The resource at each
+.Ar url
+must be running
+.Xr slant-cgi 8 .
 Its arguments are as follows:
 .Bl -tag -width Ds
 .It Fl o Ar order
@@ -29,7 +31,13 @@ for hostname,
 for immediate CPU, or
 .Ar mdm
 for immediate memory.
+.It Fl w
+Wait time before querying hosts.
+This must be at least 15 seconds.
 .El
+.Pp
+By default, hosts are ordered as given on the command line and are
+queried every 15 seconds.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -40,7 +48,11 @@ for immediate memory.
 .\" .Sh FILES
 .\" .Sh EXIT STATUS
 .\" For sections 1, 6, and 8 only.
-.\" .Sh EXAMPLES
+.Sh EXAMPLES
+To query the localhost and a remote machine:
+.Bd -literal
+% slant -o host localhost/cgi-bin/slant-cgi https://remote/slant-cgi
+.Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS
