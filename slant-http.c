@@ -110,7 +110,7 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 	if ( ! httpok) {
 		xwarnx(errwin, "no HTTP response: %s", n->host);
 		rc = 1;
-	} else if ((rc = jsonobj_parse(n, start, sz)) > 0) {
+	} else if ((rc = jsonobj_parse(errwin, n, start, sz)) > 0) {
 		n->dirty = 1;
 		n->lastseen = time(NULL);
 	}

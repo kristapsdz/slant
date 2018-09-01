@@ -5,7 +5,6 @@
 
 #include <assert.h>
 #include <curses.h>
-#include <err.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

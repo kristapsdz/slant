@@ -156,7 +156,7 @@ int	 http_read(WINDOW *, struct node *n);
 void	 draw(WINDOW *, struct draw *, const struct node *, size_t, time_t);
 void	 drawtimes(WINDOW *, const struct draw *, const struct node *, size_t, time_t);
 struct json_value_s *json_parse(const void *, size_t);
-int 	 jsonobj_parse(struct node *n, const char *, size_t);
+int 	 jsonobj_parse(WINDOW *, struct node *n, const char *, size_t);
 
 __END_DECLS
 

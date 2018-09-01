@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
-#include <err.h>
 #include <errno.h>
 #include <limits.h>
 #include <ncurses.h>
@@ -16,7 +15,7 @@
 #include "slant.h"
 
 static int
-jsonobj_parse_int(const struct node *n,
+jsonobj_parse_int(WINDOW *errwin, const struct node *n,
 	int64_t *res, const struct json_number_s *num)
 {
 	const char	*er;
@@ -24,12 +23,13 @@ jsonobj_parse_int(const struct node *n,
 	*res = strtonum(num->number, -LLONG_MAX, LLONG_MAX, &er);
 	if (er == NULL)
 		return 1;
-	warnx("%s: bad integer: %s: %s", n->host, num->number, er);
+	xwarnx(errwin, "JSON bad integer: %s: %s: %s", 
+		num->number, n->host, er);
 	return 0;
 }
 
 static int
-jsonobj_parse_real(const struct node *n,
+jsonobj_parse_real(WINDOW *errwin, const struct node *n,
 	double *res, const struct json_number_s *num)
 {
 	char	*der;
@@ -38,12 +38,14 @@ jsonobj_parse_real(const struct node *n,
 	*res = strtod(num->number, &der);
 	if (der != num->number && 0 == errno)
 		return 1;
-	warnx("%s: bad double: %s", n->host, num->number);
+	xwarnx(errwin, "JSON bad double: %s: %s", 
+		num->number, n->host);
 	return 0;
 }
 
 static int
-jsonobj_parse_recs(const struct node *n, const char *name,
+jsonobj_parse_recs(WINDOW *errwin,
+	const struct node *n, const char *name,
 	const struct json_object_element_s *e, 
 	struct record **recs, size_t *recsz)
 {
@@ -63,7 +65,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 			 has_discwrite, has_discread;
 
 	if (json_type_array != e->value->type) {
-		warnx("%s: non-array child of %s", n->host, name);
+		xwarnx(errwin, "JSON non-array child: %s: %s", 
+			name, n->host);
 		return 0;
 	}
 
@@ -71,7 +74,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 	*recsz = ar->length;
 	*recs = calloc(*recsz, sizeof(struct record));
 	if (NULL == *recs) {
-		warn(NULL);
+		xwarn(errwin, NULL);
 		return -1;
 	}
 
@@ -83,8 +86,8 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 
 		val = are->value;
 		if (json_type_object != val->type) {
-			warnx("%s: non-object array "
-				"child of %s", n->host, name);
+			xwarnx(errwin, "JSON non-object child: %s: %s", 
+				name, n->host);
 			goto err;
 		}
 		obj = val->payload;
@@ -93,59 +96,60 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 			cp = obje->name->string;
 			if (json_type_number !=
 			    obje->value->type) {
-				warnx("%s: expected number "
-					"for array object", n->host);
+				xwarnx(errwin, "JSON expected number "
+					"for array object: %s", 
+					n->host);
 				goto err;
 			}
 			num = obje->value->payload;
 			if (0 == strcasecmp(cp, "ctime")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].ctime, num)) 
+				    (errwin, n, &(*recs)[i].ctime, num)) 
 					goto err;
 				has_ctime = 1;
 			} else if (0 == strcasecmp(cp, "entries")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].entries, num)) 
+				    (errwin, n, &(*recs)[i].entries, num)) 
 					goto err;
 				has_entries = 1;
 			} else if (0 == strcasecmp(cp, "cpu")) {
 				if ( ! jsonobj_parse_real
-				    (n, &(*recs)[i].cpu, num)) 
+				    (errwin, n, &(*recs)[i].cpu, num)) 
 					goto err;
 				has_cpu = 1;
 			} else if (0 == strcasecmp(cp, "mem")) {
 				if ( ! jsonobj_parse_real
-				    (n, &(*recs)[i].mem, num)) 
+				    (errwin, n, &(*recs)[i].mem, num)) 
 					goto err;
 				has_mem = 1;
 			} else if (0 == strcasecmp(cp, "nettx")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].nettx, num)) 
+				    (errwin, n, &(*recs)[i].nettx, num)) 
 					goto err;
 				has_nettx = 1;
 			} else if (0 == strcasecmp(cp, "netrx")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].netrx, num)) 
+				    (errwin, n, &(*recs)[i].netrx, num)) 
 					goto err;
 				has_netrx = 1;
 			} else if (0 == strcasecmp(cp, "discread")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].discread, num)) 
+				    (errwin, n, &(*recs)[i].discread, num)) 
 					goto err;
 				has_discread = 1;
 			} else if (0 == strcasecmp(cp, "discwrite")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].discwrite, num)) 
+				    (errwin, n, &(*recs)[i].discwrite, num)) 
 					goto err;
 				has_discwrite = 1;
 			} else if (0 == strcasecmp(cp, "interval")) {
-				if ( ! jsonobj_parse_int(n, &ival, num)) 
+				if ( ! jsonobj_parse_int(errwin, n, &ival, num)) 
 					goto err;
 				(*recs)[i].interval = ival;		
 				has_interval = 1;
 			} else if (0 == strcasecmp(cp, "id")) {
 				if ( ! jsonobj_parse_int
-				    (n, &(*recs)[i].id, num)) 
+				    (errwin, n, &(*recs)[i].id, num)) 
 					goto err;
 				has_id = 1;
 			}
@@ -160,7 +164,7 @@ jsonobj_parse_recs(const struct node *n, const char *name,
 		    0 == has_discwrite ||
 		    0 == has_interval ||
 		    0 == has_id) {
-			warnx("%s: missing fields", n->host);
+			xwarnx(errwin, "JSON missing fields: %s", n->host);
 			goto err;
 		}
 	}
@@ -177,7 +181,8 @@ err:
  * Parse the full response.
  */
 int
-jsonobj_parse(struct node *n, const char *str, size_t sz)
+jsonobj_parse(WINDOW *errwin, 
+	struct node *n, const char *str, size_t sz)
 {
 	struct json_value_s *s;
 	struct json_object_s *obj;
@@ -187,7 +192,7 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 	/* Consider this a recoverable error. */
 
 	if (NULL == (s = json_parse(str, sz))) {
-		warnx("%s: json_parse", n->host);
+		xwarnx(errwin, "json_parse: %s", n->host);
 		return 0;
 	}
 
@@ -196,7 +201,7 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 	if (NULL == n->recs) {
 		n->recs = calloc(1, sizeof(struct recset));
 		if (NULL == n->recs) {
-			warn(NULL);
+			xwarn(errwin, NULL);
 			free(s);
 			return -1;
 		}
@@ -219,27 +224,27 @@ jsonobj_parse(struct node *n, const char *str, size_t sz)
 	obj = s->payload;
 	for (e = obj->start; NULL != e; e = e->next) {
 		if (0 == strcasecmp(e->name->string, "qmin")) 
-			rc = jsonobj_parse_recs(n, "qmin", e,
+			rc = jsonobj_parse_recs(errwin, n, "qmin", e,
 				&n->recs->byqmin,
 				&n->recs->byqminsz);
 		else if (0 == strcasecmp(e->name->string, "min"))
-			rc = jsonobj_parse_recs(n, "min", e,
+			rc = jsonobj_parse_recs(errwin, n, "min", e,
 				&n->recs->bymin,
 				&n->recs->byminsz);
 		else if (0 == strcasecmp(e->name->string, "hour"))
-			rc = jsonobj_parse_recs(n, "hour", e,
+			rc = jsonobj_parse_recs(errwin, n, "hour", e,
 				&n->recs->byhour,
 				&n->recs->byhoursz);
 		else if (0 == strcasecmp(e->name->string, "day"))
-			rc = jsonobj_parse_recs(n, "day", e,
+			rc = jsonobj_parse_recs(errwin, n, "day", e,
 				&n->recs->byday,
 				&n->recs->bydaysz);
 		else if (0 == strcasecmp(e->name->string, "week"))
-			rc = jsonobj_parse_recs(n, "week", e,
+			rc = jsonobj_parse_recs(errwin, n, "week", e,
 				&n->recs->byweek,
 				&n->recs->byweeksz);
 		else if (0 == strcasecmp(e->name->string, "year"))
-			rc = jsonobj_parse_recs(n, "year", e,
+			rc = jsonobj_parse_recs(errwin, n, "year", e,
 				&n->recs->byyear,
 				&n->recs->byyearsz);
 		else
