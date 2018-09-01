@@ -219,20 +219,6 @@ main(int argc, char *argv[])
 
 	memset(&cfg, 0, sizeof(struct syscfg));
 
-	/*
-	 * Pre-pledge, establishing a reasonable baseline.
-	 * Then open our database in a protected process.
-	 * After that, drop us to minimum privilege/role.
-	 *
-	 *  ps, inet, vminfo: stat collection
-	 *  rpath, cpath, wpath, flock, proc, fattr: ksql(3)
-	 */
-
-	/*if (-1 == pledge
-	    ("vminfo inet ps vminfo stdio rpath "
-	     "cpath wpath flock proc fattr", NULL))
-		err(EXIT_FAILURE, "pledge");*/
-
 	while (-1 != (c = getopt(argc, argv, "d:nf:")))
 		switch (c) {
 		case 'd':
@@ -272,11 +258,6 @@ main(int argc, char *argv[])
 
 	if ( ! noop && NULL == (db = db_open(dbfile)))
 		errx(EXIT_FAILURE, "%s", dbfile);
-
-	/* Re-drop privileges after database fork. */
-
-	/*if (-1 == pledge("vminfo inet ps vminfo stdio", NULL))
-		err(EXIT_FAILURE, "pledge");*/
 
 	if (NULL != db)
 		db_role(db, ROLE_produce);
