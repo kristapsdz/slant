@@ -141,8 +141,12 @@ struct	json_object_s {
 
 __BEGIN_DECLS
 
-int	 dns_parse_url(struct node *);
-int	 dns_resolve(const char *, struct dns *);
+void	 xdbg(WINDOW *, const char *, ...);
+void	 xwarnx(WINDOW *, const char *, ...);
+void	 xwarn(WINDOW *, const char *, ...);
+
+int	 dns_parse_url(WINDOW *, struct node *);
+int	 dns_resolve(WINDOW *, const char *, struct dns *);
 int	 http_init_connect(struct node *);
 int	 http_close_done(struct node *);
 int	 http_close_err(struct node *);

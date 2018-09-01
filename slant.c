@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <locale.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,7 @@
 #include "slant.h"
 
 static	volatile sig_atomic_t sigged;
+static	int debug = 1;
 
 static void
 dosig(int code)
@@ -153,10 +155,47 @@ cmp_host(const void *p1, const void *p2)
 	return strcmp(n1->host, n2->host);
 }
 
+void
+xwarn(WINDOW *errwin, const char *fmt, ...)
+{
+	va_list  ap;
+	int	 er = errno;
+
+	va_start(ap, fmt);
+	vwprintw(errwin, fmt, ap);
+	va_end(ap);
+	wprintw(errwin, "%s%s\n", 
+		NULL == fmt ? "" : ": ", strerror(er));
+}
+
+void
+xwarnx(WINDOW *errwin, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vwprintw(errwin, fmt, ap);
+	va_end(ap);
+	waddch(errwin, '\n');
+}
+
+void
+xdbg(WINDOW *errwin, const char *fmt, ...)
+{
+	va_list ap;
+
+	if ( ! debug) 
+		return;
+	va_start(ap, fmt);
+	vwprintw(errwin, fmt, ap);
+	va_end(ap);
+	waddch(errwin, '\n');
+}
+
 int
 main(int argc, char *argv[])
 {
-	int	 	 c, first = 1;
+	int	 	 c, first = 1, maxy, maxx;
 	size_t		 i, nsz;
 	const char	*er;
 	struct node	*n = NULL;
@@ -166,6 +205,7 @@ main(int argc, char *argv[])
 	sigset_t	 mask, oldmask;
 	time_t		 last, now;
 	time_t		 waittime = 15;
+	WINDOW		*errwin = NULL, *mainwin = NULL;
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
@@ -263,6 +303,12 @@ main(int argc, char *argv[])
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(2, COLOR_RED, COLOR_BLACK);
 
+	getmaxyx(stdscr, maxy, maxx);
+
+	mainwin = subwin(stdscr, maxy - 10, maxx, 0, 0);
+	errwin = subwin(stdscr, 0, maxx, maxy - 10, 0);
+	scrollok(errwin, 1);
+
 	/*
 	 * All terminal windows initialised.
 	 * From here on out, we want to use ncurses for reporting
@@ -274,7 +320,7 @@ main(int argc, char *argv[])
 		n[i].state = STATE_STARTUP;
 		n[i].url = strdup(argv[i]);
 
-		if ( ! dns_parse_url(&n[i]))
+		if ( ! dns_parse_url(errwin, &n[i]))
 			goto out;
 		if (NULL == n[i].url ||
 		    NULL == n[i].path ||
@@ -291,7 +337,7 @@ main(int argc, char *argv[])
 
 	for (i = 0; i < nsz; i++) {
 		n[i].state = STATE_RESOLVING;
-		if ( ! dns_resolve(n[i].host, &n[i].addrs))
+		if ( ! dns_resolve(errwin, n[i].host, &n[i].addrs))
 			goto out;
 		n[i].state = STATE_CONNECT_READY;
 	}
@@ -344,13 +390,13 @@ main(int argc, char *argv[])
 		 */
 
 		if ((c || first) && now > last) {
-			draw(stdscr, &d, n, nsz, now);
+			draw(mainwin, &d, n, nsz, now);
 			for (i = 0; i < nsz; i++) 
 				n[i].dirty = 0;
 			refresh();
 			first = 0;
 		} else if (now > last) {
-			drawtimes(stdscr, &d, n, nsz, now);
+			drawtimes(mainwin, &d, n, nsz, now);
 			refresh();
 		}
 

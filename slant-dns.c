@@ -14,13 +14,15 @@
 #include "slant.h"
 
 int
-dns_parse_url(struct node *n)
+dns_parse_url(WINDOW *errwin, struct node *n)
 {
 	char		*cp;
 	const char 	*s = n->url;
 
  	n->addrs.https = 0;
 	n->addrs.port = 80;
+
+	xdbg(errwin, "parsing: %s", n->url);
 
 	if (0 == strncasecmp(s, "https://", 8)) {
 	 	n->addrs.https = 1;
@@ -30,7 +32,7 @@ dns_parse_url(struct node *n)
 		s += 7;
 
 	if (NULL == (n->host = strdup(s))) {
-		warn(NULL);
+		xwarn(errwin, NULL);
 		return 0;
 	}
 
@@ -52,10 +54,11 @@ dns_parse_url(struct node *n)
 
 	if (NULL == n->path)
 		if (NULL == (n->path = strdup(""))) {
-			warn(NULL);
+			xwarn(errwin, NULL);
 			return 0;
 		}
 
+	xdbg(errwin, "parsed: [%s][%s]", n->host, n->path);
 	return 1;
 }
 
@@ -78,7 +81,7 @@ dns_parse_url(struct node *n)
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 int
-dns_resolve(const char *host, struct dns *vec)
+dns_resolve(WINDOW *errwin, const char *host, struct dns *vec)
 {
 	struct addrinfo	 hints, *res0, *res;
 	struct sockaddr	*sa;
@@ -90,11 +93,14 @@ dns_resolve(const char *host, struct dns *vec)
 
 	error = getaddrinfo(host, NULL, &hints, &res0);
 
-	if (error == EAI_AGAIN || error == EAI_NONAME)
-		return 1;
+	xdbg(errwin, "DNS resolving: %s", host);
 
-	if (error) {
-		warnx("%s: parse error: %s",
+	if (error == EAI_AGAIN || error == EAI_NONAME) {
+		xwarnx(errwin, "DNS resolve error: %s: %s", 
+			host, gai_strerror(error));
+		return 0;
+	} else if (error) {
+		xwarnx(errwin, "DNS parse error: %s: %s",
 			host, gai_strerror(error));
 		return 0;
 	}
@@ -121,6 +127,8 @@ dns_resolve(const char *host, struct dns *vec)
 				INET6_ADDRSTRLEN);
 		}
 		
+		xdbg(errwin, "DNS resolved: %s: %s",
+			host, vec->addrs[vec->addrsz].ip);
 		vec->addrsz++;
 	}
 
