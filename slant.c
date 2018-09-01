@@ -58,7 +58,7 @@ nodes_free(struct node *n, size_t sz)
 }
 
 static int
-nodes_update(time_t waittime, struct node *n, size_t sz)
+nodes_update(WINDOW *errwin, time_t waittime, struct node *n, size_t sz)
 {
 	size_t	 i;
 	time_t	 t = time(NULL);
@@ -73,27 +73,27 @@ nodes_update(time_t waittime, struct node *n, size_t sz)
 			n[i].dirty = 1;
 			break;
 		case STATE_CONNECT_READY:
-			if ( ! http_init_connect(&n[i]))
+			if ( ! http_init_connect(errwin, &n[i]))
 				return -1;
 			break;
 		case STATE_CONNECT:
-			if ( ! http_connect(&n[i]))
+			if ( ! http_connect(errwin, &n[i]))
 				return -1;
 			break;
 		case STATE_WRITE:
-			if ( ! http_write(&n[i]))
+			if ( ! http_write(errwin, &n[i]))
 				return -1;
 			break;
 		case STATE_CLOSE_ERR:
-			if ( ! http_close_err(&n[i]))
+			if ( ! http_close_err(errwin, &n[i]))
 				return -1;
 			break;
 		case STATE_CLOSE_DONE:
-			if ( ! http_close_done(&n[i]))
+			if ( ! http_close_done(errwin, &n[i]))
 				return -1;
 			break;
 		case STATE_READ:
-			if ( ! http_read(&n[i]))
+			if ( ! http_read(errwin, &n[i]))
 				return -1;
 			break;
 		default:
@@ -166,6 +166,7 @@ xwarn(WINDOW *errwin, const char *fmt, ...)
 	va_end(ap);
 	wprintw(errwin, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
+	wrefresh(errwin);
 }
 
 void
@@ -177,6 +178,7 @@ xwarnx(WINDOW *errwin, const char *fmt, ...)
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
 	waddch(errwin, '\n');
+	wrefresh(errwin);
 }
 
 void
@@ -190,6 +192,7 @@ xdbg(WINDOW *errwin, const char *fmt, ...)
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
 	waddch(errwin, '\n');
+	wrefresh(errwin);
 }
 
 int
@@ -360,7 +363,7 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		if ((c = nodes_update(waittime, n, nsz)) < 0)
+		if ((c = nodes_update(errwin, waittime, n, nsz)) < 0)
 			break;
 
 		switch (d.order) {
@@ -393,11 +396,11 @@ main(int argc, char *argv[])
 			draw(mainwin, &d, n, nsz, now);
 			for (i = 0; i < nsz; i++) 
 				n[i].dirty = 0;
-			refresh();
+			wrefresh(mainwin);
 			first = 0;
 		} else if (now > last) {
 			drawtimes(mainwin, &d, n, nsz, now);
-			refresh();
+			wrefresh(mainwin);
 		}
 
 		last = now;

@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
-#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -20,7 +19,7 @@
 #include "slant.h"
 
 static int
-http_close_inner(struct node *n)
+http_close_inner(WINDOW *errwin, struct node *n)
 {
 	int	 c;
 
@@ -65,11 +64,11 @@ http_close_err_ok(struct node *n)
 }
 
 int
-http_close_err(struct node *n)
+http_close_err(WINDOW *errwin, struct node *n)
 {
 	int	 c;
 
-	if ((c = http_close_inner(n)) < 0)
+	if ((c = http_close_inner(errwin, n)) < 0)
 		return 0;
 	else if (c > 0)
 		return http_close_err_ok(n);
@@ -79,7 +78,7 @@ http_close_err(struct node *n)
 }
 
 static int
-http_close_done_ok(struct node *n)
+http_close_done_ok(WINDOW *errwin, struct node *n)
 {
 	char	*end, *sv, *start = n->xfer.rbuf;
 	size_t	 len, sz = n->xfer.rbufsz;
@@ -102,13 +101,14 @@ http_close_done_ok(struct node *n)
 				httpok = 1;
 				continue;
 			}
-			/*warnx("%s: bad response: %.3s", n->host, sv);*/
+			xwarnx(errwin, "bad HTTP response: %s: %.3s",
+				n->host, sv);
 			return 1;
 		}
 	}
 
 	if ( ! httpok) {
-		warnx("%s: no HTTP response code", n->host);
+		xwarnx(errwin, "no HTTP response: %s", n->host);
 		rc = 1;
 	} else if ((rc = jsonobj_parse(n, start, sz)) > 0) {
 		n->dirty = 1;
@@ -122,14 +122,14 @@ http_close_done_ok(struct node *n)
 }
 
 int
-http_close_done(struct node *n)
+http_close_done(WINDOW *errwin, struct node *n)
 {
 	int	 c;
 
-	if ((c = http_close_inner(n)) < 0)
+	if ((c = http_close_inner(errwin, n)) < 0)
 		return 0;
 	else if (c > 0)
-		return http_close_done_ok(n);
+		return http_close_done_ok(errwin, n);
 
 	n->state = STATE_CLOSE_DONE;
 	return 1;
@@ -140,7 +140,7 @@ http_close_done(struct node *n)
  * Return zero on failure, non-zero on success.
  */
 static int
-http_write_ready(struct node *n)
+http_write_ready(WINDOW *errwin, struct node *n)
 {
 	int	 c;
 
@@ -148,7 +148,7 @@ http_write_ready(struct node *n)
 		c = tls_connect_socket(n->xfer.tls, 
 			n->xfer.pfd->fd, n->host);
 		if (c < 0) {
-			warnx("%s: tls_connect_socket: %s", 
+			xwarnx(errwin, "tls_connect_socket: %s: %s", 
 				n->host, tls_error(n->xfer.tls));
 		}
 	}
@@ -164,7 +164,7 @@ http_write_ready(struct node *n)
 		n->path, n->host);
 
 	if (c < 0) {
-		warn(NULL);
+		xwarn(errwin, NULL);
 		return 0;
 	}
 
@@ -184,7 +184,7 @@ http_write_ready(struct node *n)
  * Returns zero on system failure, non-zero on success.
  */
 int
-http_init_connect(struct node *n)
+http_init_connect(WINDOW *errwin, struct node *n)
 {
 	int		   family, c, flags;
 	socklen_t	   sslen;
@@ -194,7 +194,7 @@ http_init_connect(struct node *n)
 
 	if (NULL == n->xfer.tls) {
 		if (NULL == (n->xfer.tls = tls_client())) {
-			warn(NULL);
+			xwarn(errwin, "tls_client");
 			return 0;
 		}
 	} else
@@ -202,12 +202,12 @@ http_init_connect(struct node *n)
 
 	if (NULL != n->xfer.tls) {
 		if (NULL == (cfg = tls_config_new())) {
-			warn(NULL);
+			xwarn(errwin, "tls_config_new");
 			return 0;
 		}
 		tls_config_set_protocols(cfg, TLS_PROTOCOLS_ALL);
 		if (-1 == tls_configure(n->xfer.tls, cfg)) {
-			warnx("%s: tls_configure: %s", n->host,
+			xwarnx(errwin, "tls_configure: %s: %s", n->host,
 				tls_error(n->xfer.tls));
 			return 0;
 		}
@@ -235,11 +235,11 @@ http_init_connect(struct node *n)
 	} 
 
 	if (c < 0) {
-		warn("%s: cannot convert: %s", n->host, 
+		xwarn(errwin, "cannot convert: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == c) {
-		warnx("%s: cannot convert: %s", n->host, 
+		xwarnx(errwin, "cannot convert: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	}
@@ -248,18 +248,18 @@ http_init_connect(struct node *n)
 	n->xfer.pfd->fd = socket(family, SOCK_STREAM, 0);
 
 	if (-1 == n->xfer.pfd->fd) {
-		warn("socket");
+		xwarn(errwin, "socket");
 		return 0;
 	}
 
 	/* Set up non-blocking mode. */
 
 	if (-1 == (flags = fcntl(n->xfer.pfd->fd, F_GETFL, 0))) {
-		warn("fcntl");
+		xwarn(errwin, "fcntl");
 		return 0;
 	}
 	if (-1 == fcntl(n->xfer.pfd->fd, F_SETFL, flags|O_NONBLOCK)) {
-		warn("fcntl");
+		xwarn(errwin, "fcntl");
 		return 0;
 	}
 
@@ -272,15 +272,15 @@ http_init_connect(struct node *n)
 	if (c && (EINTR == errno || EINPROGRESS == errno))
 		return 1;
 	else if (c == 0)
-		return http_write_ready(n);
+		return http_write_ready(errwin, n);
 
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno)
-		return http_close_err(n);
+		return http_close_err(errwin, n);
 
-	warn("%s: connect: %s", n->host, 
+	xwarn(errwin, "connect: %s: %s", n->host, 
 		n->addrs.addrs[n->addrs.curaddr].ip);
 	return 0;
 }
@@ -292,7 +292,7 @@ http_init_connect(struct node *n)
  * STATE_WRITE on success.
  */
 int
-http_connect(struct node *n)
+http_connect(WINDOW *errwin, struct node *n)
 {
 	int	  c;
 	int 	  error = 0;
@@ -302,11 +302,11 @@ http_connect(struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		warn("%s: poll: %s", n->host, 
+		xwarn(errwin, "poll: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
-		return http_close_err(n);
+		return http_close_err(errwin, n);
 	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
@@ -314,19 +314,19 @@ http_connect(struct node *n)
 		SOL_SOCKET, SO_ERROR, &error, &len);
 
 	if (c < 0) {
-		warn(NULL);
+		xwarn(errwin, "getsockopt");
 		return 0;
 	} else if (0 == error)
-		return http_write_ready(n);
+		return http_write_ready(errwin, n);
 
 	errno = error;
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno)
-		return http_close_err(n);
+		return http_close_err(errwin, n);
 
-	warn(NULL);
+	xwarn(errwin, "getsockopt");
 	return 0;
 }
 
@@ -339,7 +339,7 @@ http_connect(struct node *n)
  * changing of state.
  */
 int
-http_write(struct node *n)
+http_write(WINDOW *errwin, struct node *n)
 {
 	ssize_t	 ssz;
 
@@ -349,11 +349,11 @@ http_write(struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		warn("%s: poll errors: %s", n->host, 
+		xwarn(errwin, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents)
-		return http_close_err(n);
+		return http_close_err(errwin, n);
 	
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
 	     ! (POLLIN & n->xfer.pfd->revents))
@@ -370,7 +370,8 @@ http_write(struct node *n)
 			n->xfer.pfd->events = POLLIN;
 			return 1;
 		} else if (ssz < 0) {
-			warnx("%s: tls_write: %s: %s", n->host, 
+			xwarnx(errwin, "tls_write: %s: %s: %s", 
+				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
 			return 0;
@@ -379,7 +380,7 @@ http_write(struct node *n)
 		ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
 			n->xfer.wbufpos, n->xfer.wbufsz);
 		if (ssz < 0) {
-			warn("%s: write: %s", n->host, 
+			xwarn(errwin, "write: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
 			return 0;
 		}
@@ -410,7 +411,7 @@ http_write(struct node *n)
  * STATE_CONNECT_WAITING.
  */
 int
-http_read(struct node *n)
+http_read(WINDOW *errwin, struct node *n)
 {
 	ssize_t	 ssz;
 	char	 buf[1024 * 5];
@@ -423,7 +424,7 @@ http_read(struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		warnx("%s: poll errors: %s", n->host, 
+		xwarnx(errwin, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} 
@@ -443,7 +444,8 @@ http_read(struct node *n)
 			n->xfer.pfd->events = POLLIN;
 			return 1;
 		} else if (ssz < 0) {
-			warnx("%s: tls_read: %s: %s", n->host, 
+			xwarnx(errwin, "tls_read: %s: %s: %s", 
+				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
 			return 0;
@@ -451,20 +453,20 @@ http_read(struct node *n)
 	} else {
 		ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
 		if (ssz < 0) {
-			warn("%s: read: %s", n->host, 
+			xwarn(errwin, "read: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
 			return 0;
 		}
 	}
 
 	if (0 == ssz)
-		return http_close_done(n);
+		return http_close_done(errwin, n);
 
 	/* Copy static into dynamic buffer. */
 
 	pp = realloc(n->xfer.rbuf, n->xfer.rbufsz + ssz);
 	if (NULL == pp) {
-		warn(NULL);
+		xwarn(errwin, NULL);
 		return 0;
 	}
 	n->xfer.rbuf = pp;

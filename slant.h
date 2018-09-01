@@ -147,12 +147,12 @@ void	 xwarn(WINDOW *, const char *, ...);
 
 int	 dns_parse_url(WINDOW *, struct node *);
 int	 dns_resolve(WINDOW *, const char *, struct dns *);
-int	 http_init_connect(struct node *);
-int	 http_close_done(struct node *);
-int	 http_close_err(struct node *);
-int	 http_connect(struct node *);
-int	 http_write(struct node *n);
-int	 http_read(struct node *n);
+int	 http_init_connect(WINDOW *, struct node *);
+int	 http_close_done(WINDOW *, struct node *);
+int	 http_close_err(WINDOW *, struct node *);
+int	 http_connect(WINDOW *, struct node *);
+int	 http_write(WINDOW *, struct node *n);
+int	 http_read(WINDOW *, struct node *n);
 void	 draw(WINDOW *, struct draw *, const struct node *, size_t, time_t);
 void	 drawtimes(WINDOW *, const struct draw *, const struct node *, size_t, time_t);
 struct json_value_s *json_parse(const void *, size_t);

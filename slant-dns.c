@@ -2,7 +2,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include <err.h>
 #include <netdb.h>
 #include <ncurses.h>
 #include <stdio.h>
