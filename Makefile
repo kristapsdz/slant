@@ -1,7 +1,5 @@
-PREFIX	  ?= /usr/local
-WPREFIX	  ?= /var/www
-CPPFLAGS  ?= -I/usr/local/include
-LDFLAGS	  ?= -L/usr/local/lib
+PREFIX	   = /usr/local
+WPREFIX	   = /var/www
 
 CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
