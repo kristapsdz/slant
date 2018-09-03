@@ -66,19 +66,21 @@ install: slant-collectd slant-cgi slant slant-upgrade
 	mkdir -p $(DESTDIR)$(CGIBIN)
 	install -m 0444 slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
 	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
-	install -m 0555 slant-collectd $(DESTDIR)$(SBINDIR)
+	install -m 0555 slant-collectd slant-upgrade $(DESTDIR)$(SBINDIR)
 	install -m 0555 slant $(DESTDIR)$(BINDIR)
 	install -m 0444 slant.1 $(DESTDIR)$(MANDIR)/man1
-	install -m 0444 slant-collectd.8 $(DESTDIR)$(MANDIR)/man8
+	install -m 0444 slant-collectd.8 slant-upgrade.8 $(DESTDIR)$(MANDIR)/man8
 
 uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/slant/slant.kwbp
 	rmdir $(DESTDIR)$(SHAREDIR)/slant
 	rm -f $(DESTDIR)$(CGIBIN)/slant-cgi
 	rm -f $(DESTDIR)$(SBINDIR)/slant-collectd
+	rm -f $(DESTDIR)$(SBINDIR)/slant-upgrade
 	rm -f $(DESTDIR)$(BINDIR)/slant
 	rm -f $(DESTDIR)$(MANDIR)/man1/slant.1
 	rm -f $(DESTDIR)$(MANDIR)/man8/slant-collectd.8
+	rm -f $(DESTDIR)$(MANDIR)/man8/slant-upgrade.8
 
 slant-upgrade: slant-upgrade.in.sh
 	sed -e "s!@DATADIR@!$(DATADIR)!g" \

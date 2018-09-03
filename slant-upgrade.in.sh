@@ -6,6 +6,8 @@ then
 	exit 1
 fi
 
+set -e
+
 if [ ! -f "@DATADIR@/slant.db" ]
 then
 	echo "@DATADIR@/slant.db: installing new"
