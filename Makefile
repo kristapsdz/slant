@@ -1,14 +1,20 @@
+PREFIX	  ?= /usr/local
+WPREFIX	  ?= /var/www
+CPPFLAGS  ?= -I/usr/local/include
+LDFLAGS	  ?= -L/usr/local/lib
+
 CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
 CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
-CPPFLAGS   = -I/usr/local/include
-LDFLAGS	   = -L/usr/local/lib
-BINDIR     = /usr/local/bin
-MANDIR	   = /usr/local/man
-CGIBIN	   = /var/www/cgi-bin
-DATADIR	   = /var/www/data
+
+BINDIR     = $(PREFIX)/bin
+SBINDIR    = $(PREFIX)/sbin
+MANDIR	   = $(PREFIX)/man
+SHAREDIR   = $(PREFIX)/share
+CGIBIN	   = $(WPREFIX)/cgi-bin
+DATADIR	   = $(WPREFIX)/data
+
 DBFILE	   = /data/slant.db
 VERSION	   = 0.0.1
-SHAREDIR   = /usr/local/share
 WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
@@ -16,7 +22,7 @@ sinclude Makefile.local
 DOTAR	   = Makefile \
 	     slant-cgi.c \
 	     slant-collectd-openbsd.c \
-	     slant-collectd.1 \
+	     slant-collectd.8 \
 	     slant-collectd.c \
 	     slant-collectd.h \
 	     slant-dns.c \
@@ -46,7 +52,7 @@ installwww: www
 	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots/slant-$(VERSION).tar.gz
 	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots
 
-slant.tar.gz:
+slant.tar.gz: $(DOTAR)
 	mkdir -p .dist/slant-$(VERSION)/
 	install -m 0644 $(DOTAR) .dist/slant-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
@@ -55,22 +61,24 @@ slant.tar.gz:
 install: slant-collectd slant-cgi slant slant-upgrade
 	mkdir -p $(DESTDIR)$(SHAREDIR)/slant
 	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(SBINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(CGIBIN)
 	install -m 0444 slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
 	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
-	install -m 0555 slant-collectd $(DESTDIR)$(BINDIR)
+	install -m 0555 slant-collectd $(DESTDIR)$(SBINDIR)
 	install -m 0555 slant $(DESTDIR)$(BINDIR)
-	install -m 0444 slant-collectd.1 slant.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0444 slant.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0444 slant-collectd.8 $(DESTDIR)$(MANDIR)/man8
 
 uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/slant/slant.kwbp
 	rmdir $(DESTDIR)$(SHAREDIR)/slant
 	rm -f $(DESTDIR)$(CGIBIN)/slant-cgi
-	rm -f $(DESTDIR)$(BINDIR)/slant-collectd
+	rm -f $(DESTDIR)$(SBINDIR)/slant-collectd
 	rm -f $(DESTDIR)$(BINDIR)/slant
-	rm -f $(DESTDIR)$(MANDIR)/man1/slant-collectd.1
 	rm -f $(DESTDIR)$(MANDIR)/man1/slant.1
+	rm -f $(DESTDIR)$(MANDIR)/man8/slant-collectd.8
 
 slant-upgrade: slant-upgrade.in.sh
 	sed -e "s!@DATADIR@!$(DATADIR)!g" \

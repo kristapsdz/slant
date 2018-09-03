@@ -1,11 +1,13 @@
 .Dd $Mdocdate$
-.Dt SLANT-COLLECTD 1
+.Dt SLANT-COLLECTD 8
 .Os
 .Sh NAME
 .Nm slant-collectd
 .Nd daemon to collect system statistics
 .Sh SYNOPSIS
 .Nm slant-collectd
+.Op Fl n
+.Op Fl d Ar discs
 .Op Fl f Ar dbfile
 .Sh DESCRIPTION
 The
@@ -14,12 +16,23 @@ utility collects system statistics and records them in
 .Ar dbfile ,
 which defaults to
 .Pa /var/www/data/slant.db .
+Its arguments are as follows:
+.Bl -tag -width Ds
+.It Fl n
+Do not open the database: print data as columns to standard output.
+.It Fl d Ar discs
+Discs to monitor.
+Multiple discs may be separated by a comma.
+By default, all discs are monitored.
+.It Fl f Ar dbfile
+The SQLite database file.
+.El
 .Pp
 To end collection, kill the process with
 .Dv SIGINT
 or
 .Dv SIGTERM ,
-which will gracefully end the collectoin sequence.
+which will gracefully end the collection sequence.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -30,7 +43,12 @@ which will gracefully end the collectoin sequence.
 .\" .Sh FILES
 .\" .Sh EXIT STATUS
 .\" For sections 1, 6, and 8 only.
-.\" .Sh EXAMPLES
+.Sh EXAMPLES
+On a system with software RAID (or software FDE), monitor only the root
+disc to prevent bandwidth duplication.
+.Bd -literal
+# slant-collectd -d sd0
+.Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS
