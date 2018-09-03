@@ -174,6 +174,10 @@ xwarnx(WINDOW *errwin, const char *fmt, ...)
 {
 	va_list ap;
 
+	wattron(errwin, A_BOLD);
+	waddstr(errwin, "Warning");
+	wattroff(errwin, A_BOLD);
+	waddstr(errwin, ": ");
 	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
@@ -413,6 +417,8 @@ main(int argc, char *argv[])
 	}
 
 out:
+	delwin(errwin);
+	delwin(mainwin);
 	endwin();
 	nodes_free(n, nsz);
 	free(pfds);
