@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <paths.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -217,6 +218,18 @@ main(int argc, char *argv[])
 	char		*d, *discs = NULL;
 	struct syscfg	 cfg;
 
+	/*
+	 * FIXME: relax this restriction.
+	 * This is just because we can't use pledge() due to the
+	 * sysctls we call.
+	 * So we need to use chroot just for some basic security from
+	 * polluting our database.
+	 * Once we have unveil(), this will no longer be necessary.
+	 */
+
+	if (0 != getuid())
+		errx(EXIT_FAILURE, "must be run as root");
+
 	memset(&cfg, 0, sizeof(struct syscfg));
 
 	while (-1 != (c = getopt(argc, argv, "d:nf:")))
@@ -228,7 +241,7 @@ main(int argc, char *argv[])
 			dbfile = optarg;
 			break;
 		case 'n':
-			noop = 1;
+			noop = 2;
 			break;
 		default:
 			goto usage;
@@ -258,6 +271,13 @@ main(int argc, char *argv[])
 
 	if ( ! noop && NULL == (db = db_open(dbfile)))
 		errx(EXIT_FAILURE, "%s", dbfile);
+
+	/* FIXME: once we have unveil, this is moot. */
+
+	if (-1 == chroot(_PATH_VAREMPTY))
+		err(EXIT_FAILURE, "%s", _PATH_VAREMPTY);
+	else if (-1 == chdir("/"))
+		err(EXIT_FAILURE, "/");
 
 	if (NULL != db)
 		db_role(db, ROLE_produce);
