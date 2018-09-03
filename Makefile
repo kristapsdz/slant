@@ -29,6 +29,7 @@ DOTAR	   = Makefile \
 	     slant-json.c \
 	     slant-jsonobj.c \
 	     slant-upgrade.in.sh \
+	     slant-upgrade.8 \
 	     slant.1 \
 	     slant.c \
 	     slant.h \
