@@ -10,6 +10,7 @@ set -e
 
 if [ ! -f "@DATADIR@/slant.db" ]
 then
+	mkdir -p "@DATADIR@"
 	echo "@DATADIR@/slant.db: installing new"
 	kwebapp-sql "@SHAREDIR@/slant/slant.kwbp" | sqlite3 "@DATADIR@/slant.db"
 	chown www "@DATADIR@/slant.db"
