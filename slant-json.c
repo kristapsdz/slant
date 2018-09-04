@@ -111,12 +111,10 @@ enum json_parse_flags_e {
        json_parse_flags_allow_multi_line_strings)
 };
 
-#if 0
 // Parse a JSON text file, returning a pointer to the root of the JSON
 // structure. json_parse performs 1 call to malloc for the entire encoding.
 // Returns 0 if an error occurred (malformed JSON input, or malloc failed)
 struct json_value_s *json_parse(const void *src, size_t src_size);
-#endif
 
 // Parse a JSON text file, returning a pointer to the root of the JSON
 // structure. json_parse performs 1 call to malloc for the entire encoding.
@@ -256,6 +254,7 @@ struct json_value_ex_s {
   size_t row_no;
 };
 
+#if 0
 // a parsing error code
 enum json_parse_error_e {
   // no error occurred (huzzah!)
@@ -311,6 +310,7 @@ struct json_parse_result_s {
   // the row number for the error, in bytes
   size_t error_row_no;
 };
+#endif
 
 struct json_parse_state_s {
   const char *src;

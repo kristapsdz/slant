@@ -14,6 +14,22 @@
 #include "extern.h"
 #include "slant.h"
 
+static const char *const json_errors[] =
+{
+	"no error",
+	"expected comma or closing bracket",
+	"expected colon",
+	"expected opening quote",
+	"invalid string escape sequence",
+	"invalid number format",
+	"invalid value",
+	"premature end of buffer",
+	"invalid string",
+	"allocator failed",
+	"unexpected trailing characters",
+	"unknown"
+};
+
 static int
 jsonobj_parse_int(WINDOW *errwin, const struct node *n,
 	int64_t *res, const struct json_number_s *num)
@@ -187,12 +203,19 @@ jsonobj_parse(WINDOW *errwin,
 	struct json_value_s *s;
 	struct json_object_s *obj;
 	struct json_object_element_s *e;
+	struct json_parse_result_s res;
 	int	 rc;
 
 	/* Consider this a recoverable error. */
 
-	if (NULL == (s = json_parse(str, sz))) {
-		xwarnx(errwin, "json_parse: %s", n->host);
+	memset(&res, 0, sizeof(struct json_parse_result_s));
+	s = json_parse_ex(str, sz, 0, NULL, NULL, &res);
+	if (NULL == s) {
+		xwarnx(errwin, "json_parse_ex: %s:%zu:%zu: %s", 
+			n->host,
+			res.error_line_no,
+			res.error_row_no,
+			json_errors[res.error]);
 		return 0;
 	}
 

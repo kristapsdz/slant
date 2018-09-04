@@ -139,6 +139,29 @@ struct	json_object_s {
 	size_t 	 length;
 };
 
+enum json_parse_error_e {
+	json_parse_error_none = 0,
+	json_parse_error_expected_comma_or_closing_bracket,
+	json_parse_error_expected_colon,
+	json_parse_error_expected_opening_quote,
+	json_parse_error_invalid_string_escape_sequence,
+	json_parse_error_invalid_number_format,
+	json_parse_error_invalid_value,
+	json_parse_error_premature_end_of_buffer,
+	json_parse_error_invalid_string,
+	json_parse_error_allocator_failed,
+	json_parse_error_unexpected_trailing_characters,
+	json_parse_error_unknown
+};
+
+struct json_parse_result_s {
+	size_t error;
+	size_t error_offset;
+	size_t error_line_no;
+	size_t error_row_no;
+};
+
+
 __BEGIN_DECLS
 
 void	 xdbg(WINDOW *, const char *, ...)
@@ -161,7 +184,10 @@ int	 http_read(WINDOW *, struct node *n);
 void	 draw(WINDOW *, struct draw *, const struct node *, size_t, time_t);
 void	 drawtimes(WINDOW *, const struct draw *, const struct node *, size_t, time_t);
 
-struct json_value_s *json_parse(const void *, size_t);
+struct json_value_s *
+	 json_parse_ex(const void *, size_t, size_t, 
+		void *(*)(void *, size_t), void *, 
+		struct json_parse_result_s *);
 int 	 jsonobj_parse(WINDOW *, struct node *n, const char *, size_t);
 
 __END_DECLS
