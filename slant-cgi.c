@@ -118,7 +118,10 @@ main(void)
 		return EXIT_FAILURE;
 	}
 
-	er = khttp_parse(&r, NULL, 0, pages, PAGE__MAX, PAGE_INDEX);
+	er = khttp_parsex(&r, ksuffixmap,
+             kmimetypes, KMIME__MAX, NULL, 0,
+             pages, PAGE__MAX, KMIME_APP_JSON,
+             PAGE_INDEX, NULL, NULL, 0, NULL);
 
 	if (KCGI_OK != er) {
 		kutil_warnx(NULL, NULL, "%s", kcgi_strerror(er));
