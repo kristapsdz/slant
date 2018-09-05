@@ -193,24 +193,52 @@ draw_pct(WINDOW *win, double vv)
  * than 120 seconds, draw as red.
  */
 static void
-draw_interval(WINDOW *win, time_t last, time_t now)
+draw_interval(WINDOW *win, time_t waittime, 
+	time_t timeo, time_t last, time_t now)
 {
 	time_t	 ospan, span, hr, min;
+	int	 attrs = 0, b1, b2;
 
 	if (0 == last) {
 		waddstr(win, "---:--:--");
 		return;
 	}
 
+	b1 = A_BOLD | COLOR_PAIR(1);
+	b2 = A_BOLD | COLOR_PAIR(2);
+
 	if ((span = now - last) < 0)
 		span = 0;
 	
 	ospan = span;
 
-	if (ospan >= 120)
-		wattron(win, A_BOLD | COLOR_PAIR(2));
-	else if (ospan >= 60)
-		wattron(win, A_BOLD | COLOR_PAIR(1));
+	/*
+	 * Be smart about when we colour our last-seen times.
+	 * If we're on a short interval (waittime < 30), then give us
+	 * some leeway---connections might take time.
+	 * Otherwise, assume connections happen "instantly".
+	 */
+
+	if (waittime == timeo) {
+		/* Time since last contacting remote. */
+		if (waittime <= 30) {
+			if (ospan >= waittime * 8)
+				wattron(win, attrs = b2);
+			else if (ospan >= waittime * 4)
+				wattron(win, attrs = b1);
+		} else {
+			if (ospan >= waittime * 4)
+				wattron(win, attrs = b2);
+			else if (ospan >= waittime * 2)
+				wattron(win, attrs = b1);
+		}
+	} else {
+		/* Time since remote collection of data. */
+		if (ospan >= timeo + (waittime * 8))
+			wattron(win, attrs = b2);
+		else if (ospan >= timeo + (waittime * 4))
+			wattron(win, attrs = b1);
+	}
 
 	hr = span / (60 * 60);
 	span -= hr * 60 * 60;
@@ -220,10 +248,8 @@ draw_interval(WINDOW *win, time_t last, time_t now)
 		(long long)hr, (long long)min, 
 		(long long)span);
 
-	if (ospan >= 120)
-		wattroff(win, A_BOLD | COLOR_PAIR(2));
-	else if (ospan >= 60)
-		wattroff(win, A_BOLD | COLOR_PAIR(1));
+	if (attrs)
+		wattroff(win, attrs);
 }
 
 static void
@@ -511,7 +537,7 @@ draw_header(WINDOW *win,
 }
 
 void
-draw(WINDOW *win, struct draw *d, 
+draw(WINDOW *win, struct draw *d, time_t timeo,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i, sz, maxhostsz, maxipsz,
@@ -578,13 +604,13 @@ draw(WINDOW *win, struct draw *d,
 		waddch(win, ' ');
 		getyx(win, y, x);
 		intervalpos = x;
-		draw_interval(win, get_last(&n[i]), t);
+		draw_interval(win, 15, timeo, get_last(&n[i]), t);
 		waddch(win, ' ');
 		draw_main_separator(win);
 		waddch(win, ' ');
 		getyx(win, y, x);
 		lastseenpos = x;
-		draw_interval(win, n[i].lastseen, t);
+		draw_interval(win, timeo, timeo, n[i].lastseen, t);
 	}
 
 	/* Remember for updating times. */
@@ -606,7 +632,7 @@ draw(WINDOW *win, struct draw *d,
  * and keeps our display running tight.
  */
 void
-drawtimes(WINDOW *win, const struct draw *d, 
+drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i;
@@ -618,8 +644,8 @@ drawtimes(WINDOW *win, const struct draw *d,
 
 	for (i = 0; i < nsz; i++) {
 		wmove(win, i + 1, d->intervalpos);
-		draw_interval(win, get_last(&n[i]), t);
+		draw_interval(win, 15, timeo, get_last(&n[i]), t);
 		wmove(win, i + 1, d->lastseenpos);
-		draw_interval(win, n[i].lastseen, t);
+		draw_interval(win, timeo, timeo, n[i].lastseen, t);
 	}
 }

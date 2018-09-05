@@ -181,8 +181,10 @@ int	 http_connect(WINDOW *, struct node *);
 int	 http_write(WINDOW *, struct node *n);
 int	 http_read(WINDOW *, struct node *n);
 
-void	 draw(WINDOW *, struct draw *, const struct node *, size_t, time_t);
-void	 drawtimes(WINDOW *, const struct draw *, const struct node *, size_t, time_t);
+void	 draw(WINDOW *, struct draw *, time_t,
+		const struct node *, size_t, time_t);
+void	 drawtimes(WINDOW *, const struct draw *, time_t,
+		const struct node *, size_t, time_t);
 
 struct json_value_s *
 	 json_parse_ex(const void *, size_t, size_t, 

@@ -244,7 +244,7 @@ main(int argc, char *argv[])
 	struct timespec	 ts;
 	struct draw	 d;
 	sigset_t	 mask, oldmask;
-	time_t		 last, now, waittime = 15;
+	time_t		 last, now, waittime = 60;
 	WINDOW		*errwin = NULL, *mainwin = NULL;
 	char		*cp;
 
@@ -449,13 +449,13 @@ main(int argc, char *argv[])
 		 */
 
 		if ((c || first) && now > last) {
-			draw(mainwin, &d, n, nsz, now);
+			draw(mainwin, &d, waittime, n, nsz, now);
 			for (i = 0; i < nsz; i++) 
 				n[i].dirty = 0;
 			wrefresh(mainwin);
 			first = 0;
 		} else if (now > last) {
-			drawtimes(mainwin, &d, n, nsz, now);
+			drawtimes(mainwin, &d, waittime, n, nsz, now);
 			wrefresh(mainwin);
 		}
 
@@ -476,6 +476,9 @@ out:
 	free(pfds);
 	return EXIT_SUCCESS;
 usage:
-	fprintf(stderr, "usage: %s [-o order] addr...\n", getprogname());
+	fprintf(stderr, "usage: %s "
+		"[-o order] "
+		"[-w waittime] "
+		"addr...\n", getprogname());
 	return EXIT_FAILURE;
 }
