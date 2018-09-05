@@ -33,11 +33,64 @@ for immediate CPU, or
 for immediate memory.
 .It Fl w
 Wait time before querying hosts.
-This must be at least 15 seconds.
+This must be at least 15 seconds (minimum collection interval).
 .El
 .Pp
 By default, hosts are ordered as given on the command line and are
-queried every 15 seconds.
+queried every 60 seconds.
+By default, data is displayed as a table with the following columns:
+.Bl -tag -width Ds
+.It hostname
+The collection domain name.
+.It processor
+CPU time averaged across all cores/CPUs on the system.
+This is shown as an average over three intervals: in the last 15
+seconds (instantaneous), in the last hour, in the last day.
+Percentages more than 80% are coloured red; more than 50%, yellow.
+It is preceded by a bar graph of the instantaneous view coloured in the
+same way.
+.It memory
+Memory usage (all active memory over all pages).
+This is shown as an average over three intervals: in the last 15
+seconds (instantaneous), in the last hour, in the last day.
+Percentages more than 80% are coloured red; more than 50%, yellow.
+It is preceded by a bar graph of the instantaneous view coloured in the
+same way.
+.It network rx:tx
+Data received and transmitted as averaged over all network devices.
+This is shown as an average over three intervals: in the last 15
+seconds (instantaneous), in the last hour, in the last day.
+Units are human-readably scaled.
+.It disc read:write
+Data read and written as averaged over all configured devices.
+This is shown as an average over three intervals: in the last 15
+seconds (instantaneous), in the last hour, in the last day.
+Units are human-readably scaled.
+.It address
+The IP address (IPV4 or IPV6) of the host.
+.It last
+The last data collection time as recorded by the remote host's
+collection system.
+Shown as hours, minutes, seconds elapsed.
+If a worrying amount of elapsed time has shown, the time will be shown
+in yellow.
+If the amount indicates problems, it will be shown in red.
+.It ping
+The last connection time as recorded by the local host's
+Shown as hours, minutes, seconds elapsed.
+If a worrying amount of elapsed time has shown, the time will be shown
+in yellow.
+If the amount indicates problems, it will be shown in red.
+.El
+.Pp
+Data is not recorded to the local machine: it is
+.Dq live .
+So if the front-end is shut down and restarted with hosts that are
+unresponsive, their data will not be refreshed til the next access.
+.Pp
+An error and debug log is shown below the table of all hosts.
+The log is saved to
+.Pa ~/.slant-errlog .
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
