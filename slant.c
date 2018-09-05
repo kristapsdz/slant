@@ -362,6 +362,8 @@ main(int argc, char *argv[])
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(2, COLOR_RED, COLOR_BLACK);
 
+	/* FIXME: handle resize events. */
+
 	getmaxyx(stdscr, maxy, maxx);
 
 	mainwin = subwin(stdscr, maxy - 10, maxx, 0, 0);

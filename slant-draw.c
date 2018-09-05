@@ -542,7 +542,13 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 {
 	size_t	 i, sz, maxhostsz, maxipsz,
 		 lastseenpos, intervalpos, chhead;
-	int	 x, y;
+	int	 x, y, maxy, maxx;
+
+	/* Don't let us run off the window. */
+
+	getmaxyx(win, maxy, maxx);
+	if (nsz > (size_t)maxy - 1)
+		nsz = maxy - 1;
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
@@ -636,11 +642,18 @@ drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i;
+	int	 maxy, maxx;
 
 	/* Hasn't collected data yet... */
 
 	if (0 == d->intervalpos || 0 == d->lastseenpos)
 		return;
+
+	/* Don't let us run off the window. */
+
+	getmaxyx(win, maxy, maxx);
+	if (nsz > (size_t)maxy - 1)
+		nsz = maxy - 1;
 
 	for (i = 0; i < nsz; i++) {
 		wmove(win, i + 1, d->intervalpos);
