@@ -24,7 +24,9 @@ trap "rm -f $TMPFILE" ERR EXIT
 
 echo "@DATADIR@/slant.db: patching existing"
 
-kwebapp-sqldiff "@DATADIR@/slant.kwbp"  "@SHAREDIR@/slant/slant.kwbp" > $TMPFILE
+( echo "BEGIN EXCLUSIVE TRANSACTION;" ; \
+  kwebapp-sqldiff "@DATADIR@/slant.kwbp"  "@SHAREDIR@/slant/slant.kwbp" ; \
+  echo "COMMIT TRANSACTION;" ; ) > $TMPFILE
 
 if [ $? -ne 0 ]
 then
