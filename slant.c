@@ -165,6 +165,7 @@ xloghead(WINDOW *errwin)
 	tm = localtime(&t);
 	strftime(buf, sizeof(buf), "%F %T", tm);
 	waddstr(errwin, buf);
+	fprintf(stderr, "%s: ", buf);
 	wprintw(errwin, " %lc ", L'\x2502');
 }
 
@@ -178,9 +179,15 @@ xwarn(WINDOW *errwin, const char *fmt, ...)
 	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
 	wprintw(errwin, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
+	fprintf(stderr, "%s%s\n", 
+		NULL == fmt ? "" : ": ", strerror(er));
 	wrefresh(errwin);
+	fflush(stderr);
 }
 
 void
@@ -193,11 +200,17 @@ xwarnx(WINDOW *errwin, const char *fmt, ...)
 	waddstr(errwin, "Warning");
 	wattroff(errwin, A_BOLD);
 	waddstr(errwin, ": ");
+	fprintf(stderr, "Warning: ");
 	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
 	waddch(errwin, '\n');
+	fputc('\n', stderr);
 	wrefresh(errwin);
+	fflush(stderr);
 }
 
 void
@@ -209,10 +222,15 @@ xdbg(WINDOW *errwin, const char *fmt, ...)
 		return;
 	xloghead(errwin);
 	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
 	waddch(errwin, '\n');
+	fputc('\n', stderr);
 	wrefresh(errwin);
+	fflush(stderr);
 }
 
 int
@@ -226,9 +244,27 @@ main(int argc, char *argv[])
 	struct timespec	 ts;
 	struct draw	 d;
 	sigset_t	 mask, oldmask;
-	time_t		 last, now;
-	time_t		 waittime = 15;
+	time_t		 last, now, waittime = 15;
 	WINDOW		*errwin = NULL, *mainwin = NULL;
+	char		*cp;
+
+	if (-1 == pledge("cpath wpath tty rpath dns inet stdio", NULL))
+		err(EXIT_FAILURE, NULL);
+
+	/*
+	 * Open $HOME/.slant-errlog to catch any errors.
+	 * This is because our JSON has a tendency to fail and I'm not
+	 * sure why.
+	 * So we can capture the entire JSON buffer for post-analysis.
+	 */
+
+	if (NULL != getenv("HOME")) {
+		c = asprintf(&cp, 
+			"%s/.slant-errlog", getenv("HOME"));
+		if (c < 0)
+			err(EXIT_FAILURE, NULL);
+		freopen(cp, "a", stderr);
+	}
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);

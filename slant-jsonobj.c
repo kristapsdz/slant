@@ -216,6 +216,10 @@ jsonobj_parse(WINDOW *errwin,
 			res.error_line_no,
 			res.error_row_no,
 			json_errors[res.error]);
+		fprintf(stderr, "------>------\n");
+		fprintf(stderr, "%.*s\n", (int)sz, str);
+		fprintf(stderr, "------<------\n");
+		fflush(stderr);
 		return 0;
 	}
 
