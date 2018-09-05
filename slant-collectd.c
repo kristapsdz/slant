@@ -49,6 +49,7 @@ update_interval(struct kwbp *db, time_t span,
 			first->netrx + r->netrx, 
 			first->discread + r->discread, 
 			first->discwrite + r->discwrite, 
+			first->nprocs + r->nprocs,
 			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
@@ -56,13 +57,14 @@ update_interval(struct kwbp *db, time_t span,
 		assert(NULL != last);
 		db_record_update_tail(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
-			r->discread, r->discwrite,
+			r->discread, r->discwrite, r->nprocs,
 			last->id);
 	} else {
 		/* New entry. */
 		db_record_insert(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
-			r->discread, r->discwrite, ival);
+			r->discread, r->discwrite, r->nprocs, 
+			ival);
 	}
 }
 
@@ -72,13 +74,15 @@ print(const struct sysinfo *p)
 
 	printf("%9.1f%% %9.1f%% "
 		"%10" PRId64 " %10" PRId64 " "
-		"%10" PRId64 " %10" PRId64 "\n",
+		"%10" PRId64 " %10" PRId64 " "
+		"%9.1f%%\n",
 		sysinfo_get_cpu_avg(p),
 		sysinfo_get_mem_avg(p),
 		sysinfo_get_nettx_avg(p),
 		sysinfo_get_netrx_avg(p),
 		sysinfo_get_discread_avg(p),
-		sysinfo_get_discwrite_avg(p));
+		sysinfo_get_discwrite_avg(p),
+		sysinfo_get_nprocs(p));
 }
 
 /*
@@ -108,6 +112,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 	rr.netrx = sysinfo_get_netrx_avg(p);
 	rr.discread = sysinfo_get_discread_avg(p);
 	rr.discwrite = sysinfo_get_discwrite_avg(p);
+	rr.nprocs = sysinfo_get_nprocs(p);
 
 	/* 
 	 * First count what we have.
@@ -166,12 +171,12 @@ update(struct kwbp *db, const struct sysinfo *p,
 		assert(NULL != first_byqmin);
 		db_record_update_tail(db, t, 1, 
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
-			rr.discread, rr.discwrite,
+			rr.discread, rr.discwrite, rr.nprocs,
 			last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
-			rr.discread, rr.discwrite,
+			rr.discread, rr.discwrite, rr.nprocs,
 			INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */

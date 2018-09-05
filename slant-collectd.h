@@ -18,6 +18,7 @@ int64_t		 sysinfo_get_nettx_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_netrx_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_discread_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_discwrite_avg(const struct sysinfo *);
+double		 sysinfo_get_nprocs(const struct sysinfo *);
 
 __END_DECLS
 

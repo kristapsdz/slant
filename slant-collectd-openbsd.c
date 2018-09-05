@@ -96,6 +96,7 @@ struct	sysinfo {
 	size_t		 sample; /* sample number */
 	int		 pageshift; /* used for memory pages */
 	double		 mem_avg; /* average memory */
+	double		 nproc_pct; /* nprocs percent */
 	int64_t         *cpu_states; /* used for cpu compute */
 	double		 cpu_avg; /* average cpu */
 	int64_t        **cp_time; /* used for cpu compute */
@@ -269,6 +270,30 @@ sysinfo_update_mem(struct sysinfo *p)
 	p->mem_avg = 100.0 *
 		PAGETOK(uvmexp.active, p->pageshift) /
 		(double)PAGETOK(uvmexp.npages, p->pageshift);
+	return 1;
+}
+
+static int
+sysinfo_update_nprocs(struct sysinfo *p)
+{
+	size_t	 size;
+	int	 nprocs, maxproc;
+	int 	 cp_nproc_mib[] = { CTL_KERN, KERN_NPROCS },
+		 cp_maxproc_mib[] = { CTL_KERN, KERN_MAXPROC };
+
+	size = sizeof(int);
+
+	if (sysctl(cp_nproc_mib, 2, &nprocs, &size, NULL, 0) < 0) {
+		warn("sysctl: CTL_KERN, KERN_NPROCS");
+		return 0;
+	}
+
+	if (sysctl(cp_maxproc_mib, 2, &maxproc, &size, NULL, 0) < 0) {
+		warn("sysctl: CTL_KERN, KERN_MAXPROC");
+		return 0;
+	}
+
+	p->nproc_pct = 100.0 * nprocs / (double)maxproc;
 	return 1;
 }
 
@@ -482,6 +507,8 @@ int
 sysinfo_update(const struct syscfg *cfg, struct sysinfo *p)
 {
 
+	if ( ! sysinfo_update_nprocs(p))
+		return 0;
 	if ( ! sysinfo_update_cpu(p))
 		return 0;
 	if ( ! sysinfo_update_mem(p))
@@ -543,4 +570,11 @@ sysinfo_get_discwrite_avg(const struct sysinfo *p)
 	if (1 == p->sample)
 		return 0;
 	return p->disc_wavg;
+}
+
+double
+sysinfo_get_nprocs(const struct sysinfo *p)
+{
+
+	return p->nproc_pct;
 }

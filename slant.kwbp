@@ -41,6 +41,9 @@ struct	record {
 		"Read bytes per second over all configured discs.";
 	field discwrite int comment
 		"Written bytes per second over all configured discs.";
+	field nprocs double comment
+		"The percentage of processes running over the maximum
+		 number of possible processes.";
 
 	field interval enum interval comment
 		"The type of record.";
@@ -49,14 +52,16 @@ struct	record {
 		 the tail entry).";
 
 	insert;
+
 	list: name lister order ctime desc comment
 		"List all entries, ordered by record time.";
+
 	update ctime, entries, cpu, mem, nettx, netrx, discread,
-		discwrite: id: name tail comment
+		discwrite, nprocs: id: name tail comment
 		"Take the tail of the circular queue and refresh its
 		contents, making it the new head.";
-	update entries, cpu, mem, nettx, netrx, discread, discwrite: id:
-		name current comment
+	update entries, cpu, mem, nettx, netrx, discread, discwrite,
+		nprocs: id: name current comment
 		"Update the current record.
 		 This is the record within the current quarter-minute
 		 (if qmin), minute (if min), or hour (if hour).";
