@@ -155,12 +155,26 @@ cmp_host(const void *p1, const void *p2)
 	return strcmp(n1->host, n2->host);
 }
 
+static void
+xloghead(WINDOW *errwin)
+{
+	char	 	 buf[32];
+	struct tm	*tm;
+	time_t		 t = time(NULL);
+
+	tm = localtime(&t);
+	strftime(buf, sizeof(buf), "%F %T", tm);
+	waddstr(errwin, buf);
+	wprintw(errwin, " %lc ", L'\x2502');
+}
+
 void
 xwarn(WINDOW *errwin, const char *fmt, ...)
 {
 	va_list  ap;
 	int	 er = errno;
 
+	xloghead(errwin);
 	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
@@ -174,6 +188,7 @@ xwarnx(WINDOW *errwin, const char *fmt, ...)
 {
 	va_list ap;
 
+	xloghead(errwin);
 	wattron(errwin, A_BOLD);
 	waddstr(errwin, "Warning");
 	wattroff(errwin, A_BOLD);
@@ -192,6 +207,7 @@ xdbg(WINDOW *errwin, const char *fmt, ...)
 
 	if ( ! debug) 
 		return;
+	xloghead(errwin);
 	va_start(ap, fmt);
 	vwprintw(errwin, fmt, ap);
 	va_end(ap);
