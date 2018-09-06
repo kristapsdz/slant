@@ -291,6 +291,9 @@ sysinfo_update_nprocs(struct sysinfo *p)
 	if (sysctl(cp_maxproc_mib, 2, &maxproc, &size, NULL, 0) < 0) {
 		warn("sysctl: CTL_KERN, KERN_MAXPROC");
 		return 0;
+	} else if (0 == maxproc) {
+		warnx("sysctl: CTL_KERN, KERN_MAXPROC returns 0");
+		return 0;
 	}
 
 	p->nproc_pct = 100.0 * nprocs / (double)maxproc;
