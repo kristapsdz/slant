@@ -18,6 +18,12 @@
 #include "extern.h"
 #include "slant.h"
 
+/*
+ * Close out a connection (its file descriptor).
+ * This is sensitive to whether we're https (tls_close) or not.
+ * Return zero if the closing needs reentrancy (we need to re-call the
+ * function), non-zero if the connection has closed.
+ */
 static int
 http_close_inner(WINDOW *errwin, struct node *n)
 {
@@ -38,28 +44,8 @@ http_close_inner(WINDOW *errwin, struct node *n)
 		return 0;
 	} 
 	
-#if 0
-	/* This almost always reports superfluous errors. */
-	if (c < 0) {
-		warnx("%s: tls_close: %s", n->host,
-			tls_error(n->xfer.tls));
-		return -1;
-	}
-#endif
-
 	close(n->xfer.pfd->fd);
 	n->xfer.pfd->fd = -1;
-	return 1;
-}
-
-static int
-http_close_err_ok(struct node *n)
-{
-
-	n->addrs.curaddr = 
-		(n->addrs.curaddr + 1) % n->addrs.addrsz;
-	n->state = STATE_CONNECT_WAITING;
-	n->waitstart = time(NULL);
 	return 1;
 }
 
@@ -68,10 +54,13 @@ http_close_err(WINDOW *errwin, struct node *n)
 {
 	int	 c;
 
-	if ((c = http_close_inner(errwin, n)) < 0)
-		return 0;
-	else if (c > 0)
-		return http_close_err_ok(n);
+	if (0 != (c = http_close_inner(errwin, n))) {
+		n->addrs.curaddr = 
+			(n->addrs.curaddr + 1) % n->addrs.addrsz;
+		n->state = STATE_CONNECT_WAITING;
+		n->waitstart = time(NULL);
+		return 1;
+	}
 
 	n->state = STATE_CLOSE_ERR;
 	return 1;
@@ -83,9 +72,10 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 	char	*end, *sv, *start = n->xfer.rbuf;
 	size_t	 len, sz = n->xfer.rbufsz;
 	int	 rc, httpok = 0;
+	time_t	 t = time(NULL);
 
 	n->state = STATE_CONNECT_WAITING;
-	n->waitstart = time(NULL);
+	n->waitstart = t;
 
 	while (NULL != (end = memmem(start, sz, "\r\n", 2))) {
 		sv = start;
@@ -94,21 +84,20 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 		sz -= len + 2;
 		if (0 == len)
 			break;
-		sv[len] = '\0';
-		if (0 == strncmp(sv, "HTTP/1.0 ", 9)) {
-			sv += 9;
-			if (0 == strncmp(sv, "200 ", 4)) {
-				httpok = 1;
-				continue;
-			}
-			xwarnx(errwin, "bad HTTP response: %s: %.3s",
-				n->host, sv);
-			return 1;
-		}
+		else if (len < 13)
+			continue;
+		if (0 == memcmp(sv, "HTTP/1.0 200 ", 13)) 
+			httpok = 1;
 	}
 
 	if ( ! httpok) {
-		xwarnx(errwin, "no HTTP response: %s", n->host);
+		xwarnx(errwin, "bad HTTP response (%lld seconds): "
+			"%s", t - n->xfer.start, n->host);
+		fprintf(stderr, "------>------\n");
+		fprintf(stderr, "%.*s\n", (int)n->xfer.rbufsz, 
+			n->xfer.rbuf);
+		fprintf(stderr, "------<------\n");
+		fflush(stderr);
 		rc = 1;
 	} else if ((rc = jsonobj_parse(errwin, n, start, sz)) > 0) {
 		n->dirty = 1;
@@ -264,24 +253,34 @@ http_init_connect(WINDOW *errwin, struct node *n)
 	}
 
 	n->state = STATE_CONNECT;
+	n->xfer.start = time(NULL);
 
 	/* This is from connect(2): asynchronous connection. */
 
 	c = connect(n->xfer.pfd->fd, 
 		(struct sockaddr *)&n->xfer.ss, sslen);
-	if (c && (EINTR == errno || EINPROGRESS == errno))
-		return 1;
-	else if (c == 0)
+	if (0 == c)
 		return http_write_ready(errwin, n);
+
+	/* Asynchronous connect... */
+
+	if (EINTR == errno || 
+	    EINPROGRESS == errno)
+		return 1;
 
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
-	    ENETUNREACH == errno)
+	    ENETUNREACH == errno) {
+		xwarn(errwin, "connect (transient): %s: %s", 
+			n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(errwin, n);
+	}
 
 	xwarn(errwin, "connect: %s: %s", n->host, 
 		n->addrs.addrs[n->addrs.curaddr].ip);
+
 	return 0;
 }
 
@@ -314,7 +313,8 @@ http_connect(WINDOW *errwin, struct node *n)
 		SOL_SOCKET, SO_ERROR, &error, &len);
 
 	if (c < 0) {
-		xwarn(errwin, "getsockopt");
+		xwarn(errwin, "getsockopt: %s: %s",
+			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == error)
 		return http_write_ready(errwin, n);
@@ -323,10 +323,14 @@ http_connect(WINDOW *errwin, struct node *n)
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
-	    ENETUNREACH == errno)
+	    ENETUNREACH == errno) {
+		xwarn(errwin, "getsockopt (transient): %s: %s",
+			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(errwin, n);
+	}
 
-	xwarn(errwin, "getsockopt");
+	xwarn(errwin, "getsockopt: %s: %s",
+		n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 	return 0;
 }
 

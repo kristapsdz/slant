@@ -62,9 +62,7 @@ enum	state {
 	STATE_CLOSE_DONE,
 	STATE_CLOSE_ERR,
 	STATE_WRITE,
-	STATE_READ,
-	STATE_WAITING,
-	STATE_DONE,
+	STATE_READ
 };
 
 struct	xfer {
@@ -76,6 +74,7 @@ struct	xfer {
 	struct sockaddr_storage ss; /* socket */
 	struct pollfd	*pfd; /* pollfd descriptor */
 	struct tls	*tls; /* tls context, if needed */
+	time_t		 start; /* connection start time */
 };
 
 struct	node {
