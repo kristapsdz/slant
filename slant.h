@@ -32,6 +32,12 @@ struct	draw {
 	size_t		 lastseenpos; /* location of last seen stamp */
 	size_t		 intervalpos; /* location of interval stamp */
 	enum draword	 order;
+	int		 box_cpu;
+#define	CPU_QMIN	 0x0001
+#define	CPU_MIN	 	 0x0002
+#define	CPU_HOUR 	 0x0004
+#define	CPU_DAY	 	 0x0008
+#define	CPU_QMIN_BARS	 0x0010
 };
 
 /*

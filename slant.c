@@ -270,6 +270,7 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, NULL);
 
 	memset(&d, 0, sizeof(struct draw));
+	d.box_cpu = CPU_QMIN_BARS | CPU_MIN | CPU_HOUR;
 
 	/* Start up TLS handling really early. */
 

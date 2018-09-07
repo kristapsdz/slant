@@ -15,6 +15,19 @@
 #include "extern.h"
 #include "slant.h"
 
+static const char *const states[] = {
+	"strt", /* STATE_STARTUP */
+	"rslv", /* STATE_RESOLVING */
+	"cnwt", /* STATE_CONNECT_WAITING */
+	"cnrd", /* STATE_CONNECT_READY */
+	"cnct", /* STATE_CONNECT */
+	"cldn", /* STATE_CLOSE_DONE */
+	"cler", /* STATE_CLOSE_ERR */
+	"wrte", /* STATE_WRITE */
+	"read" /* STATE_READ */
+};
+
+
 /*
  * Return the last time for which we have some data.
  * This can come from any of the intervals.
@@ -257,13 +270,13 @@ draw_xfer(WINDOW *win, double vv, int left)
 {
 	char	 nbuf[16];
 
-	if (vv >= 1024 * 1024 * 1024)
+	if (vv >= 1000 * 1000 * 1000)
 		snprintf(nbuf, sizeof(nbuf), "%.1fG", 
 			vv / (1024 * 1024 * 1024));
-	else if (vv >= 1024 * 1024)
+	else if (vv >= 1000 * 1000)
 		snprintf(nbuf, sizeof(nbuf), 
 			"%.1fM", vv / (1024 * 1024));
-	else if (vv >= 1024)
+	else if (vv >= 1000)
 		snprintf(nbuf, sizeof(nbuf), "%.1fK", vv / 1024);
 	else if (vv < 0.001)
 		snprintf(nbuf, sizeof(nbuf), "%gB", 0.0);
@@ -432,52 +445,88 @@ draw_mem(WINDOW *win, const struct node *n)
 }
 
 static void
-draw_cpu(WINDOW *win, const struct node *n)
+draw_cpu(const struct draw *d, WINDOW *win, const struct node *n)
 {
 	double	 vv;
+	int	 bits = d->box_cpu;
 
-	if (NULL == n->recs) {
-		wprintw(win, "%10s", " ");
-		waddch(win, ' ');
-		wprintw(win, "------%");
-		draw_sub_separator(win);
-		wprintw(win, "------%");
-		draw_sub_separator(win);
-		wprintw(win, "------%");
-		return;
+	if (CPU_QMIN_BARS & bits) {
+		bits &= ~CPU_QMIN_BARS;
+		if (NULL != n->recs &&
+		    n->recs->byqminsz &&
+		    n->recs->byqmin[0].entries) {
+			vv = n->recs->byqmin[0].cpu /
+				n->recs->byqmin[0].entries;
+			draw_bars(win, vv);
+		} else
+			wprintw(win, "%10s", " ");
+		if (bits)
+			waddch(win, ' ');
 	}
 
-	if (n->recs->byqminsz &&
-	    n->recs->byqmin[0].entries) {
-		vv = n->recs->byqmin[0].cpu /
-			n->recs->byqmin[0].entries;
-		draw_bars(win, vv);
-		waddch(win, ' ');
-		wattron(win, A_BOLD);
-		draw_pct(win, vv);
-		wattroff(win, A_BOLD);
-	} else
-		wprintw(win, "%17s", " ");
+	if (CPU_QMIN & bits) {
+		bits &= ~CPU_QMIN;
+		if (NULL != n->recs &&
+		    n->recs->byqminsz &&
+		    n->recs->byqmin[0].entries) {
+			vv = n->recs->byqmin[0].cpu /
+				n->recs->byqmin[0].entries;
+			wattron(win, A_BOLD);
+			draw_pct(win, vv);
+			wattroff(win, A_BOLD);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " ");
+		} else 
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	draw_sub_separator(win);
+	if (CPU_MIN & bits) {
+		bits &= ~CPU_MIN;
+		if (NULL != n->recs &&
+		    n->recs->byminsz &&
+		    n->recs->bymin[0].entries) {
+			vv = n->recs->bymin[0].cpu /
+				n->recs->bymin[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	if (n->recs->byhoursz &&
-	    n->recs->byhour[0].entries) {
-		vv = n->recs->byhour[0].cpu /
-			n->recs->byhour[0].entries;
-		draw_pct(win, vv);
-	} else
-		wprintw(win, "%6s", " ");
+	if (CPU_HOUR & bits) {
+		bits &= ~CPU_HOUR;
+		if (NULL != n->recs &&
+	 	    n->recs->byhoursz &&
+		    n->recs->byhour[0].entries) {
+			vv = n->recs->byhour[0].cpu /
+				n->recs->byhour[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	draw_sub_separator(win);
-
-	if (n->recs->bydaysz &&
-	    n->recs->byday[0].entries) {
-		vv = n->recs->byday[0].cpu /
-			n->recs->byday[0].entries;
-		draw_pct(win, vv);
-	} else
-		wprintw(win, "%6s", " ");
+	if (CPU_HOUR & bits) {
+		bits &= ~CPU_HOUR;
+		if (NULL != n->recs &&
+		    n->recs->bydaysz &&
+		    n->recs->byday[0].entries) {
+			vv = n->recs->byday[0].cpu /
+				n->recs->byday[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
 }
 
 static void
@@ -499,18 +548,46 @@ draw_centre(WINDOW *win, const char *v, size_t sz)
 }
 
 static void
-draw_header(WINDOW *win, 
-	struct draw *d, size_t maxhostsz, size_t maxipsz)
+draw_header(WINDOW *win, const struct draw *d, 
+	size_t maxhostsz, size_t maxipsz)
 {
+	size_t	 sz;
+	int	 bits;
 
 	wmove(win, 0, 1);
 	wclrtoeol(win);
 	wprintw(win, "%*s", (int)maxhostsz, "hostname");
 	waddch(win, ' ');
-	draw_main_separator(win);
-	waddch(win, ' ');
-	draw_centre(win, "processor", 31);
-	waddch(win, ' ');
+
+	if (d->box_cpu) {
+		bits = d->box_cpu;
+		draw_main_separator(win);
+		waddch(win, ' ');
+		sz = 0;
+		if (CPU_QMIN_BARS & bits) {
+			bits &= ~CPU_QMIN_BARS;
+			sz += 10 + (bits ? 1 : 0);
+		}
+		if (CPU_QMIN & bits) {
+			bits &= ~CPU_QMIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_MIN & bits) {
+			bits &= ~CPU_MIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_HOUR & bits) {
+			bits &= ~CPU_HOUR;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_DAY & bits) {
+			bits &= ~CPU_DAY;
+			sz += 6;
+		}
+		draw_centre(win, "cpu", sz);
+		waddch(win, ' ');
+	}
+
 	draw_main_separator(win);
 	waddch(win, ' ');
 	draw_centre(win, "memory", 31);
@@ -525,7 +602,7 @@ draw_header(WINDOW *win,
 	waddch(win, ' ');
 	draw_main_separator(win);
 	waddch(win, ' ');
-	wprintw(win, "%*s", (int)maxipsz, "address");
+	wprintw(win, "%*s", (int)maxipsz + 5, "link state");
 	waddch(win, ' ');
 	draw_main_separator(win);
 	waddch(win, ' ');
@@ -584,11 +661,13 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 		wattron(win, A_BOLD);
 		wprintw(win, "%*s", (int)maxhostsz, n[i].host);
 		wattroff(win, A_BOLD);
-		waddch(win, ' ');
-		draw_main_separator(win);
-		waddch(win, ' ');
-		draw_cpu(win, &n[i]);
-		waddch(win, ' ');
+		if (d->box_cpu) {
+			waddch(win, ' ');
+			draw_main_separator(win);
+			waddch(win, ' ');
+			draw_cpu(d, win, &n[i]);
+			waddch(win, ' ');
+		}
 		draw_main_separator(win);
 		waddch(win, ' ');
 		draw_mem(win, &n[i]);
@@ -605,6 +684,8 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 		waddch(win, ' ');
 		wprintw(win, "%*s", (int)maxipsz,
 			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
+		waddstr(win, ":");
+		waddstr(win, states[n->state]);
 		waddch(win, ' ');
 		draw_main_separator(win);
 		waddch(win, ' ');
