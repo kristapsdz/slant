@@ -58,6 +58,8 @@ struct	draw {
 #define	LINK_IP		 0x0001
 #define LINK_STATE	 0x0002
 #define LINK_ACCESS	 0x0004
+	int		 box_host;
+#define	HOST_ACCESS	 0x0001
 };
 
 /*

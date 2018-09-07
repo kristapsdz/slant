@@ -813,9 +813,11 @@ draw_header(WINDOW *win, const struct draw *d,
 		waddch(win, ' ');
 	}
 
-	draw_main_separator(win);
-	waddch(win, ' ');
-	wprintw(win, "%9s", "last");
+	if (d->box_host) {
+		draw_main_separator(win);
+		waddch(win, ' ');
+		wprintw(win, "%9s", "last");
+	}
 }
 
 void
@@ -891,11 +893,15 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 		} else
 			lastseenpos = 0;
 
-		draw_main_separator(win);
-		waddch(win, ' ');
-		getyx(win, y, x);
-		intervalpos = x;
-		draw_interval(win, 15, timeo, get_last(&n[i]), t);
+		if (d->box_host) {
+			draw_main_separator(win);
+			waddch(win, ' ');
+			getyx(win, y, x);
+			intervalpos = x;
+			draw_interval(win, 15, 
+				timeo, get_last(&n[i]), t);
+		} else
+			intervalpos = 0;
 	}
 
 	/* Remember for updating times. */
