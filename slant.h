@@ -54,6 +54,10 @@ struct	draw {
 #define	DISC_MIN	 0x0002
 #define	DISC_HOUR 	 0x0004
 #define	DISC_DAY	 0x0008
+	int		 box_link;
+#define	LINK_IP		 0x0001
+#define LINK_STATE	 0x0002
+#define LINK_ACCESS	 0x0004
 };
 
 /*

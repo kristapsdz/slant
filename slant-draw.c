@@ -290,6 +290,36 @@ draw_xfer(WINDOW *win, double vv, int left)
 }
 
 static void
+draw_link(const struct draw *d, size_t maxipsz, time_t timeo,
+	time_t t, WINDOW *win, const struct node *n, size_t *lastseen)
+{
+	int	 x, y, bits = d->box_link;
+
+	*lastseen = 0;
+
+	if (LINK_IP & bits) {
+		bits &= ~LINK_IP;
+		wprintw(win, "%*s", (int)maxipsz,
+			n->addrs.addrs[n->addrs.curaddr].ip);
+		if (LINK_STATE & bits)
+			waddstr(win, ":");
+	}
+
+	if (LINK_STATE & bits) {
+		bits &= ~LINK_STATE;
+		waddstr(win, states[n->state]);
+		if (LINK_ACCESS & bits)
+			waddch(win, ' ');
+	}
+
+	if (LINK_ACCESS & bits) {
+		getyx(win, y, x);
+		*lastseen= x;
+		draw_interval(win, timeo, timeo, n->lastseen, t);
+	}
+}
+
+static void
 draw_disc(const struct draw *d, WINDOW *win, const struct node *n)
 {
 	double	 vv;
@@ -758,17 +788,34 @@ draw_header(WINDOW *win, const struct draw *d,
 		waddch(win, ' ');
 	}
 
-	draw_main_separator(win);
-	waddch(win, ' ');
-	wprintw(win, "%*s", (int)maxipsz + 5, "link state");
-	waddch(win, ' ');
+	if (d->box_link) {
+		bits = d->box_link;
+		draw_main_separator(win);
+		waddch(win, ' ');
+		sz = 0;
+		if (LINK_IP & bits) {
+			bits &= ~LINK_IP;
+			sz += maxipsz + 
+				((bits & LINK_STATE) ? 1 : 0);
+		}
+		if (LINK_STATE & bits) {
+			bits &= ~LINK_STATE;
+			sz += 4 + (bits ? 1 : 0);
+		}
+		if (LINK_ACCESS & bits) {
+			bits &= ~LINK_ACCESS;
+			sz += 9;
+		}
+		if (sz < 12)
+			draw_centre(win, "link", sz);
+		else
+			draw_centre(win, "link state", sz);
+		waddch(win, ' ');
+	}
+
 	draw_main_separator(win);
 	waddch(win, ' ');
 	wprintw(win, "%9s", "last");
-	waddch(win, ' ');
-	draw_main_separator(win);
-	waddch(win, ' ');
-	wprintw(win, "%9s", "ping");
 }
 
 void
@@ -835,24 +882,20 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 			waddch(win, ' ');
 		}
 
-		draw_main_separator(win);
-		waddch(win, ' ');
-		wprintw(win, "%*s", (int)maxipsz,
-			n[i].addrs.addrs[n[i].addrs.curaddr].ip);
-		waddstr(win, ":");
-		waddstr(win, states[n->state]);
-		waddch(win, ' ');
+		if (d->box_link) {
+			draw_main_separator(win);
+			waddch(win, ' ');
+			draw_link(d, maxipsz, timeo, t,
+				win, &n[i], &lastseenpos);
+			waddch(win, ' ');
+		} else
+			lastseenpos = 0;
+
 		draw_main_separator(win);
 		waddch(win, ' ');
 		getyx(win, y, x);
 		intervalpos = x;
 		draw_interval(win, 15, timeo, get_last(&n[i]), t);
-		waddch(win, ' ');
-		draw_main_separator(win);
-		waddch(win, ' ');
-		getyx(win, y, x);
-		lastseenpos = x;
-		draw_interval(win, timeo, timeo, n[i].lastseen, t);
 	}
 
 	/* Remember for updating times. */
@@ -882,7 +925,7 @@ drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
 
 	/* Hasn't collected data yet... */
 
-	if (0 == d->intervalpos || 0 == d->lastseenpos)
+	if (0 == d->intervalpos && 0 == d->lastseenpos)
 		return;
 
 	/* Don't let us run off the window. */
@@ -892,9 +935,13 @@ drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
 		nsz = maxy - 1;
 
 	for (i = 0; i < nsz; i++) {
-		wmove(win, i + 1, d->intervalpos);
-		draw_interval(win, 15, timeo, get_last(&n[i]), t);
-		wmove(win, i + 1, d->lastseenpos);
-		draw_interval(win, timeo, timeo, n[i].lastseen, t);
+		if (d->intervalpos) {
+			wmove(win, i + 1, d->intervalpos);
+			draw_interval(win, 15, timeo, get_last(&n[i]), t);
+		}
+		if (d->lastseenpos) {
+			wmove(win, i + 1, d->lastseenpos);
+			draw_interval(win, timeo, timeo, n[i].lastseen, t);
+		}
 	}
 }

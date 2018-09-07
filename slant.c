@@ -274,6 +274,7 @@ main(int argc, char *argv[])
 	d.box_mem = MEM_QMIN_BARS | MEM_MIN | MEM_HOUR;
 	d.box_net = NET_QMIN | NET_MIN | NET_HOUR;
 	d.box_disc = DISC_QMIN | DISC_MIN | DISC_HOUR;
+	d.box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
 
 	/* Start up TLS handling really early. */
 
