@@ -49,6 +49,11 @@ struct	draw {
 #define	NET_MIN	 	 0x0002
 #define	NET_HOUR 	 0x0004
 #define	NET_DAY	 	 0x0008
+	int		 box_disc;
+#define	DISC_QMIN	 0x0001
+#define	DISC_MIN	 0x0002
+#define	DISC_HOUR 	 0x0004
+#define	DISC_DAY	 0x0008
 };
 
 /*

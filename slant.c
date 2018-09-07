@@ -273,6 +273,7 @@ main(int argc, char *argv[])
 	d.box_cpu = CPU_QMIN_BARS | CPU_MIN | CPU_HOUR;
 	d.box_mem = MEM_QMIN_BARS | MEM_MIN | MEM_HOUR;
 	d.box_net = NET_QMIN | NET_MIN | NET_HOUR;
+	d.box_disc = DISC_QMIN | DISC_MIN | DISC_HOUR;
 
 	/* Start up TLS handling really early. */
 
