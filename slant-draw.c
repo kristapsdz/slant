@@ -343,56 +343,84 @@ draw_disc(WINDOW *win, const struct node *n)
 }
 
 static void
-draw_inet(WINDOW *win, const struct node *n)
+draw_inet(const struct draw *d, WINDOW *win, const struct node *n)
 {
 	double	 vv;
+	int	 bits = d->box_net;
 
-	if (NULL != n->recs &&
-	    n->recs->byqminsz &&
-	    n->recs->byqmin[0].entries) {
-		vv = n->recs->byqmin[0].netrx /
-			n->recs->byqmin[0].entries;
-		wattron(win, A_BOLD);
-		draw_xfer(win, vv, 0);
-		wattroff(win, A_BOLD);
-		waddch(win, ':');
-		vv = n->recs->byqmin[0].nettx /
-			n->recs->byqmin[0].entries;
-		wattron(win, A_BOLD);
-		draw_xfer(win, vv, 1);
-		wattroff(win, A_BOLD);
-	} else
-		waddstr(win, "------:------");
+	if (NET_QMIN & bits) {
+		bits &= ~NET_QMIN;
+		if (NULL != n->recs &&
+		    n->recs->byqminsz &&
+		    n->recs->byqmin[0].entries) {
+			vv = n->recs->byqmin[0].netrx /
+				n->recs->byqmin[0].entries;
+			wattron(win, A_BOLD);
+			draw_xfer(win, vv, 0);
+			wattroff(win, A_BOLD);
+			waddch(win, ':');
+			vv = n->recs->byqmin[0].nettx /
+				n->recs->byqmin[0].entries;
+			wattron(win, A_BOLD);
+			draw_xfer(win, vv, 1);
+			wattroff(win, A_BOLD);
+		} else
+			waddstr(win, "------:------");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	draw_sub_separator(win);
+	if (NET_MIN & bits) {
+		bits &= ~NET_MIN;
+		if (NULL != n->recs &&
+		    n->recs->byminsz &&
+		    n->recs->bymin[0].entries) {
+			vv = n->recs->bymin[0].netrx /
+				n->recs->bymin[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->bymin[0].nettx /
+				n->recs->bymin[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	if (NULL != n->recs &&
-	    n->recs->byhoursz &&
-	    n->recs->byhour[0].entries) {
-		vv = n->recs->byhour[0].netrx /
-			n->recs->byhour[0].entries;
-		draw_xfer(win, vv, 0);
-		waddch(win, ':');
-		vv = n->recs->byhour[0].nettx /
-			n->recs->byhour[0].entries;
-		draw_xfer(win, vv, 1);
-	} else
-		waddstr(win, "------:------");
+	if (NET_HOUR & bits) {
+		bits &= ~NET_HOUR;
+		if (NULL != n->recs &&
+		    n->recs->byhoursz &&
+		    n->recs->byhour[0].entries) {
+			vv = n->recs->byhour[0].netrx /
+				n->recs->byhour[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byhour[0].nettx /
+				n->recs->byhour[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+		if (bits)
+			draw_sub_separator(win);
+	}
 
-	draw_sub_separator(win);
-
-	if (NULL != n->recs &&
-	    n->recs->bydaysz &&
-	    n->recs->byday[0].entries) {
-		vv = n->recs->byday[0].netrx /
-			n->recs->byday[0].entries;
-		draw_xfer(win, vv, 0);
-		waddch(win, ':');
-		vv = n->recs->byday[0].nettx /
-			n->recs->byday[0].entries;
-		draw_xfer(win, vv, 1);
-	} else
-		waddstr(win, "------:------");
+	if (NET_DAY & bits) {
+		bits &= ~NET_DAY;
+		if (NULL != n->recs &&
+		    n->recs->bydaysz &&
+		    n->recs->byday[0].entries) {
+			vv = n->recs->byday[0].netrx /
+				n->recs->byday[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byday[0].nettx /
+				n->recs->byday[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+	}
 }
 
 static void
@@ -465,8 +493,8 @@ draw_mem(const struct draw *d, WINDOW *win, const struct node *n)
 			draw_sub_separator(win);
 	}
 
-	if (MEM_HOUR & bits) {
-		bits &= ~MEM_HOUR;
+	if (MEM_DAY & bits) {
+		bits &= ~MEM_DAY;
 		if (NULL != n->recs &&
 		    n->recs->bydaysz &&
 		    n->recs->byday[0].entries) {
@@ -550,8 +578,8 @@ draw_cpu(const struct draw *d, WINDOW *win, const struct node *n)
 			draw_sub_separator(win);
 	}
 
-	if (CPU_HOUR & bits) {
-		bits &= ~CPU_HOUR;
+	if (CPU_DAY & bits) {
+		bits &= ~CPU_DAY;
 		if (NULL != n->recs &&
 		    n->recs->bydaysz &&
 		    n->recs->byday[0].entries) {
@@ -620,8 +648,7 @@ draw_header(WINDOW *win, const struct draw *d,
 			sz += 6;
 		}
 		draw_centre(win, "cpu", sz);
-		if (d->box_mem)
-			waddch(win, ' ');
+		waddch(win, ' ');
 	}
 
 	if (d->box_mem) {
@@ -653,10 +680,31 @@ draw_header(WINDOW *win, const struct draw *d,
 		waddch(win, ' ');
 	}
 
-	draw_main_separator(win);
-	waddch(win, ' ');
-	draw_centre(win, "network rx:tx", 41);
-	waddch(win, ' ');
+	if (d->box_net) {
+		bits = d->box_net;
+		draw_main_separator(win);
+		waddch(win, ' ');
+		sz = 0;
+		if (NET_QMIN & bits) {
+			bits &= ~NET_QMIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_MIN & bits) {
+			bits &= ~NET_MIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_HOUR & bits) {
+			bits &= ~NET_HOUR;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_DAY & bits) {
+			bits &= ~NET_DAY;
+			sz += 13;
+		}
+		draw_centre(win, "inet rx:tx", sz);
+		waddch(win, ' ');
+	}
+
 	draw_main_separator(win);
 	waddch(win, ' ');
 	draw_centre(win, "disc read:write", 41);
@@ -728,8 +776,7 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 			draw_main_separator(win);
 			waddch(win, ' ');
 			draw_cpu(d, win, &n[i]);
-			if (d->box_mem)
-				waddch(win, ' ');
+			waddch(win, ' ');
 		}
 
 		if (d->box_mem) {
@@ -739,10 +786,13 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 			waddch(win, ' ');
 		}
 
-		draw_main_separator(win);
-		waddch(win, ' ');
-		draw_inet(win, &n[i]);
-		waddch(win, ' ');
+		if (d->box_net) {
+			draw_main_separator(win);
+			waddch(win, ' ');
+			draw_inet(d, win, &n[i]);
+			waddch(win, ' ');
+		}
+
 		draw_main_separator(win);
 		waddch(win, ' ');
 		draw_disc(win, &n[i]);

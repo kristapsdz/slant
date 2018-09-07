@@ -44,6 +44,11 @@ struct	draw {
 #define	MEM_HOUR 	 0x0004
 #define	MEM_DAY	 	 0x0008
 #define	MEM_QMIN_BARS	 0x0010
+	int		 box_net;
+#define	NET_QMIN	 0x0001
+#define	NET_MIN	 	 0x0002
+#define	NET_HOUR 	 0x0004
+#define	NET_DAY	 	 0x0008
 };
 
 /*

@@ -271,7 +271,8 @@ main(int argc, char *argv[])
 
 	memset(&d, 0, sizeof(struct draw));
 	d.box_cpu = CPU_QMIN_BARS | CPU_MIN | CPU_HOUR;
-	d.box_mem = 0;
+	d.box_mem = MEM_QMIN_BARS | MEM_MIN | MEM_HOUR;
+	d.box_net = NET_QMIN | NET_MIN | NET_HOUR;
 
 	/* Start up TLS handling really early. */
 
