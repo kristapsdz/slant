@@ -18,7 +18,7 @@
 static const char *const states[] = {
 	"strt", /* STATE_STARTUP */
 	"rslv", /* STATE_RESOLVING */
-	"cnwt", /* STATE_CONNECT_WAITING */
+	"idle", /* STATE_CONNECT_WAITING */
 	"cnrd", /* STATE_CONNECT_READY */
 	"cnct", /* STATE_CONNECT */
 	"cldn", /* STATE_CLOSE_DONE */
