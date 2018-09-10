@@ -60,6 +60,12 @@ struct	draw {
 #define LINK_ACCESS	 0x0004
 	int		 box_host;
 #define	HOST_ACCESS	 0x0001
+	int		 box_procs;
+#define	PROCS_QMIN	 0x0001
+#define	PROCS_MIN	 0x0002
+#define	PROCS_HOUR 	 0x0004
+#define	PROCS_DAY	 0x0008
+#define	PROCS_QMIN_BARS	 0x0010
 };
 
 /*

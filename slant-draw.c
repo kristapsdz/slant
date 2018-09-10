@@ -482,6 +482,91 @@ draw_inet(const struct draw *d, WINDOW *win, const struct node *n)
 }
 
 static void
+draw_procs(const struct draw *d, WINDOW *win, const struct node *n)
+{
+	double	 vv;
+	int	 bits = d->box_procs;
+
+	if (PROCS_QMIN_BARS & bits) {
+		bits &= ~PROCS_QMIN_BARS;
+		if (NULL != n->recs &&
+		    n->recs->byqminsz &&
+		    n->recs->byqmin[0].entries) {
+			vv = n->recs->byqmin[0].nprocs /
+				n->recs->byqmin[0].entries;
+			draw_bars(win, vv);
+		} else
+			wprintw(win, "%10s", " ");
+		if (bits)
+			waddch(win, ' ');
+	}
+
+	if (PROCS_QMIN & bits) {
+		bits &= ~PROCS_QMIN;
+		if (NULL != n->recs &&
+		    n->recs->byqminsz &&
+		    n->recs->byqmin[0].entries) {
+			vv = n->recs->byqmin[0].nprocs /
+				n->recs->byqmin[0].entries;
+			wattron(win, A_BOLD);
+			draw_pct(win, vv);
+			wattroff(win, A_BOLD);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " ");
+		} else 
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (PROCS_MIN & bits) {
+		bits &= ~PROCS_MIN;
+		if (NULL != n->recs &&
+		    n->recs->byminsz &&
+		    n->recs->bymin[0].entries) {
+			vv = n->recs->bymin[0].nprocs /
+				n->recs->bymin[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (PROCS_HOUR & bits) {
+		bits &= ~PROCS_HOUR;
+		if (NULL != n->recs &&
+	 	    n->recs->byhoursz &&
+		    n->recs->byhour[0].entries) {
+			vv = n->recs->byhour[0].nprocs /
+				n->recs->byhour[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (PROCS_DAY & bits) {
+		bits &= ~PROCS_DAY;
+		if (NULL != n->recs &&
+		    n->recs->bydaysz &&
+		    n->recs->byday[0].entries) {
+			vv = n->recs->byday[0].nprocs /
+				n->recs->byday[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+}
+
+static void
 draw_mem(const struct draw *d, WINDOW *win, const struct node *n)
 {
 	double	 vv;
@@ -738,6 +823,35 @@ draw_header(WINDOW *win, const struct draw *d,
 		waddch(win, ' ');
 	}
 
+	if (d->box_procs) {
+		bits = d->box_procs;
+		draw_main_separator(win);
+		waddch(win, ' ');
+		sz = 0;
+		if (PROCS_QMIN_BARS & bits) {
+			bits &= ~PROCS_QMIN_BARS;
+			sz += 10 + (bits ? 1 : 0);
+		}
+		if (PROCS_QMIN & bits) {
+			bits &= ~PROCS_QMIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_MIN & bits) {
+			bits &= ~PROCS_MIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_HOUR & bits) {
+			bits &= ~PROCS_HOUR;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_DAY & bits) {
+			bits &= ~PROCS_DAY;
+			sz += 6;
+		}
+		draw_centre(win, "procs", sz);
+		waddch(win, ' ');
+	}
+
 	if (d->box_net) {
 		bits = d->box_net;
 		draw_main_separator(win);
@@ -855,35 +969,36 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 		wprintw(win, "%*s", (int)maxhostsz, n[i].host);
 		wattroff(win, A_BOLD);
 		waddch(win, ' ');
-
 		if (d->box_cpu) {
 			draw_main_separator(win);
 			waddch(win, ' ');
 			draw_cpu(d, win, &n[i]);
 			waddch(win, ' ');
 		}
-
 		if (d->box_mem) {
 			draw_main_separator(win);
 			waddch(win, ' ');
 			draw_mem(d, win, &n[i]);
 			waddch(win, ' ');
 		}
-
+		if (d->box_procs) {
+			draw_main_separator(win);
+			waddch(win, ' ');
+			draw_procs(d, win, &n[i]);
+			waddch(win, ' ');
+		}
 		if (d->box_net) {
 			draw_main_separator(win);
 			waddch(win, ' ');
 			draw_inet(d, win, &n[i]);
 			waddch(win, ' ');
 		}
-
 		if (d->box_disc) {
 			draw_main_separator(win);
 			waddch(win, ' ');
 			draw_disc(d, win, &n[i]);
 			waddch(win, ' ');
 		}
-
 		if (d->box_link) {
 			draw_main_separator(win);
 			waddch(win, ' ');
@@ -892,7 +1007,6 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 			waddch(win, ' ');
 		} else
 			lastseenpos = 0;
-
 		if (d->box_host) {
 			draw_main_separator(win);
 			waddch(win, ' ');

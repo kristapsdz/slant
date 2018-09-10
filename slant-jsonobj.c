@@ -76,7 +76,7 @@ jsonobj_parse_recs(WINDOW *errwin,
 	size_t		 i;
 	int		 has_ctime, has_entries, 
 			 has_cpu, has_interval,
-			 has_id, has_mem,
+			 has_id, has_mem, has_procs,
 			 has_nettx, has_netrx,
 			 has_discwrite, has_discread;
 
@@ -138,6 +138,11 @@ jsonobj_parse_recs(WINDOW *errwin,
 				    (errwin, n, &(*recs)[i].mem, num)) 
 					goto err;
 				has_mem = 1;
+			} else if (0 == strcasecmp(cp, "nprocs")) {
+				if ( ! jsonobj_parse_real
+				    (errwin, n, &(*recs)[i].nprocs, num)) 
+					goto err;
+				has_procs = 1;
 			} else if (0 == strcasecmp(cp, "nettx")) {
 				if ( ! jsonobj_parse_int
 				    (errwin, n, &(*recs)[i].nettx, num)) 
@@ -174,6 +179,7 @@ jsonobj_parse_recs(WINDOW *errwin,
 		    0 == has_entries ||
 		    0 == has_cpu ||
 		    0 == has_mem ||
+		    0 == has_procs ||
 		    0 == has_nettx ||
 		    0 == has_netrx ||
 		    0 == has_discread ||
