@@ -66,8 +66,27 @@ Data read and written as averaged over all configured devices.
 This is shown as an average over three intervals: in the last 15
 seconds (instantaneous), in the last hour, in the last day.
 Units are human-readably scaled.
-.It address
-The IP address (IPV4 or IPV6) of the host.
+.It link state
+The IP address (IPV4 or IPV6) of the host and the connection state.
+This may be one of 
+.Li strt ,
+startup;
+.Li rslv ,
+resolving;
+.Li cnwt ,
+waiting for next connection;
+.Li cnrd ,
+ready to connect;
+.Li cnct ,
+connecting;
+.Li cldn ,
+connection finished (success);
+.Li cler ,
+connection finished (error);
+.Li wrte ,
+writing request; or
+.Li read ,
+reading response.
 .It last
 The last data collection time as recorded by the remote host's
 collection system.
