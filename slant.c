@@ -270,10 +270,11 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, NULL);
 
 	memset(&d, 0, sizeof(struct draw));
-	d.box_cpu = CPU_QMIN_BARS | CPU_MIN | CPU_HOUR;
-	d.box_mem = MEM_QMIN_BARS | MEM_MIN | MEM_HOUR;
-	d.box_net = NET_QMIN | NET_MIN | NET_HOUR;
-	d.box_disc = DISC_QMIN | DISC_MIN | DISC_HOUR;
+	d.box_cpu = CPU_QMIN_BARS | CPU_MIN;
+	d.box_mem = MEM_QMIN_BARS | MEM_MIN;
+	d.box_net = NET_QMIN | NET_MIN;
+	d.box_disc = DISC_QMIN | DISC_MIN;
+	d.box_procs = PROCS_QMIN_BARS | PROCS_QMIN | PROCS_MIN;
 	d.box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
 	d.box_host = HOST_ACCESS;
 
