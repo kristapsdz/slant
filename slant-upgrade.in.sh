@@ -2,8 +2,14 @@
 
 if [ -n "`pgrep slant-collectd`" ]
 then
-	echo "slant-collectd running: stop it first" 1>&2
-	exit 1
+	echo "slant-collectd running: stopping it first" 1>&2
+	pkill slant-collectd
+	sleep 2
+	if [ -n "`pgrep slant-collectd`" ]
+	then
+		echo "slant-collectd: not dying" 1>&2
+		exit 1
+	fi
 fi
 
 set -e
