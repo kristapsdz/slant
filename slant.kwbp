@@ -41,7 +41,7 @@ struct	record {
 		"Read bytes per second over all configured discs.";
 	field discwrite int comment
 		"Written bytes per second over all configured discs.";
-	field nprocs double comment
+	field nprocs double default 0 comment
 		"The percentage of processes running over the maximum
 		 number of possible processes.";
 
