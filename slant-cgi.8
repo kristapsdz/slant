@@ -20,12 +20,13 @@ resource, which has the aliases
 .Pa /index ,
 .Pa / ,
 or the empty request.
-Other resources return an HTTP error 404.
-Non-GET request return an HTTP error 405.
+Other resources return an HTTP code 404.
+Non-GET request return an HTTP code 405.
+Other (non-200) codes are possible and follow standard definitions.
 .Pp
 On success,
 .Nm
-returns an HTTP error 200 and a valid JSON document.
+returns an HTTP code 200 and a valid JSON document.
 This consists of the following:
 .Bd -literal
 { qmin: [ records... ],
@@ -36,32 +37,23 @@ This consists of the following:
   year: [ records... ] }
 .Ed
 .Pp
-These represent the set of records accumulated over a given interval of
-time: quarter-minute (instantaneous)
-.Pq Li qmin ,
-minute
-.Pq Li min ,
-hourly
-.Pq Li hour ,
-daily
-.Pq Li day ,
-weekly
-.Pq Li week ,
-and yearly
-.Pq Li year .
-Each record is accumulated on a quarter-minute basis.
+These are the possibly-empty sets of records accumulated over a given
+interval of time in quarter-minute quanta.
 So each
+.Li qmin
+record consists of exactly one entry; each
 .Li min
-record will consist of at most four records (one for each
-quarter-minute); each
-.Li hour ,
-at least 240, etc.
+record consists of at least one and at most four entries, one for each
+quarter-minute; each
+.Li hour
+has at most 240, etc.
 .Pp
 There are finite records (except for yearly ones) bound to a circular
-buffer per interval type.
+buffer per interval.
 When a record is filled, such as with four quarter-minute entries into a
-minute record, a new record is prepared with zero entries and the last
-is forgotten.
+minute record, the next entry creates a new record with one entry while
+the oldest is discarded.
+.Pp
 The circular buffer is large enough for a reasonable glimpse into the
 past, with emphasis placed on recent data: 40 quarter-minute records (10
 minutes), 300 minute records (5 hours), 96 hourly (5 days), 28 daily (4
@@ -69,20 +61,22 @@ weeks), 104 weekly (two years), endless yearly entries.
 .Pp
 Each record consists of the following:
 .Bd -literal
-{    ctime: int64,
-   entries: int64,
-       cpu: double,
-       mem: double,
-     netrx: int64,
-     nettx: int64,
-  discread: int64,
- discwrite: int64,
-    nprocs: double,
-  interval: int64,
-        id: int64 }
+{    ctime: int,
+   entries: int,
+       cpu: real,
+       mem: real,
+     netrx: int,
+     nettx: int,
+  discread: int,
+ discwrite: int,
+    nprocs: real,
+  interval: int,
+        id: int }
 .Ed
 .Pp
-This consists of the following data.
+Integers are serialised from 64-bit signed numbers.
+Real-valued numbers are serialised from double-precision numbers.
+The fields are defined as follows:
 .Bl -tag -width Ds
 .It Li ctime
 a UNIX epoch of when the record was started (first entry)
