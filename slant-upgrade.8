@@ -12,7 +12,24 @@ The
 utility upgrades or installs the database used by
 .Xr slant-collectd 8 .
 It accepts no arguments.
-It should be run on first installation or system upgrade.
+This is usually run automatically by the packaging system, such as
+.Xr pkg_add 1 .
+.Pp
+For new installations (i.e., without an existing database file), this
+utility creates a database from the
+.Xr kwebapp 5
+configuration and enables the CGI script.
+.Pp
+For upgrades, it patches the existing database file from both the
+existing and new
+.Xr kwebapp 5
+configuration and enables the CGI script.
+It's assumed that the packaging system installs the CGI script without
+permissions to execute.
+.Pp
+If
+.Xr slant-collectd 8
+is running, it is terminated before upgrade or installation.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -28,8 +45,9 @@ It should be run on first installation or system upgrade.
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS
 .\" For sections 2, 3, 4, and 9 errno settings only.
-.\" .Sh SEE ALSO
-.\" .Xr foobar 1
+.Sh SEE ALSO
+.Xr slant 1 ,
+.Xr slant-collectd 8
 .\" .Sh STANDARDS
 .\" .Sh HISTORY
 .\" .Sh AUTHORS

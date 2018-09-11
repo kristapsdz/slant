@@ -22,6 +22,7 @@ then
 	chown www "@DATADIR@/slant.db"
 	chmod 600 "@DATADIR@/slant.db"
 	install -m 0444  "@SHAREDIR@/slant/slant.kwbp" "@DATADIR@/slant.kwbp"
+	chmod 555 "@CGIBIN@/slant-cgi"
 	exit 0
 fi
 
@@ -42,5 +43,6 @@ fi
 
 sqlite3 "@DATADIR@/slant.db" < $TMPFILE
 install -m 0444  "@SHAREDIR@/slant/slant.kwbp" "@DATADIR@/slant.kwbp"
+chmod 555 "@CGIBIN@/slant-cgi"
 rm -f "@DATADIR@/slant-upgrade.sql"
 echo "@DATADIR@/slant.db: patch success"

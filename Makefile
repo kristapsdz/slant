@@ -12,7 +12,7 @@ CGIBIN	   = $(WPREFIX)/cgi-bin
 DATADIR	   = $(WPREFIX)/data
 
 DBFILE	   = /data/slant.db
-VERSION	   = 0.0.3
+VERSION	   = 0.0.4
 WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
@@ -83,10 +83,11 @@ uninstall:
 
 slant-upgrade: slant-upgrade.in.sh
 	sed -e "s!@DATADIR@!$(DATADIR)!g" \
+	    -e "s!@CGIBIN@!$(CGIBIN)!g" \
 	    -e "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
 
-# Only run these for development.
-# Real systems will install the SQL from SHAREDIR/slant.
+# Only run this for development.
+# Real systems will install with slant-upgrade(8).
 
 installdb: slant.db
 	mkdir -p $(DESTDIR)$(DATADIR)
