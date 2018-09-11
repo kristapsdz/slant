@@ -1,0 +1,134 @@
+.Dd $Mdocdate$
+.Dt SLANT-CGI 8
+.Os
+.Sh NAME
+.Nm slant-cgi
+.Nd CGI program returning slant data
+.Sh SYNOPSIS
+.Nm slant-cgi
+.Sh DESCRIPTION
+The
+.Nm
+utility produces system statistics as recorded by
+.Xr slant-collectd 8 .
+It interfaces with the database by default in
+.Pa /var/www/data/slant.db .
+.Pp
+The CGI program accepts HTTP GET requests for the
+.Pa /index.json
+resource, which has the aliases
+.Pa /index ,
+.Pa / ,
+or the empty request.
+Other resources return an HTTP error 404.
+Non-GET request return an HTTP error 405.
+.Pp
+On success,
+.Nm
+returns an HTTP error 200 and a valid JSON document.
+This consists of the following:
+.Bd -literal
+{ qmin: [ records... ],
+   min: [ records... ],
+  hour: [ records... ],
+   day: [ records... ],
+  week: [ records... ],
+  year: [ records... ] }
+.Ed
+.Pp
+These represent the set of records accumulated over a given interval of
+time: quarter-minute (instantaneous)
+.Pq Li qmin ,
+minute
+.Pq Li min ,
+hourly
+.Pq Li hour ,
+daily
+.Pq Li day ,
+weekly
+.Pq Li week ,
+and yearly
+.Pq Li year .
+Each record is accumulated on a quarter-minute basis.
+So each
+.Li min
+record will consist of at most four records (one for each
+quarter-minute); each
+.Li hour ,
+at least 240, etc.
+.Pp
+There are finite records (except for yearly ones) bound to a circular
+buffer per interval type.
+When a record is filled, such as with four quarter-minute entries into a
+minute record, a new record is prepared with zero entries and the last
+is forgotten.
+The circular buffer is large enough for a reasonable glimpse into the
+past, with emphasis placed on recent data: 40 quarter-minute records (10
+minutes), 300 minute records (5 hours), 96 hourly (5 days), 28 daily (4
+weeks), 104 weekly (two years), endless yearly entries.
+.Pp
+Each record consists of the following:
+.Bd -literal
+{    ctime: int64,
+   entries: int64,
+       cpu: double,
+       mem: double,
+     netrx: int64,
+     nettx: int64,
+  discread: int64,
+ discwrite: int64,
+    nprocs: double,
+  interval: int64,
+        id: int64 }
+.Ed
+.Pp
+This consists of the following data.
+.Bl -tag -width Ds
+.It Li ctime
+a UNIX epoch of when the record was started (first entry)
+.It Li entries
+the number of entries, so front-end displays will need to average all
+data by this number
+.It Li cpu
+average processor utilisation over all processing unit
+.It Li mem
+active memory over all available memory
+.It Li netrx
+bytes received per second over all interfaces
+.It Li nettx
+bytes transmitted per second over all interfaces
+.It Li discread
+bytes read per second over all configured devices
+.It Li discwrite
+bytes written per second over all configured devices
+.It Li nprocs
+number of running processes over all possible processes
+.It Li interval
+the type of interval starting with zero for quarter-minute, one fo 
+minute, etc.
+.It Li id
+a unique record identifier
+.El
+.\" The following requests should be uncommented and used where appropriate.
+.\" .Sh CONTEXT
+.\" For section 9 functions only.
+.\" .Sh RETURN VALUES
+.\" For sections 2, 3, and 9 function return values only.
+.\" .Sh ENVIRONMENT
+.\" For sections 1, 6, 7, and 8 only.
+.\" .Sh FILES
+.\" .Sh EXIT STATUS
+.\" For sections 1, 6, and 8 only.
+.\" .Sh EXAMPLES
+.\" .Sh DIAGNOSTICS
+.\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
+.\" .Sh ERRORS
+.\" For sections 2, 3, 4, and 9 errno settings only.
+.Sh SEE ALSO
+.Xr slant 1 ,
+.Xr slant-collectd 8
+.\" .Sh STANDARDS
+.\" .Sh HISTORY
+.\" .Sh AUTHORS
+.\" .Sh CAVEATS
+.\" .Sh BUGS
