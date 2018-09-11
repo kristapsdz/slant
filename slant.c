@@ -248,35 +248,23 @@ layout(size_t maxx, const struct node *n, size_t nsz, struct draw *d)
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_cpu = CPU_QMIN | CPU_HOUR;
-	d->box_mem = MEM_QMIN | MEM_HOUR;
-	d->box_net = NET_QMIN | NET_HOUR;
-	d->box_disc = DISC_QMIN | DISC_HOUR;
-	d->box_procs = PROCS_QMIN | PROCS_HOUR;
-	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
-	d->box_host = HOST_ACCESS;
+	d->box_cpu &= ~CPU_QMIN_BARS;
+	d->box_mem &= ~MEM_QMIN_BARS;
+	d->box_procs &= ~PROCS_QMIN_BARS;
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_cpu = CPU_QMIN;
-	d->box_mem = MEM_QMIN;
-	d->box_net = NET_QMIN;
-	d->box_disc = DISC_QMIN;
-	d->box_procs = PROCS_QMIN;
-	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
-	d->box_host = HOST_ACCESS;
+	d->box_cpu &= ~CPU_HOUR;
+	d->box_mem &= ~MEM_HOUR;
+	d->box_net &= ~NET_HOUR;
+	d->box_disc &= ~DISC_HOUR;
+	d->box_procs &= ~PROCS_HOUR;
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_cpu = CPU_QMIN;
-	d->box_mem = MEM_QMIN;
-	d->box_net = NET_QMIN;
-	d->box_disc = DISC_QMIN;
-	d->box_procs = PROCS_QMIN;
-	d->box_link = LINK_ACCESS;
-	d->box_host = HOST_ACCESS;
+	d->box_link &= ~(LINK_IP | LINK_STATE);
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
