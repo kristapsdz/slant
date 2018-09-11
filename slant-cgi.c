@@ -43,7 +43,8 @@ http_open(struct kreq *r, enum khttp code)
 }
 
 static void
-sendindex(struct kreq *r, const struct record_q *q)
+sendindex(struct kreq *r, 
+	const struct system *sys, const struct record_q *q)
 {
 	struct kjsonreq	 req;
 	const struct record *rr;
@@ -51,6 +52,9 @@ sendindex(struct kreq *r, const struct record_q *q)
 	http_open(r, KHTTP_200);
 	kjson_open(&req, r);
 	kjson_obj_open(&req);
+
+	kjson_putstringp(&req, "version", VERSION);
+	json_system_obj(&req, sys);
 
 	kjson_arrayp_open(&req, "qmin");
 	TAILQ_FOREACH(rr, q, _entries)
@@ -111,6 +115,7 @@ main(void)
 	struct kreq	 r;
 	enum kcgi_err	 er;
 	struct record_q	*rq;
+	struct system	*sys;
 
 	if (-1 == pledge("stdio rpath "
 	    "cpath wpath flock fattr proc", NULL)) {
@@ -157,10 +162,17 @@ main(void)
 	}
 
 	db_role(r.arg, ROLE_consume);
+
 	rq = db_record_list_lister(r.arg);
-	sendindex(&r, rq);
+	sys = db_system_get_id(r.arg, 1);
+
+	sendindex(&r, sys, rq);
+
+	db_system_free(sys);
 	db_record_freeq(rq);
+
 	db_close(r.arg);
 	khttp_free(&r);
+
 	return EXIT_SUCCESS;
 }

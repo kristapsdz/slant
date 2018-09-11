@@ -110,6 +110,7 @@ struct	sysinfo {
 	u_int64_t	 disc_wbytes; /* last disc total write */
 	int64_t	 	 disc_ravg; /* average reads/sec */
 	int64_t	 	 disc_wavg; /* average reads/sec */
+	time_t		 boottime; /* time booted */
 };
 
 static int
@@ -186,6 +187,23 @@ sysinfo_free(struct sysinfo *p)
 	free(p);
 }
 
+static int
+sysinfo_init_boottime(struct sysinfo *p)
+{
+	int	 	bt_mib[] = { CTL_KERN, KERN_BOOTTIME };
+	struct timeval 	tv;
+	size_t	 	size;
+
+	size = sizeof(struct timeval);
+	if (sysctl(bt_mib, 2, &tv, &size, NULL, 0) < 0) {
+		warn("sysctl: CTL_KERN, KERN_BOOTTIME");
+		return 0;
+	}
+
+	p->boottime = tv.tv_sec;
+	return 1;
+}
+
 struct sysinfo *
 sysinfo_alloc(void)
 {
@@ -250,6 +268,11 @@ sysinfo_alloc(void)
 	/* we only need the amount of log(2)1024 for our conversion */
 
 	p->pageshift -= 10;
+
+	if ( ! sysinfo_init_boottime(p)) {
+		sysinfo_free(p);
+		return NULL;
+	}
 
 	return p;
 }
@@ -580,4 +603,11 @@ sysinfo_get_nprocs(const struct sysinfo *p)
 {
 
 	return p->nproc_pct;
+}
+
+time_t
+sysinfo_get_boottime(const struct sysinfo *p)
+{
+
+	return p->boottime;
 }

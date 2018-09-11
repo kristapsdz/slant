@@ -69,6 +69,15 @@ update_interval(struct kwbp *db, time_t span,
 }
 
 static void
+printinit(const struct sysinfo *p)
+{
+	time_t	 t;
+
+	t = sysinfo_get_boottime(p);
+	printf("# Boottime: %s", ctime(&t));
+}
+
+static void
 print(const struct sysinfo *p)
 {
 
@@ -83,6 +92,24 @@ print(const struct sysinfo *p)
 		sysinfo_get_discread_avg(p),
 		sysinfo_get_discwrite_avg(p),
 		sysinfo_get_nprocs(p));
+}
+
+static void
+init(struct kwbp *db, const struct sysinfo *p)
+{
+	struct system	*s;
+
+	db_trans_open(db, 1, 0);
+
+	if (NULL != (s = db_system_get_id(db, 1))) {
+		db_system_update_all
+			(db, sysinfo_get_boottime(p), 1);
+		db_system_free(s);
+	} else
+		db_system_insert
+			(db, sysinfo_get_boottime(p), 1);
+
+	db_trans_commit(db, 1);
 }
 
 /*
@@ -301,6 +328,11 @@ main(int argc, char *argv[])
 		warn("signal");
 		goto out;
 	}
+
+	if (NULL != db)
+		init(db, info);
+	else
+		printinit(info);
 
 	/*
 	 * Now enter our main loop.

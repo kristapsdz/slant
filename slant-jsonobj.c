@@ -30,6 +30,10 @@ static const char *const json_errors[] =
 	"unknown"
 };
 
+/* 
+ * FIXME: move in code that gets the json_number_s from the object so we
+ * don't need to keep redoing it.
+ */
 static int
 jsonobj_parse_int(WINDOW *errwin, const struct node *n,
 	int64_t *res, const struct json_number_s *num)
@@ -80,7 +84,11 @@ jsonobj_parse_recs(WINDOW *errwin,
 			 has_nettx, has_netrx,
 			 has_discwrite, has_discread;
 
-	if (json_type_array != e->value->type) {
+	if (NULL != *recs) {
+		xwarnx(errwin, "JSON duplicate: %s: %s", 
+			name, n->host);
+		return 0;
+	} else if (json_type_array != e->value->type) {
 		xwarnx(errwin, "JSON non-array child: %s: %s", 
 			name, n->host);
 		return 0;
@@ -199,6 +207,75 @@ err:
 	return 0;
 }
 
+static int
+jsonobj_parse_system(WINDOW *errwin, const struct node *n,
+	const struct json_object_element_s *p)
+{
+	struct json_object_s *obj;
+	struct json_object_element_s *e;
+	const struct json_number_s *num;
+	struct system	*sys;
+	int		 has_boot = 0;
+
+	if (json_type_object != p->value->type) {
+		xwarnx(errwin, "JSON non-object "
+			"child: system: %s", n->host);
+		return 0;
+	}
+
+	sys = &n->recs->system;
+
+	obj = p->value->payload;
+	for (e = obj->start; NULL != e; e = e->next) {
+		if (0 == strcasecmp(e->name->string, "boot")) {
+			if (json_type_number !=
+			    e->value->type) {
+				xwarnx(errwin, "JSON expected number "
+					"for array object: %s", 
+					n->host);
+				return 0;
+			}
+			num = e->value->payload;
+			if ( ! jsonobj_parse_int
+			    (errwin, n, &sys->boot, num)) 
+				return 0;
+			has_boot = 1;
+		} else 
+			continue;
+	}
+
+	if (0 == has_boot) {
+		xwarnx(errwin, "JSON missing fields: %s", n->host);
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
+jsonobj_parse_version(WINDOW *errwin, const struct node *n,
+	const struct json_object_element_s *p)
+{
+	struct json_string_s	*string;
+
+	if (NULL != n->recs->version) {
+		xwarnx(errwin, "JSON duplicate version: %s", n->host);
+		return 0;
+	} else if (json_type_string != p->value->type) {
+		xwarnx(errwin, "JSON non-string "
+			"child: version: %s", n->host);
+		return 0;
+	}
+
+	string = p->value->payload;
+	n->recs->version = strdup(string->string);
+	if (NULL == n->recs->version) {
+		xwarn(errwin, NULL);
+		return 0;
+	}
+	return 1;
+}
+
 /*
  * Parse the full response.
  */
@@ -210,7 +287,7 @@ jsonobj_parse(WINDOW *errwin,
 	struct json_object_s *obj;
 	struct json_object_element_s *e;
 	struct json_parse_result_s res;
-	int	 rc;
+	int	 rc, has_version, has_system;
 
 	/* Consider this a recoverable error. */
 
@@ -240,6 +317,7 @@ jsonobj_parse(WINDOW *errwin,
 		}
 	} 
 
+	free(n->recs->version);
 	free(n->recs->byqmin);
 	free(n->recs->bymin);
 	free(n->recs->byhour);
@@ -247,40 +325,43 @@ jsonobj_parse(WINDOW *errwin,
 	free(n->recs->byweek);
 	free(n->recs->byyear);
 
-	n->recs->byqminsz =
-		n->recs->byminsz =
-		n->recs->byhoursz = 
-		n->recs->bydaysz = 
-		n->recs->byweeksz = 
-		n->recs->byyearsz = 0;
+	memset(n->recs, 0, sizeof(struct recset));
+
+	has_system = has_version = 0;
 
 	obj = s->payload;
 	for (e = obj->start; NULL != e; e = e->next) {
-		if (0 == strcasecmp(e->name->string, "qmin")) 
+		if (0 == strcasecmp(e->name->string, "qmin")) {
 			rc = jsonobj_parse_recs(errwin, n, "qmin", e,
 				&n->recs->byqmin,
 				&n->recs->byqminsz);
-		else if (0 == strcasecmp(e->name->string, "min"))
+		} else if (0 == strcasecmp(e->name->string, "min")) {
 			rc = jsonobj_parse_recs(errwin, n, "min", e,
 				&n->recs->bymin,
 				&n->recs->byminsz);
-		else if (0 == strcasecmp(e->name->string, "hour"))
+		} else if (0 == strcasecmp(e->name->string, "hour")) {
 			rc = jsonobj_parse_recs(errwin, n, "hour", e,
 				&n->recs->byhour,
 				&n->recs->byhoursz);
-		else if (0 == strcasecmp(e->name->string, "day"))
+		} else if (0 == strcasecmp(e->name->string, "day")) {
 			rc = jsonobj_parse_recs(errwin, n, "day", e,
 				&n->recs->byday,
 				&n->recs->bydaysz);
-		else if (0 == strcasecmp(e->name->string, "week"))
+		} else if (0 == strcasecmp(e->name->string, "week")) {
 			rc = jsonobj_parse_recs(errwin, n, "week", e,
 				&n->recs->byweek,
 				&n->recs->byweeksz);
-		else if (0 == strcasecmp(e->name->string, "year"))
+		} else if (0 == strcasecmp(e->name->string, "year")) {
 			rc = jsonobj_parse_recs(errwin, n, "year", e,
 				&n->recs->byyear,
 				&n->recs->byyearsz);
-		else
+		} else if (0 == strcasecmp(e->name->string, "version")) {
+			rc = jsonobj_parse_version(errwin, n, e);
+			has_version = rc > 0;
+		} else if (0 == strcasecmp(e->name->string, "system")) {
+			rc = jsonobj_parse_system(errwin, n, e);
+			has_system = rc > 0;
+		} else
 			continue;
 
 		if (rc <= 0) {
@@ -290,6 +371,13 @@ jsonobj_parse(WINDOW *errwin,
 	}
 
 	free(s);
+
+	if (0 == has_version ||
+	    0 == has_system) {
+		xwarnx(errwin, "JSON missing fields: %s", n->host);
+		return 0;
+	}
+
 	return 1;
 }
 

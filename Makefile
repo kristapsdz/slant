@@ -12,10 +12,12 @@ CGIBIN	   = $(WPREFIX)/cgi-bin
 DATADIR	   = $(WPREFIX)/data
 
 DBFILE	   = /data/slant.db
-VERSION	   = 0.0.4
 WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
+
+VERSION	   = 0.0.4
+CFLAGS	  += -DVERSION=\"$(VERSION)\"
 
 DOTAR	   = Makefile \
 	     slant-cgi.c \

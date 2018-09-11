@@ -47,9 +47,13 @@ nodes_free(struct node *n, size_t sz)
 		free(n[i].xfer.wbuf);
 		free(n[i].xfer.rbuf);
 		if (NULL != n[i].recs) {
+			free(n[i].recs->version);
 			free(n[i].recs->byqmin);
 			free(n[i].recs->bymin);
 			free(n[i].recs->byhour);
+			free(n[i].recs->byday);
+			free(n[i].recs->byweek);
+			free(n[i].recs->byyear);
 			free(n[i].recs);
 		}
 	}

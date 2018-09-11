@@ -73,6 +73,8 @@ struct	draw {
  * This can be totally empty: we have no constraints.
  */
 struct	recset {
+	char		*version;
+	struct system	 system;
 	struct record	*byqmin;
 	size_t		 byqminsz;
 	struct record	*bymin;

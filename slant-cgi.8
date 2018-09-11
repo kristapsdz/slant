@@ -27,17 +27,42 @@ Other (non-200) codes are possible and follow standard definitions.
 On success,
 .Nm
 returns an HTTP code 200 and a valid JSON document.
-This consists of the following:
+.Pp
+The document consists of the following.
+In this description, integers
+.Pq Li int
+are serialised from 64-bit signed numbers.
+Real-valued numbers
+.Pq Li real
+are serialised from double-precision numbers.
 .Bd -literal
-{ qmin: [ records... ],
-   min: [ records... ],
-  hour: [ records... ],
-   day: [ records... ],
-  week: [ records... ],
-  year: [ records... ] }
+{ version: "x.y.z",
+   system: { system },
+     qmin: [ records... ],
+      min: [ records... ],
+     hour: [ records... ],
+      day: [ records... ],
+     week: [ records... ],
+     year: [ records... ] 
+}
 .Ed
 .Pp
-These are the possibly-empty sets of records accumulated over a given
+The
+.Li version
+is the software suite version.
+This is informational.
+The
+.Li system ,
+pair consists of system information:
+.Bd -literal
+{ boottime: int }
+.Ed
+.Pp
+For the time being it consists only of
+.Li boottime ,
+the UNIX epoch value for when the system was last booted.
+.Pp
+The last six are the possibly-empty sets of records accumulated over a given
 interval of time in quarter-minute quanta.
 So each
 .Li qmin
@@ -71,11 +96,10 @@ Each record consists of the following:
  discwrite: int,
     nprocs: real,
   interval: int,
-        id: int }
+        id: int 
+}
 .Ed
 .Pp
-Integers are serialised from 64-bit signed numbers.
-Real-valued numbers are serialised from double-precision numbers.
 The fields are defined as follows:
 .Bl -tag -width Ds
 .It Li ctime

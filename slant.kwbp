@@ -15,6 +15,28 @@ enum	interval {
 	item byyear comment "Per-year record type.";
 };
 
+struct	system {
+	field boot epoch comment
+		"When the system was last booted.";
+	field id int unique default 1;
+
+	insert;
+
+	update boot: id: name all;
+
+	search id: name id;
+
+	roles produce {
+		insert;
+		update all;
+		search id;
+	};
+
+	roles consume {
+		search id;
+	};
+};
+
 struct	record {
 	field ctime epoch comment
 		"Time the record started.
