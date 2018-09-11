@@ -1,15 +1,26 @@
 #! /bin/sh
 
-if [ -n "`pgrep slant-collectd`" ]
+stopped=
+pgrep slant-collectd >/dev/null
+if [ $? -eq 1 ]
 then
 	echo "slant-collectd running: stopping it first" 1>&2
 	pkill slant-collectd
 	sleep 2
-	if [ -n "`pgrep slant-collectd`" ]
+	pgrep slant-collectd >/dev/null
+	if [ $? -eq 1 ]
 	then
-		echo "slant-collectd: not dying" 1>&2
-		exit 1
+		echo "slant-collectd: not dying: trying again" 1>&2
+		pkill slant-collectd
+		sleep 5
+		pgrep slant-collectd >/dev/null
+		if [ $? -eq 1 ]
+		then
+			echo "slant-collectd: not dying" 1>&2
+			exit 1
+		fi
 	fi
+	stopped=1
 fi
 
 set -e
@@ -46,3 +57,8 @@ install -m 0444  "@SHAREDIR@/slant/slant.kwbp" "@DATADIR@/slant.kwbp"
 chmod 555 "@CGIBIN@/slant-cgi"
 rm -f "@DATADIR@/slant-upgrade.sql"
 echo "@DATADIR@/slant.db: patch success"
+
+if [ -n "$stopped" ]
+then
+	echo "slant-collectd should be restarted"
+fi
