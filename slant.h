@@ -204,6 +204,9 @@ void	 xwarnx(WINDOW *, const char *, ...)
 void	 xwarn(WINDOW *, const char *, ...)
 		__attribute__((format(printf, 2, 3)));
 
+size_t	 compute_width(const struct node *, size_t,
+		const struct draw *);
+
 int	 dns_parse_url(WINDOW *, struct node *);
 int	 dns_resolve(WINDOW *, const char *, struct dns *);
 

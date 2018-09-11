@@ -233,6 +233,58 @@ xdbg(WINDOW *errwin, const char *fmt, ...)
 	fflush(stderr);
 }
 
+static int
+layout(size_t maxx, const struct node *n, size_t nsz, struct draw *d)
+{
+
+	d->box_cpu = CPU_QMIN_BARS | CPU_QMIN | CPU_HOUR;
+	d->box_mem = MEM_QMIN_BARS | MEM_QMIN | MEM_HOUR;
+	d->box_net = NET_QMIN | NET_HOUR;
+	d->box_disc = DISC_QMIN | DISC_HOUR;
+	d->box_procs = PROCS_QMIN_BARS | PROCS_QMIN | PROCS_HOUR;
+	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
+	d->box_host = HOST_ACCESS;
+
+	if (maxx > compute_width(n, nsz, d)) 
+		return 1;
+
+	d->box_cpu = CPU_QMIN | CPU_HOUR;
+	d->box_mem = MEM_QMIN | MEM_HOUR;
+	d->box_net = NET_QMIN | NET_HOUR;
+	d->box_disc = DISC_QMIN | DISC_HOUR;
+	d->box_procs = PROCS_QMIN | PROCS_HOUR;
+	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
+	d->box_host = HOST_ACCESS;
+
+	if (maxx > compute_width(n, nsz, d)) 
+		return 1;
+
+	d->box_cpu = CPU_QMIN;
+	d->box_mem = MEM_QMIN;
+	d->box_net = NET_QMIN;
+	d->box_disc = DISC_QMIN;
+	d->box_procs = PROCS_QMIN;
+	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
+	d->box_host = HOST_ACCESS;
+
+	if (maxx > compute_width(n, nsz, d)) 
+		return 1;
+
+	d->box_cpu = CPU_QMIN;
+	d->box_mem = MEM_QMIN;
+	d->box_net = NET_QMIN;
+	d->box_disc = DISC_QMIN;
+	d->box_procs = PROCS_QMIN;
+	d->box_link = LINK_ACCESS;
+	d->box_host = HOST_ACCESS;
+
+	if (maxx > compute_width(n, nsz, d)) 
+		return 1;
+
+	warnx("screen too narrow");
+	return 0;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -264,19 +316,13 @@ main(int argc, char *argv[])
 		if (c < 0)
 			err(EXIT_FAILURE, NULL);
 		freopen(cp, "a", stderr);
+		free(cp);
 	}
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
 	memset(&d, 0, sizeof(struct draw));
-	d.box_cpu = CPU_QMIN_BARS | CPU_MIN;
-	d.box_mem = MEM_QMIN_BARS | MEM_MIN;
-	d.box_net = NET_QMIN | NET_MIN;
-	d.box_disc = DISC_QMIN | DISC_MIN;
-	d.box_procs = PROCS_QMIN_BARS | PROCS_QMIN | PROCS_MIN;
-	d.box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
-	d.box_host = HOST_ACCESS;
 
 	/* Start up TLS handling really early. */
 
@@ -417,6 +463,11 @@ main(int argc, char *argv[])
 
 	if (-1 == pledge("tty rpath inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
+
+	/* Configure what we see. */
+
+	if ( ! layout(maxx, n, nsz, &d))
+		goto out;
 
 	/*
 	 * Main loop: continue trying to pull down data from all of the

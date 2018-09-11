@@ -753,6 +753,171 @@ draw_centre(WINDOW *win, const char *v, size_t sz)
 		waddch(win, ' ');
 }
 
+size_t
+compute_width(const struct node *n, size_t nsz, 
+	const struct draw *d)
+{
+	size_t	 sz, maxhostsz, maxipsz, i;
+	int	 bits;
+
+	maxhostsz = strlen("hostname");
+	for (i = 0; i < nsz; i++) {
+		sz = strlen(n[i].host);
+		if (sz > maxhostsz)
+			maxhostsz = sz;
+	}
+
+	maxipsz = strlen("address");
+	for (i = 0; i < nsz; i++) {
+		sz = strlen(n[i].addrs.addrs[n[i].addrs.curaddr].ip);
+		if (sz > maxipsz)
+			maxipsz = sz;
+	}
+
+	if (d->box_cpu) {
+		bits = d->box_cpu;
+		sz += 3;
+		if (CPU_QMIN_BARS & bits) {
+			bits &= ~CPU_QMIN_BARS;
+			sz += 10 + (bits ? 1 : 0);
+		}
+		if (CPU_QMIN & bits) {
+			bits &= ~CPU_QMIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_MIN & bits) {
+			bits &= ~CPU_MIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_HOUR & bits) {
+			bits &= ~CPU_HOUR;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (CPU_DAY & bits) {
+			bits &= ~CPU_DAY;
+			sz += 6;
+		}
+	}
+
+	if (d->box_mem) {
+		bits = d->box_mem;
+		sz += 3;
+		if (MEM_QMIN_BARS & bits) {
+			bits &= ~MEM_QMIN_BARS;
+			sz += 10 + (bits ? 1 : 0);
+		}
+		if (MEM_QMIN & bits) {
+			bits &= ~MEM_QMIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (MEM_MIN & bits) {
+			bits &= ~MEM_MIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (MEM_HOUR & bits) {
+			bits &= ~MEM_HOUR;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (MEM_DAY & bits) {
+			bits &= ~MEM_DAY;
+			sz += 6;
+		}
+	}
+
+	if (d->box_procs) {
+		bits = d->box_procs;
+		sz += 3;
+		if (PROCS_QMIN_BARS & bits) {
+			bits &= ~PROCS_QMIN_BARS;
+			sz += 10 + (bits ? 1 : 0);
+		}
+		if (PROCS_QMIN & bits) {
+			bits &= ~PROCS_QMIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_MIN & bits) {
+			bits &= ~PROCS_MIN;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_HOUR & bits) {
+			bits &= ~PROCS_HOUR;
+			sz += 6 + (bits ? 1 : 0);
+		}
+		if (PROCS_DAY & bits) {
+			bits &= ~PROCS_DAY;
+			sz += 6;
+		}
+	}
+
+	if (d->box_net) {
+		bits = d->box_net;
+		sz += 3;
+		if (NET_QMIN & bits) {
+			bits &= ~NET_QMIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_MIN & bits) {
+			bits &= ~NET_MIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_HOUR & bits) {
+			bits &= ~NET_HOUR;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_DAY & bits) {
+			bits &= ~NET_DAY;
+			sz += 13;
+		}
+	}
+
+	if (d->box_disc) {
+		bits = d->box_disc;
+		sz += 3;
+		if (DISC_QMIN & bits) {
+			bits &= ~DISC_QMIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_MIN & bits) {
+			bits &= ~DISC_MIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_HOUR & bits) {
+			bits &= ~DISC_HOUR;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_DAY & bits) {
+			bits &= ~DISC_DAY;
+			sz += 13;
+		}
+	}
+
+	if (d->box_link) {
+		bits = d->box_link;
+		sz += 3;
+		if (LINK_IP & bits) {
+			bits &= ~LINK_IP;
+			sz += maxipsz + 
+				((bits & LINK_STATE) ? 1 : 0);
+		}
+		if (LINK_STATE & bits) {
+			bits &= ~LINK_STATE;
+			sz += 4 + (bits ? 1 : 0);
+		}
+		if (LINK_ACCESS & bits) {
+			bits &= ~LINK_ACCESS;
+			sz += 9;
+		}
+	}
+
+	if (d->box_host) {
+		sz += 2;
+		/* "Last" time. */
+		sz += 9;
+	}
+
+	return sz;
+}
+
 static void
 draw_header(WINDOW *win, const struct draw *d, 
 	size_t maxhostsz, size_t maxipsz)
@@ -873,7 +1038,10 @@ draw_header(WINDOW *win, const struct draw *d,
 			bits &= ~NET_DAY;
 			sz += 13;
 		}
-		draw_centre(win, "inet rx:tx", sz);
+		if (sz < 12)
+			draw_centre(win, "inet", sz);
+		else
+			draw_centre(win, "inet rx:tx", sz);
 		waddch(win, ' ');
 	}
 
@@ -898,7 +1066,10 @@ draw_header(WINDOW *win, const struct draw *d,
 			bits &= ~DISC_DAY;
 			sz += 13;
 		}
-		draw_centre(win, "disc read:write", sz);
+		if (sz < 17)
+			draw_centre(win, "disc r:w", sz);
+		else
+			draw_centre(win, "disc read:write", sz);
 		waddch(win, ' ');
 	}
 
