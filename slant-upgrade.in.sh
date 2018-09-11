@@ -2,19 +2,19 @@
 
 stopped=
 pgrep slant-collectd >/dev/null
-if [ $? -eq 1 ]
+if [ $? -ne 1 ]
 then
 	echo "slant-collectd running: stopping it first" 1>&2
 	pkill slant-collectd
 	sleep 2
 	pgrep slant-collectd >/dev/null
-	if [ $? -eq 1 ]
+	if [ $? -ne 1 ]
 	then
 		echo "slant-collectd: not dying: trying again" 1>&2
 		pkill slant-collectd
 		sleep 5
 		pgrep slant-collectd >/dev/null
-		if [ $? -eq 1 ]
+		if [ $? -ne 1 ]
 		then
 			echo "slant-collectd: not dying" 1>&2
 			exit 1
