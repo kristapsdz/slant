@@ -29,7 +29,6 @@ DOTAR	   = Makefile \
 	     slant-dns.c \
 	     slant-draw.c \
 	     slant-http.c \
-	     slant-json.c \
 	     slant-jsonobj.c \
 	     slant-upgrade.in.sh \
 	     slant-upgrade.8 \
@@ -41,8 +40,8 @@ SLANT_OBJS = slant.o \
 	     slant-dns.o \
 	     slant-draw.o \
 	     slant-http.o \
-	     slant-json.o \
-	     slant-jsonobj.o
+	     slant-jsonobj.o \
+	     json.o
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
@@ -110,7 +109,7 @@ slant-cgi: slant-cgi.o db.o json.o
 slant-cgi.o: config.h
 
 slant: $(SLANT_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
@@ -130,7 +129,7 @@ slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
 
 db.o slant-collectd.o slant-cgi.o: db.h
 
-json.o slant-cgi.o: json.h
+json.o slant-cgi.o slant-jsonobj.o: json.h
 
 $(SLANT_OBJS): slant.h
 
@@ -147,10 +146,10 @@ db.h: slant.kwbp
 	kwebapp-c-header -s -Nb slant.kwbp > $@
 
 json.h: slant.kwbp
-	kwebapp-c-header -s -g JSON_H -j -Nbd slant.kwbp > $@
+	kwebapp-c-header -s -g JSON_H -jJ -Nbd slant.kwbp > $@
 
 db.c: slant.kwbp
 	kwebapp-c-source -s -h extern.h,db.h slant.kwbp > $@
 
 json.c: slant.kwbp
-	kwebapp-c-source -s -Idj -j -Nd -h extern.h,json.h slant.kwbp > $@
+	kwebapp-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
