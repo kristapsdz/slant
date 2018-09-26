@@ -153,7 +153,7 @@ void	 draw(WINDOW *, struct draw *, time_t,
 void	 drawtimes(WINDOW *, const struct draw *, time_t,
 		const struct node *, size_t, time_t);
 
-int 	 jsonobj_parse(WINDOW *, struct node *n, const char *, size_t);
+int 	 json_parse(WINDOW *, struct node *n, const char *, size_t);
 
 __END_DECLS
 

@@ -99,7 +99,7 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 		fprintf(stderr, "------<------\n");
 		fflush(stderr);
 		rc = 1;
-	} else if ((rc = jsonobj_parse(errwin, n, start, sz)) > 0) {
+	} else if ((rc = json_parse(errwin, n, start, sz)) > 0) {
 		n->dirty = 1;
 		n->lastseen = time(NULL);
 	}

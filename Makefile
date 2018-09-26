@@ -29,7 +29,7 @@ DOTAR	   = Makefile \
 	     slant-dns.c \
 	     slant-draw.c \
 	     slant-http.c \
-	     slant-jsonobj.c \
+	     slant-json.c \
 	     slant-upgrade.in.sh \
 	     slant-upgrade.8 \
 	     slant.1 \
@@ -40,7 +40,7 @@ SLANT_OBJS = slant.o \
 	     slant-dns.o \
 	     slant-draw.o \
 	     slant-http.o \
-	     slant-jsonobj.o \
+	     slant-json.o \
 	     json.o
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
@@ -129,7 +129,7 @@ slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
 
 db.o slant-collectd.o slant-cgi.o: db.h
 
-json.o slant-cgi.o slant-jsonobj.o: json.h
+json.o slant-cgi.o slant-json.o: json.h
 
 $(SLANT_OBJS): slant.h
 

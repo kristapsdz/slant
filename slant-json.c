@@ -1,15 +1,11 @@
 #include <sys/queue.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include <assert.h>
-#include <errno.h>
-#include <limits.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <kcgi.h>
 #include <kcgijson.h>
@@ -19,7 +15,7 @@
 #include "json.h"
 
 static int
-jsonobj_parse_obj(WINDOW *errwin, const char *str, 
+json_parse_obj(WINDOW *errwin, const char *str, 
 	const jsmntok_t *t, size_t pos, struct node *n, int toks)
 {
 	int	 rc = 0;
@@ -112,8 +108,7 @@ jsonobj_parse_obj(WINDOW *errwin, const char *str,
  * Parse the full response.
  */
 int
-jsonobj_parse(WINDOW *errwin, 
-	struct node *n, const char *str, size_t sz)
+json_parse(WINDOW *errwin, struct node *n, const char *str, size_t sz)
 {
 	int	 	 i, toks, ntoks, rc;
 	size_t		 j;
@@ -159,7 +154,7 @@ jsonobj_parse(WINDOW *errwin,
 	}
 
 	for (i = 0, j = 1; i < t[0].size; i++) {
-		rc = jsonobj_parse_obj
+		rc = json_parse_obj
 			(errwin, str, &t[j], 0, n, toks - j);
 		if (rc < 0)
 			goto syserr;
