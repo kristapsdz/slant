@@ -26,6 +26,7 @@ DOTAR	   = Makefile \
 	     slant-collectd.8 \
 	     slant-collectd.c \
 	     slant-collectd.h \
+	     slant-config.c \
 	     slant-dns.c \
 	     slant-draw.c \
 	     slant-http.c \
@@ -37,6 +38,7 @@ DOTAR	   = Makefile \
 	     slant.h \
 	     slant.kwbp
 SLANT_OBJS = slant.o \
+	     slant-config.o \
 	     slant-dns.o \
 	     slant-draw.o \
 	     slant-http.o \

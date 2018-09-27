@@ -15,21 +15,21 @@
 #include "json.h"
 
 static int
-json_parse_obj(WINDOW *errwin, const char *str, 
+json_parse_obj(struct out *out, const char *str, 
 	const jsmntok_t *t, size_t pos, struct node *n, int toks)
 {
 	int	 rc = 0;
 
 	if (jsmn_eq(str, &t[pos], "version")) {
 		if (JSMN_STRING != t[++pos].type) {
-			xwarnx(errwin, "JSON version node "
+			xwarnx(out, "JSON version node "
 				"not a string: %s", n->host);
 			return 0;
 		}
 		n->recs->version = strndup
 			(str + t[pos].start,
 			 t[pos].end - t[pos].start);
-		xwarnx(errwin, "JSON version: %s", n->recs->version);
+		xwarnx(out, "JSON version: %s", n->recs->version);
 		return NULL == n->recs->version ? 0 : 1;
 	}
 
@@ -37,7 +37,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 
 	if (jsmn_eq(str, &t[pos], "qmin")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON qmin node "
+			xwarnx(out, "JSON qmin node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -47,7 +47,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "min")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON min node "
+			xwarnx(out, "JSON min node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -57,7 +57,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "hour")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON hour node "
+			xwarnx(out, "JSON hour node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -67,7 +67,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "day")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON day node "
+			xwarnx(out, "JSON day node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -77,7 +77,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "week")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON week node "
+			xwarnx(out, "JSON week node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -87,7 +87,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "year")) {
 		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(errwin, "JSON year node "
+			xwarnx(out, "JSON year node "
 				"not an array: %s", n->host);
 			return 0;
 		}
@@ -96,7 +96,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
 			 &n->recs->byyearsz,
 			 str, &t[pos], toks - pos);
 	} else {
-		xwarnx(errwin, "JSON node "
+		xwarnx(out, "JSON node "
 			"unknown name: %d, %s", t[pos].type, n->host);
 		return 0;
 	}
@@ -108,7 +108,7 @@ json_parse_obj(WINDOW *errwin, const char *str,
  * Parse the full response.
  */
 int
-json_parse(WINDOW *errwin, struct node *n, const char *str, size_t sz)
+json_parse(struct out *out, struct node *n, const char *str, size_t sz)
 {
 	int	 	 i, toks, ntoks, rc;
 	size_t		 j;
@@ -144,18 +144,18 @@ json_parse(WINDOW *errwin, struct node *n, const char *str, size_t sz)
 	ntoks = jsmn_parse(&jp, str, sz, t, toks);
 
 	if (ntoks != toks) {
-		xwarnx(errwin, "token count: %d != %d: %s", 
+		xwarnx(out, "token count: %d != %d: %s", 
 			ntoks, toks, n->host);
 		goto err;
 	} else if (t[0].type != JSMN_OBJECT) {
-		xwarnx(errwin, "top-level JSON "
+		xwarnx(out, "top-level JSON "
 			"node not object: %s", n->host);
 		goto err;
 	}
 
 	for (i = 0, j = 1; i < t[0].size; i++) {
 		rc = json_parse_obj
-			(errwin, str, &t[j], 0, n, toks - j);
+			(out, str, &t[j], 0, n, toks - j);
 		if (rc < 0)
 			goto syserr;
 		else if (0 == rc)
@@ -165,15 +165,15 @@ json_parse(WINDOW *errwin, struct node *n, const char *str, size_t sz)
 
 	return 1;
 syserr:
-	xwarn(errwin, NULL);
+	xwarn(out, NULL);
 	free(t);
 	return -1;
 err:
-	xwarnx(errwin, "JSON parse: %s", n->host);
-	fprintf(stderr, "------>------\n");
-	fprintf(stderr, "%.*s\n", (int)sz, str);
-	fprintf(stderr, "------<------\n");
-	fflush(stderr);
+	xwarnx(out, "JSON parse: %s", n->host);
+	fprintf(out->errs, "------>------\n");
+	fprintf(out->errs, "%.*s\n", (int)sz, str);
+	fprintf(out->errs, "------<------\n");
+	fflush(out->errs);
 	free(t);
 	return 0;
 }

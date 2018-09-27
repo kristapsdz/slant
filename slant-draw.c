@@ -919,21 +919,21 @@ compute_width(const struct node *n, size_t nsz,
 }
 
 static void
-draw_header(WINDOW *win, const struct draw *d, 
+draw_header(struct out *out, const struct draw *d, 
 	size_t maxhostsz, size_t maxipsz)
 {
 	size_t	 sz;
 	int	 bits;
 
-	wmove(win, 0, 1);
-	wclrtoeol(win);
-	wprintw(win, "%*s", (int)maxhostsz, "hostname");
-	waddch(win, ' ');
+	wmove(out->mainwin, 0, 1);
+	wclrtoeol(out->mainwin);
+	wprintw(out->mainwin, "%*s", (int)maxhostsz, "hostname");
+	waddch(out->mainwin, ' ');
 
 	if (d->box_cpu) {
 		bits = d->box_cpu;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (CPU_QMIN_BARS & bits) {
 			bits &= ~CPU_QMIN_BARS;
@@ -955,14 +955,14 @@ draw_header(WINDOW *win, const struct draw *d,
 			bits &= ~CPU_DAY;
 			sz += 6;
 		}
-		draw_centre(win, "cpu", sz);
-		waddch(win, ' ');
+		draw_centre(out->mainwin, "cpu", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_mem) {
 		bits = d->box_mem;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (MEM_QMIN_BARS & bits) {
 			bits &= ~MEM_QMIN_BARS;
@@ -984,14 +984,14 @@ draw_header(WINDOW *win, const struct draw *d,
 			bits &= ~MEM_DAY;
 			sz += 6;
 		}
-		draw_centre(win, "mem", sz);
-		waddch(win, ' ');
+		draw_centre(out->mainwin, "mem", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_procs) {
 		bits = d->box_procs;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (PROCS_QMIN_BARS & bits) {
 			bits &= ~PROCS_QMIN_BARS;
@@ -1013,14 +1013,14 @@ draw_header(WINDOW *win, const struct draw *d,
 			bits &= ~PROCS_DAY;
 			sz += 6;
 		}
-		draw_centre(win, "procs", sz);
-		waddch(win, ' ');
+		draw_centre(out->mainwin, "procs", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_net) {
 		bits = d->box_net;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (NET_QMIN & bits) {
 			bits &= ~NET_QMIN;
@@ -1039,16 +1039,16 @@ draw_header(WINDOW *win, const struct draw *d,
 			sz += 13;
 		}
 		if (sz < 12)
-			draw_centre(win, "inet", sz);
+			draw_centre(out->mainwin, "inet", sz);
 		else
-			draw_centre(win, "inet rx:tx", sz);
-		waddch(win, ' ');
+			draw_centre(out->mainwin, "inet rx:tx", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_disc) {
 		bits = d->box_disc;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (DISC_QMIN & bits) {
 			bits &= ~DISC_QMIN;
@@ -1067,16 +1067,16 @@ draw_header(WINDOW *win, const struct draw *d,
 			sz += 13;
 		}
 		if (sz < 17)
-			draw_centre(win, "disc r:w", sz);
+			draw_centre(out->mainwin, "disc r:w", sz);
 		else
-			draw_centre(win, "disc read:write", sz);
-		waddch(win, ' ');
+			draw_centre(out->mainwin, "disc read:write", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_link) {
 		bits = d->box_link;
-		draw_main_separator(win);
-		waddch(win, ' ');
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
 		sz = 0;
 		if (LINK_IP & bits) {
 			bits &= ~LINK_IP;
@@ -1092,21 +1092,21 @@ draw_header(WINDOW *win, const struct draw *d,
 			sz += 9;
 		}
 		if (sz < 12)
-			draw_centre(win, "link", sz);
+			draw_centre(out->mainwin, "link", sz);
 		else
-			draw_centre(win, "link state", sz);
-		waddch(win, ' ');
+			draw_centre(out->mainwin, "link state", sz);
+		waddch(out->mainwin, ' ');
 	}
 
 	if (d->box_host) {
-		draw_main_separator(win);
-		waddch(win, ' ');
-		wprintw(win, "%9s", "last");
+		draw_main_separator(out->mainwin);
+		waddch(out->mainwin, ' ');
+		wprintw(out->mainwin, "%9s", "last");
 	}
 }
 
 void
-draw(WINDOW *win, struct draw *d, time_t timeo,
+draw(struct out *out, struct draw *d, time_t timeo,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i, sz, maxhostsz, maxipsz,
@@ -1115,7 +1115,7 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 
 	/* Don't let us run off the window. */
 
-	getmaxyx(win, maxy, maxx);
+	getmaxyx(out->mainwin, maxy, maxx);
 	if (nsz > (size_t)maxy - 1)
 		nsz = maxy - 1;
 
@@ -1134,56 +1134,56 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 	}
 
 	for (i = 0; i < nsz; i++) {
-		wmove(win, i + 1, 1);
-		wclrtoeol(win);
-		wattron(win, A_BOLD);
-		wprintw(win, "%*s", (int)maxhostsz, n[i].host);
-		wattroff(win, A_BOLD);
-		waddch(win, ' ');
+		wmove(out->mainwin, i + 1, 1);
+		wclrtoeol(out->mainwin);
+		wattron(out->mainwin, A_BOLD);
+		wprintw(out->mainwin, "%*s", (int)maxhostsz, n[i].host);
+		wattroff(out->mainwin, A_BOLD);
+		waddch(out->mainwin, ' ');
 		if (d->box_cpu) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			draw_cpu(d, win, &n[i]);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			draw_cpu(d, out->mainwin, &n[i]);
+			waddch(out->mainwin, ' ');
 		}
 		if (d->box_mem) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			draw_mem(d, win, &n[i]);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			draw_mem(d, out->mainwin, &n[i]);
+			waddch(out->mainwin, ' ');
 		}
 		if (d->box_procs) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			draw_procs(d, win, &n[i]);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			draw_procs(d, out->mainwin, &n[i]);
+			waddch(out->mainwin, ' ');
 		}
 		if (d->box_net) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			draw_inet(d, win, &n[i]);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			draw_inet(d, out->mainwin, &n[i]);
+			waddch(out->mainwin, ' ');
 		}
 		if (d->box_disc) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			draw_disc(d, win, &n[i]);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			draw_disc(d, out->mainwin, &n[i]);
+			waddch(out->mainwin, ' ');
 		}
 		if (d->box_link) {
-			draw_main_separator(win);
-			waddch(win, ' ');
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
 			draw_link(d, maxipsz, timeo, t,
-				win, &n[i], &lastseenpos);
-			waddch(win, ' ');
+				out->mainwin, &n[i], &lastseenpos);
+			waddch(out->mainwin, ' ');
 		} else
 			lastseenpos = 0;
 		if (d->box_host) {
-			draw_main_separator(win);
-			waddch(win, ' ');
-			getyx(win, y, x);
+			draw_main_separator(out->mainwin);
+			waddch(out->mainwin, ' ');
+			getyx(out->mainwin, y, x);
 			intervalpos = x;
-			draw_interval(win, 15, 
+			draw_interval(out->mainwin, 15, 
 				timeo, get_last(&n[i]), t);
 		} else
 			intervalpos = 0;
@@ -1198,7 +1198,7 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
 	d->lastseenpos = lastseenpos;
 
 	if (chhead)
-		draw_header(win, d, maxhostsz, maxipsz);
+		draw_header(out, d, maxhostsz, maxipsz);
 }
 
 /*
@@ -1208,7 +1208,7 @@ draw(WINDOW *win, struct draw *d, time_t timeo,
  * and keeps our display running tight.
  */
 void
-drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
+drawtimes(struct out *out, const struct draw *d, time_t timeo,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i;
@@ -1221,18 +1221,20 @@ drawtimes(WINDOW *win, const struct draw *d, time_t timeo,
 
 	/* Don't let us run off the window. */
 
-	getmaxyx(win, maxy, maxx);
+	getmaxyx(out->mainwin, maxy, maxx);
 	if (nsz > (size_t)maxy - 1)
 		nsz = maxy - 1;
 
 	for (i = 0; i < nsz; i++) {
 		if (d->intervalpos) {
-			wmove(win, i + 1, d->intervalpos);
-			draw_interval(win, 15, timeo, get_last(&n[i]), t);
+			wmove(out->mainwin, i + 1, d->intervalpos);
+			draw_interval(out->mainwin, 15, 
+				timeo, get_last(&n[i]), t);
 		}
 		if (d->lastseenpos) {
-			wmove(win, i + 1, d->lastseenpos);
-			draw_interval(win, timeo, timeo, n[i].lastseen, t);
+			wmove(out->mainwin, i + 1, d->lastseenpos);
+			draw_interval(out->mainwin, timeo, 
+				timeo, n[i].lastseen, t);
 		}
 	}
 }

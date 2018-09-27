@@ -115,7 +115,7 @@ struct	xfer {
 
 struct	node {
 	enum state	 state; /* state of node */
-	char		*url; /* full URL for connect */
+	const char	*url; /* full URL for connect */
 	char		*host; /* just hostname of connect */
 	char		*path; /* path of connect */
 	struct xfer	 xfer; /* transfer information */
@@ -126,34 +126,48 @@ struct	node {
 	int		 dirty; /* new results */
 };
 
+struct	config {
+	char		**urls;
+	size_t		  urlsz;
+};
+
+struct	out {
+	WINDOW		*errwin;
+	WINDOW		*mainwin;
+	FILE		*errs;
+};
+
 __BEGIN_DECLS
 
-void	 xdbg(WINDOW *, const char *, ...)
+void	 xdbg(struct out *, const char *, ...)
 		__attribute__((format(printf, 2, 3)));
-void	 xwarnx(WINDOW *, const char *, ...)
+void	 xwarnx(struct out *, const char *, ...)
 		__attribute__((format(printf, 2, 3)));
-void	 xwarn(WINDOW *, const char *, ...)
+void	 xwarn(struct out *, const char *, ...)
 		__attribute__((format(printf, 2, 3)));
 
 size_t	 compute_width(const struct node *, size_t,
 		const struct draw *);
 
-int	 dns_parse_url(WINDOW *, struct node *);
-int	 dns_resolve(WINDOW *, const char *, struct dns *);
+int	 dns_parse_url(struct out *, struct node *);
+int	 dns_resolve(struct out *, const char *, struct dns *);
 
-int	 http_init_connect(WINDOW *, struct node *);
-int	 http_close_done(WINDOW *, struct node *);
-int	 http_close_err(WINDOW *, struct node *);
-int	 http_connect(WINDOW *, struct node *);
-int	 http_write(WINDOW *, struct node *n);
-int	 http_read(WINDOW *, struct node *n);
+int	 http_init_connect(struct out *, struct node *);
+int	 http_close_done(struct out *, struct node *);
+int	 http_close_err(struct out *, struct node *);
+int	 http_connect(struct out *, struct node *);
+int	 http_write(struct out *, struct node *n);
+int	 http_read(struct out *, struct node *n);
 
-void	 draw(WINDOW *, struct draw *, time_t,
+void	 draw(struct out *, struct draw *, time_t,
 		const struct node *, size_t, time_t);
-void	 drawtimes(WINDOW *, const struct draw *, time_t,
+void	 drawtimes(struct out *, const struct draw *, time_t,
 		const struct node *, size_t, time_t);
 
-int 	 json_parse(WINDOW *, struct node *n, const char *, size_t);
+int 	 json_parse(struct out *, struct node *n, const char *, size_t);
+
+int 	 config_parse(const char *, struct config *);
+void	 config_free(struct config *);
 
 __END_DECLS
 

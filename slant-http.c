@@ -50,11 +50,11 @@ http_close_inner(WINDOW *errwin, struct node *n)
 }
 
 int
-http_close_err(WINDOW *errwin, struct node *n)
+http_close_err(struct out *out, struct node *n)
 {
 	int	 c;
 
-	if (0 != (c = http_close_inner(errwin, n))) {
+	if (0 != (c = http_close_inner(out->errwin, n))) {
 		n->addrs.curaddr = 
 			(n->addrs.curaddr + 1) % n->addrs.addrsz;
 		n->state = STATE_CONNECT_WAITING;
@@ -67,7 +67,7 @@ http_close_err(WINDOW *errwin, struct node *n)
 }
 
 static int
-http_close_done_ok(WINDOW *errwin, struct node *n)
+http_close_done_ok(struct out *out, struct node *n)
 {
 	char	*end, *sv, *start = n->xfer.rbuf;
 	size_t	 len, sz = n->xfer.rbufsz;
@@ -91,15 +91,15 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 	}
 
 	if ( ! httpok) {
-		xwarnx(errwin, "bad HTTP response (%lld seconds): "
+		xwarnx(out, "bad HTTP response (%lld seconds): "
 			"%s", t - n->xfer.start, n->host);
-		fprintf(stderr, "------>------\n");
-		fprintf(stderr, "%.*s\n", (int)n->xfer.rbufsz, 
+		fprintf(out->errs, "------>------\n");
+		fprintf(out->errs, "%.*s\n", (int)n->xfer.rbufsz, 
 			n->xfer.rbuf);
-		fprintf(stderr, "------<------\n");
-		fflush(stderr);
+		fprintf(out->errs, "------<------\n");
+		fflush(out->errs);
 		rc = 1;
-	} else if ((rc = json_parse(errwin, n, start, sz)) > 0) {
+	} else if ((rc = json_parse(out, n, start, sz)) > 0) {
 		n->dirty = 1;
 		n->lastseen = time(NULL);
 	}
@@ -111,14 +111,14 @@ http_close_done_ok(WINDOW *errwin, struct node *n)
 }
 
 int
-http_close_done(WINDOW *errwin, struct node *n)
+http_close_done(struct out *out, struct node *n)
 {
 	int	 c;
 
-	if ((c = http_close_inner(errwin, n)) < 0)
+	if ((c = http_close_inner(out->errwin, n)) < 0)
 		return 0;
 	else if (c > 0)
-		return http_close_done_ok(errwin, n);
+		return http_close_done_ok(out, n);
 
 	n->state = STATE_CLOSE_DONE;
 	return 1;
@@ -129,7 +129,7 @@ http_close_done(WINDOW *errwin, struct node *n)
  * Return zero on failure, non-zero on success.
  */
 static int
-http_write_ready(WINDOW *errwin, struct node *n)
+http_write_ready(struct out *out, struct node *n)
 {
 	int	 c;
 
@@ -137,7 +137,7 @@ http_write_ready(WINDOW *errwin, struct node *n)
 		c = tls_connect_socket(n->xfer.tls, 
 			n->xfer.pfd->fd, n->host);
 		if (c < 0) {
-			xwarnx(errwin, "tls_connect_socket: %s: %s", 
+			xwarnx(out, "tls_connect_socket: %s: %s", 
 				n->host, tls_error(n->xfer.tls));
 		}
 	}
@@ -153,7 +153,7 @@ http_write_ready(WINDOW *errwin, struct node *n)
 		n->path, n->host);
 
 	if (c < 0) {
-		xwarn(errwin, NULL);
+		xwarn(out, NULL);
 		return 0;
 	}
 
@@ -173,7 +173,7 @@ http_write_ready(WINDOW *errwin, struct node *n)
  * Returns zero on system failure, non-zero on success.
  */
 int
-http_init_connect(WINDOW *errwin, struct node *n)
+http_init_connect(struct out *out, struct node *n)
 {
 	int		   family, c, flags;
 	socklen_t	   sslen;
@@ -183,7 +183,7 @@ http_init_connect(WINDOW *errwin, struct node *n)
 
 	if (NULL == n->xfer.tls) {
 		if (NULL == (n->xfer.tls = tls_client())) {
-			xwarn(errwin, "tls_client");
+			xwarn(out, "tls_client");
 			return 0;
 		}
 	} else
@@ -191,12 +191,12 @@ http_init_connect(WINDOW *errwin, struct node *n)
 
 	if (NULL != n->xfer.tls) {
 		if (NULL == (cfg = tls_config_new())) {
-			xwarn(errwin, "tls_config_new");
+			xwarn(out, "tls_config_new");
 			return 0;
 		}
 		tls_config_set_protocols(cfg, TLS_PROTOCOLS_ALL);
 		if (-1 == tls_configure(n->xfer.tls, cfg)) {
-			xwarnx(errwin, "tls_configure: %s: %s", n->host,
+			xwarnx(out, "tls_configure: %s: %s", n->host,
 				tls_error(n->xfer.tls));
 			return 0;
 		}
@@ -224,11 +224,11 @@ http_init_connect(WINDOW *errwin, struct node *n)
 	} 
 
 	if (c < 0) {
-		xwarn(errwin, "cannot convert: %s: %s", n->host, 
+		xwarn(out, "cannot convert: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == c) {
-		xwarnx(errwin, "cannot convert: %s: %s", n->host, 
+		xwarnx(out, "cannot convert: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	}
@@ -237,18 +237,18 @@ http_init_connect(WINDOW *errwin, struct node *n)
 	n->xfer.pfd->fd = socket(family, SOCK_STREAM, 0);
 
 	if (-1 == n->xfer.pfd->fd) {
-		xwarn(errwin, "socket");
+		xwarn(out, "socket");
 		return 0;
 	}
 
 	/* Set up non-blocking mode. */
 
 	if (-1 == (flags = fcntl(n->xfer.pfd->fd, F_GETFL, 0))) {
-		xwarn(errwin, "fcntl");
+		xwarn(out, "fcntl");
 		return 0;
 	}
 	if (-1 == fcntl(n->xfer.pfd->fd, F_SETFL, flags|O_NONBLOCK)) {
-		xwarn(errwin, "fcntl");
+		xwarn(out, "fcntl");
 		return 0;
 	}
 
@@ -260,7 +260,7 @@ http_init_connect(WINDOW *errwin, struct node *n)
 	c = connect(n->xfer.pfd->fd, 
 		(struct sockaddr *)&n->xfer.ss, sslen);
 	if (0 == c)
-		return http_write_ready(errwin, n);
+		return http_write_ready(out, n);
 
 	/* Asynchronous connect... */
 
@@ -272,13 +272,13 @@ http_init_connect(WINDOW *errwin, struct node *n)
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno) {
-		xwarn(errwin, "connect (transient): %s: %s", 
+		xwarn(out, "connect (transient): %s: %s", 
 			n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(errwin, n);
+		return http_close_err(out, n);
 	}
 
-	xwarn(errwin, "connect: %s: %s", n->host, 
+	xwarn(out, "connect: %s: %s", n->host, 
 		n->addrs.addrs[n->addrs.curaddr].ip);
 
 	return 0;
@@ -291,7 +291,7 @@ http_init_connect(WINDOW *errwin, struct node *n)
  * STATE_WRITE on success.
  */
 int
-http_connect(WINDOW *errwin, struct node *n)
+http_connect(struct out *out, struct node *n)
 {
 	int	  c;
 	int 	  error = 0;
@@ -301,11 +301,11 @@ http_connect(WINDOW *errwin, struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		xwarn(errwin, "poll: %s: %s", n->host, 
+		xwarn(out, "poll: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
-		return http_close_err(errwin, n);
+		return http_close_err(out, n);
 	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
@@ -313,23 +313,23 @@ http_connect(WINDOW *errwin, struct node *n)
 		SOL_SOCKET, SO_ERROR, &error, &len);
 
 	if (c < 0) {
-		xwarn(errwin, "getsockopt: %s: %s",
+		xwarn(out, "getsockopt: %s: %s",
 			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == error)
-		return http_write_ready(errwin, n);
+		return http_write_ready(out, n);
 
 	errno = error;
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
 	    ENETUNREACH == errno) {
-		xwarn(errwin, "getsockopt (transient): %s: %s",
+		xwarn(out, "getsockopt (transient): %s: %s",
 			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(errwin, n);
+		return http_close_err(out, n);
 	}
 
-	xwarn(errwin, "getsockopt: %s: %s",
+	xwarn(out, "getsockopt: %s: %s",
 		n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 	return 0;
 }
@@ -343,7 +343,7 @@ http_connect(WINDOW *errwin, struct node *n)
  * changing of state.
  */
 int
-http_write(WINDOW *errwin, struct node *n)
+http_write(struct out *out, struct node *n)
 {
 	ssize_t	 ssz;
 
@@ -353,11 +353,11 @@ http_write(WINDOW *errwin, struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		xwarn(errwin, "poll errors: %s: %s", n->host, 
+		xwarn(out, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents)
-		return http_close_err(errwin, n);
+		return http_close_err(out, n);
 	
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
 	     ! (POLLIN & n->xfer.pfd->revents))
@@ -374,7 +374,7 @@ http_write(WINDOW *errwin, struct node *n)
 			n->xfer.pfd->events = POLLIN;
 			return 1;
 		} else if (ssz < 0) {
-			xwarnx(errwin, "tls_write: %s: %s: %s", 
+			xwarnx(out, "tls_write: %s: %s: %s", 
 				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
@@ -384,7 +384,7 @@ http_write(WINDOW *errwin, struct node *n)
 		ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
 			n->xfer.wbufpos, n->xfer.wbufsz);
 		if (ssz < 0) {
-			xwarn(errwin, "write: %s: %s", n->host, 
+			xwarn(out, "write: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
 			return 0;
 		}
@@ -415,7 +415,7 @@ http_write(WINDOW *errwin, struct node *n)
  * STATE_CONNECT_WAITING.
  */
 int
-http_read(WINDOW *errwin, struct node *n)
+http_read(struct out *out, struct node *n)
 {
 	ssize_t	 ssz;
 	char	 buf[1024 * 5];
@@ -428,7 +428,7 @@ http_read(WINDOW *errwin, struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		xwarnx(errwin, "poll errors: %s: %s", n->host, 
+		xwarnx(out, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} 
@@ -448,7 +448,7 @@ http_read(WINDOW *errwin, struct node *n)
 			n->xfer.pfd->events = POLLIN;
 			return 1;
 		} else if (ssz < 0) {
-			xwarnx(errwin, "tls_read: %s: %s: %s", 
+			xwarnx(out, "tls_read: %s: %s: %s", 
 				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
@@ -457,20 +457,20 @@ http_read(WINDOW *errwin, struct node *n)
 	} else {
 		ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
 		if (ssz < 0) {
-			xwarn(errwin, "read: %s: %s", n->host, 
+			xwarn(out, "read: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
 			return 0;
 		}
 	}
 
 	if (0 == ssz)
-		return http_close_done(errwin, n);
+		return http_close_done(out, n);
 
 	/* Copy static into dynamic buffer. */
 
 	pp = realloc(n->xfer.rbuf, n->xfer.rbufsz + ssz);
 	if (NULL == pp) {
-		xwarn(errwin, NULL);
+		xwarn(out, NULL);
 		return 0;
 	}
 	n->xfer.rbuf = pp;

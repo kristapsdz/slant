@@ -42,7 +42,6 @@ nodes_free(struct node *n, size_t sz)
 		if (-1 != n[i].xfer.pfd->fd)
 			close(n[i].xfer.pfd->fd);
 		tls_free(n[i].xfer.tls);
-		free(n[i].url);
 		free(n[i].host);
 		free(n[i].xfer.wbuf);
 		free(n[i].xfer.rbuf);
@@ -61,8 +60,17 @@ nodes_free(struct node *n, size_t sz)
 	free(n);
 }
 
+/*
+ * Run a single step of the state machine.
+ * For each node, we examine the current state (n->state) and perform
+ * some task based upon that.
+ * Return <0 on some sort of error condition or the number of nodes that
+ * have changed, which means some sort of window update event should
+ * occur to reflect the change.
+ */
 static int
-nodes_update(WINDOW *errwin, time_t waittime, struct node *n, size_t sz)
+nodes_update(struct out *out, 
+	time_t waittime, struct node *n, size_t sz)
 {
 	size_t	 i;
 	time_t	 t = time(NULL);
@@ -77,27 +85,27 @@ nodes_update(WINDOW *errwin, time_t waittime, struct node *n, size_t sz)
 			n[i].dirty = 1;
 			break;
 		case STATE_CONNECT_READY:
-			if ( ! http_init_connect(errwin, &n[i]))
+			if ( ! http_init_connect(out, &n[i]))
 				return -1;
 			break;
 		case STATE_CONNECT:
-			if ( ! http_connect(errwin, &n[i]))
+			if ( ! http_connect(out, &n[i]))
 				return -1;
 			break;
 		case STATE_WRITE:
-			if ( ! http_write(errwin, &n[i]))
+			if ( ! http_write(out, &n[i]))
 				return -1;
 			break;
 		case STATE_CLOSE_ERR:
-			if ( ! http_close_err(errwin, &n[i]))
+			if ( ! http_close_err(out, &n[i]))
 				return -1;
 			break;
 		case STATE_CLOSE_DONE:
-			if ( ! http_close_done(errwin, &n[i]))
+			if ( ! http_close_done(out, &n[i]))
 				return -1;
 			break;
 		case STATE_READ:
-			if ( ! http_read(errwin, &n[i]))
+			if ( ! http_read(out, &n[i]))
 				return -1;
 			break;
 		default:
@@ -160,7 +168,7 @@ cmp_host(const void *p1, const void *p2)
 }
 
 static void
-xloghead(WINDOW *errwin)
+xloghead(struct out *out)
 {
 	char	 	 buf[32];
 	struct tm	*tm;
@@ -168,73 +176,73 @@ xloghead(WINDOW *errwin)
 
 	tm = localtime(&t);
 	strftime(buf, sizeof(buf), "%F %T", tm);
-	waddstr(errwin, buf);
-	fprintf(stderr, "%s: ", buf);
-	wprintw(errwin, " %lc ", L'\x2502');
+	waddstr(out->errwin, buf);
+	fprintf(out->errs, "%s: ", buf);
+	wprintw(out->errwin, " %lc ", L'\x2502');
 }
 
 void
-xwarn(WINDOW *errwin, const char *fmt, ...)
+xwarn(struct out *out, const char *fmt, ...)
 {
 	va_list  ap;
 	int	 er = errno;
 
-	xloghead(errwin);
+	xloghead(out);
 	va_start(ap, fmt);
-	vwprintw(errwin, fmt, ap);
+	vwprintw(out->errwin, fmt, ap);
 	va_end(ap);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
-	wprintw(errwin, "%s%s\n", 
+	wprintw(out->errwin, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
-	fprintf(stderr, "%s%s\n", 
+	fprintf(out->errs, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
-	wrefresh(errwin);
-	fflush(stderr);
+	wrefresh(out->errwin);
+	fflush(out->errs);
 }
 
 void
-xwarnx(WINDOW *errwin, const char *fmt, ...)
+xwarnx(struct out *out, const char *fmt, ...)
 {
 	va_list ap;
 
-	xloghead(errwin);
-	wattron(errwin, A_BOLD);
-	waddstr(errwin, "Warning");
-	wattroff(errwin, A_BOLD);
-	waddstr(errwin, ": ");
-	fprintf(stderr, "Warning: ");
+	xloghead(out);
+	wattron(out->errwin, A_BOLD);
+	waddstr(out->errwin, "Warning");
+	wattroff(out->errwin, A_BOLD);
+	waddstr(out->errwin, ": ");
+	fprintf(out->errs, "Warning: ");
 	va_start(ap, fmt);
-	vwprintw(errwin, fmt, ap);
+	vwprintw(out->errwin, fmt, ap);
 	va_end(ap);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
-	waddch(errwin, '\n');
-	fputc('\n', stderr);
-	wrefresh(errwin);
-	fflush(stderr);
+	waddch(out->errwin, '\n');
+	fputc('\n', out->errs);
+	wrefresh(out->errwin);
+	fflush(out->errs);
 }
 
 void
-xdbg(WINDOW *errwin, const char *fmt, ...)
+xdbg(struct out *out, const char *fmt, ...)
 {
 	va_list ap;
 
 	if ( ! debug) 
 		return;
-	xloghead(errwin);
+	xloghead(out);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
 	va_start(ap, fmt);
-	vwprintw(errwin, fmt, ap);
+	vwprintw(out->errwin, fmt, ap);
 	va_end(ap);
-	waddch(errwin, '\n');
-	fputc('\n', stderr);
-	wrefresh(errwin);
-	fflush(stderr);
+	waddch(out->errwin, '\n');
+	fputc('\n', out->errs);
+	wrefresh(out->errwin);
+	fflush(out->errs);
 }
 
 static int
@@ -281,40 +289,50 @@ int
 main(int argc, char *argv[])
 {
 	int	 	 c, first = 1, maxy, maxx;
-	size_t		 i, nsz;
-	const char	*er;
+	size_t		 i;
+	const char	*er, *cfgfile = NULL;
 	struct node	*n = NULL;
 	struct pollfd	*pfds = NULL;
 	struct timespec	 ts;
-	struct draw	 d;
 	sigset_t	 mask, oldmask;
 	time_t		 last, now, waittime = 60;
-	WINDOW		*errwin = NULL, *mainwin = NULL;
 	char		*cp;
+	struct draw	 d;
+	struct config	 cfg;
+	struct out	 out;
+	
+	if (NULL == getenv("HOME")) 
+		errx(EXIT_FAILURE, "no HOME directory defined");
+	if (NULL == setlocale(LC_ALL, ""))
+		err(EXIT_FAILURE, NULL);
+
+	/* Initial pledge. */
 
 	if (-1 == pledge("cpath wpath tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
 
+	memset(&out, 0, sizeof(struct out));
+	memset(&d, 0, sizeof(struct draw));
+	memset(&cfg, 0, sizeof(struct config));
+
 	/*
 	 * Open $HOME/.slant-errlog to catch any errors.
-	 * This is because our JSON has a tendency to fail and I'm not
-	 * sure why.
-	 * So we can capture the entire JSON buffer for post-analysis.
+	 * This way our error buffer in the window is saved.
+	 * Do this with the "cpath wpath" cause we might create the file
+	 * in doing so.
 	 */
 
-	if (NULL != getenv("HOME")) {
-		c = asprintf(&cp, 
-			"%s/.slant-errlog", getenv("HOME"));
-		if (c < 0)
-			err(EXIT_FAILURE, NULL);
-		freopen(cp, "a", stderr);
-		free(cp);
-	}
+	c = asprintf(&cp, "%s/.slant-errlog", getenv("HOME"));
+	if (c < 0)
+		err(EXIT_FAILURE, NULL);
+	if (NULL == (out.errs = fopen(cp, "a")))
+		err(EXIT_FAILURE, "%s", cp);
+	free(cp);
+
+	/* Repledge by dropping the error log pledges. */
 
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
-
-	memset(&d, 0, sizeof(struct draw));
 
 	/* Start up TLS handling really early. */
 
@@ -325,6 +343,7 @@ main(int argc, char *argv[])
 	 * Establish our signal handling: have TERM, QUIT, and INT
 	 * interrupt the poll and cause us to exit.
 	 * Otherwise, we block the signal.
+	 * TODO: handle SINGWINCH.
 	 */
 
 	if (sigemptyset(&mask) < 0)
@@ -344,8 +363,13 @@ main(int argc, char *argv[])
 	if (sigprocmask(SIG_BLOCK, &mask, &oldmask) < 0)
 		err(EXIT_FAILURE, NULL);
 
-	while (-1 != (c = getopt(argc, argv, "o:w:"))) 
+	/* Parse arguments. */
+
+	while (-1 != (c = getopt(argc, argv, "f:o:w:"))) 
 		switch (c) {
+		case 'f':
+			cfgfile = strdup(optarg);
+			break;
 		case 'o':
 			if (0 == strcmp(optarg, "host"))
 				d.order = DRAWORD_HOST;
@@ -370,30 +394,53 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (0 == argc)
+	if (argc)
 		goto usage;
 	
-	/* Initialise data. */
+	/*
+	 * Parse our configuration file.
+	 * This will tell us all we need to know about our runtime.
+	 * Use "cp" as a temporary variable in case we need to create
+	 * the configuration file name on-demand.
+	 */
 
-	nsz = argc;
-	n = calloc(nsz, sizeof(struct node));
+	cp = NULL;
+	if (NULL == cfgfile) {
+		c = asprintf(&cp, "%s/.slantrc", getenv("HOME"));
+		if (c < 0)
+			err(EXIT_FAILURE, NULL);
+		cfgfile = cp;
+	} 
+
+	c = config_parse(cfgfile, &cfg);
+	free(cp);
+
+	if ( ! c)
+		return EXIT_FAILURE;
+
+	/* Initialise data. */
+	
+	if (0 == cfg.urlsz)
+		errx(EXIT_FAILURE, "no urls given");
+
+	n = calloc(cfg.urlsz, sizeof(struct node));
 	if (NULL == n)
 		err(EXIT_FAILURE, NULL);
 
-	pfds = calloc(nsz, sizeof(struct pollfd));
+	pfds = calloc(cfg.urlsz, sizeof(struct pollfd));
 	if (NULL == pfds)
 		err(EXIT_FAILURE, NULL);
 
-	for (i = 0; i < nsz; i++)
+	for (i = 0; i < cfg.urlsz; i++)
 		pfds[i].fd = -1;
 
 	/* 
 	 * All data initialised.
 	 * Get our window system ready to roll.
+	 * Once we initialise the screen, we're going to need to use our
+	 * "errs" and "errwin" to report errors, as stderr will just
+	 * munge on the screen.
 	 */
-
-	if (NULL == setlocale(LC_ALL, ""))
-		err(EXIT_FAILURE, NULL);
 
 	if (NULL == initscr() ||
 	    ERR == start_color() ||
@@ -403,47 +450,32 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 
 	curs_set(0);
-
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(2, COLOR_RED, COLOR_BLACK);
-
-	/* FIXME: handle resize events. */
-
 	getmaxyx(stdscr, maxy, maxx);
-
-	mainwin = subwin(stdscr, maxy - 10, maxx, 0, 0);
-	errwin = subwin(stdscr, 0, maxx, maxy - 10, 0);
-	scrollok(errwin, 1);
+	out.mainwin = subwin(stdscr, maxy - 10, maxx, 0, 0);
+	out.errwin = subwin(stdscr, 0, maxx, maxy - 10, 0);
+	scrollok(out.errwin, 1);
 
 	/*
 	 * All terminal windows initialised.
 	 * From here on out, we want to use ncurses for reporting
 	 * whatever we can.
-	 */
-
-	for (i = 0; i < nsz; i++) {
-		n[i].xfer.pfd = &pfds[i];
-		n[i].state = STATE_STARTUP;
-		n[i].url = strdup(argv[i]);
-
-		if ( ! dns_parse_url(errwin, &n[i]))
-			goto out;
-		if (NULL == n[i].url ||
-		    NULL == n[i].path ||
-		    NULL == n[i].host) {
-			warn(NULL);
-			goto out;
-		}
-	}
-
-	/*
-	 * Initialise DNS stuff.
+	 * Initialise hosts and perform DNS callbacks.
 	 * TODO: put DNS init into the main loop.
 	 */
 
-	for (i = 0; i < nsz; i++) {
+	for (i = 0; i < cfg.urlsz; i++) {
+		n[i].xfer.pfd = &pfds[i];
+		n[i].state = STATE_STARTUP;
+		n[i].url = cfg.urls[i];
+		if ( ! dns_parse_url(&out, &n[i]))
+			goto out;
+	}
+
+	for (i = 0; i < cfg.urlsz; i++) {
 		n[i].state = STATE_RESOLVING;
-		if ( ! dns_resolve(errwin, n[i].host, &n[i].addrs))
+		if ( ! dns_resolve(&out, n[i].host, &n[i].addrs))
 			goto out;
 		n[i].state = STATE_CONNECT_READY;
 	}
@@ -458,36 +490,36 @@ main(int argc, char *argv[])
 
 	/* Configure what we see. */
 
-	if ( ! layout(maxx, n, nsz, &d))
+	if ( ! layout(maxx, n, cfg.urlsz, &d))
 		goto out;
 
-	/*
-	 * Main loop: continue trying to pull down data from all of the
-	 * addresses we have on file.
-	 */
+	/* Main loop. */
 
 	ts.tv_sec = 1;
 	ts.tv_nsec = 0;
 	last = 0;
 
 	while ( ! sigged) {
-		if ((c = nodes_update(errwin, waittime, n, nsz)) < 0)
+		c = nodes_update(&out, waittime, n, cfg.urlsz);
+		if (c < 0)
 			break;
+
+		/* Re-sort, if applicable. */
 
 		switch (d.order) {
 		case DRAWORD_CMDLINE:
 			break;
 		case DRAWORD_CPU:
-			qsort(n, nsz, sizeof(struct node), cmp_cpu);
+			qsort(n, cfg.urlsz, sizeof(struct node), cmp_cpu);
 			break;
 		case DRAWORD_HOST:
 			/* Only do this once. */
 			if (0 == first)
 				break;
-			qsort(n, nsz, sizeof(struct node), cmp_host);
+			qsort(n, cfg.urlsz, sizeof(struct node), cmp_host);
 			break;
 		case DRAWORD_MEM:
-			qsort(n, nsz, sizeof(struct node), cmp_mem);
+			qsort(n, cfg.urlsz, sizeof(struct node), cmp_mem);
 			break;
 		}
 
@@ -501,34 +533,36 @@ main(int argc, char *argv[])
 		 */
 
 		if ((c || first) && now > last) {
-			draw(mainwin, &d, waittime, n, nsz, now);
-			for (i = 0; i < nsz; i++) 
+			draw(&out, &d, waittime, n, cfg.urlsz, now);
+			for (i = 0; i < cfg.urlsz; i++) 
 				n[i].dirty = 0;
-			wrefresh(mainwin);
+			wrefresh(out.mainwin);
 			first = 0;
 		} else if (now > last) {
-			drawtimes(mainwin, &d, waittime, n, nsz, now);
-			wrefresh(mainwin);
+			drawtimes(&out, &d, waittime, n, cfg.urlsz, now);
+			wrefresh(out.mainwin);
 		}
 
 		last = now;
 
-		if (ppoll(pfds, nsz, &ts, &oldmask) < 0 && 
+		if (ppoll(pfds, cfg.urlsz, &ts, &oldmask) < 0 && 
 		    EINTR != errno) {
-			warn("poll");
+			xwarn(&out, "poll");
 			break;
 		}
 	}
 
 out:
-	delwin(errwin);
-	delwin(mainwin);
+	delwin(out.errwin);
+	delwin(out.mainwin);
 	endwin();
-	nodes_free(n, nsz);
+	nodes_free(n, cfg.urlsz);
+	config_free(&cfg);
 	free(pfds);
 	return EXIT_SUCCESS;
 usage:
 	fprintf(stderr, "usage: %s "
+		"[-f conf] "
 		"[-o order] "
 		"[-w waittime] "
 		"addr...\n", getprogname());

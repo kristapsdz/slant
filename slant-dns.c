@@ -12,8 +12,12 @@
 #include "extern.h"
 #include "slant.h"
 
+/*
+ * Parse the url in n->url into its component parts.
+ * Returns zero on error, non-zero on success.
+ */
 int
-dns_parse_url(WINDOW *errwin, struct node *n)
+dns_parse_url(struct out *out, struct node *n)
 {
 	char		*cp;
 	const char 	*s = n->url;
@@ -21,7 +25,7 @@ dns_parse_url(WINDOW *errwin, struct node *n)
  	n->addrs.https = 0;
 	n->addrs.port = 80;
 
-	xdbg(errwin, "parsing: %s", n->url);
+	xdbg(out, "parsing: %s", n->url);
 
 	if (0 == strncasecmp(s, "https://", 8)) {
 	 	n->addrs.https = 1;
@@ -31,14 +35,16 @@ dns_parse_url(WINDOW *errwin, struct node *n)
 		s += 7;
 
 	if (NULL == (n->host = strdup(s))) {
-		xwarn(errwin, NULL);
+		xwarn(out, NULL);
 		return 0;
 	}
 
 	for (cp = n->host; '\0' != *cp; cp++)
 		if ('/' == *cp) {
-			if (NULL == (n->path = strdup(cp)))
+			if (NULL == (n->path = strdup(cp))) {
+				xwarn(out, NULL);
 				return 0;
+			}
 			*cp = '\0';
 			for (cp = n->path; '\0' != *cp; cp++)
 				if ('?' == *cp || '#' == *cp) {
@@ -52,12 +58,12 @@ dns_parse_url(WINDOW *errwin, struct node *n)
 		}
 
 	if (NULL == n->path)
-		if (NULL == (n->path = strdup(""))) {
-			xwarn(errwin, NULL);
+		if (NULL == (n->path = strdup("/"))) {
+			xwarn(out, NULL);
 			return 0;
 		}
 
-	xdbg(errwin, "parsed: [%s][%s]", n->host, n->path);
+	xdbg(out, "parsed: [%s][%s]", n->host, n->path);
 	return 1;
 }
 
@@ -80,7 +86,7 @@ dns_parse_url(WINDOW *errwin, struct node *n)
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 int
-dns_resolve(WINDOW *errwin, const char *host, struct dns *vec)
+dns_resolve(struct out *out, const char *host, struct dns *vec)
 {
 	struct addrinfo	 hints, *res0, *res;
 	struct sockaddr	*sa;
@@ -92,14 +98,14 @@ dns_resolve(WINDOW *errwin, const char *host, struct dns *vec)
 
 	error = getaddrinfo(host, NULL, &hints, &res0);
 
-	xdbg(errwin, "DNS resolving: %s", host);
+	xdbg(out, "DNS resolving: %s", host);
 
 	if (error == EAI_AGAIN || error == EAI_NONAME) {
-		xwarnx(errwin, "DNS resolve error: %s: %s", 
+		xwarnx(out, "DNS resolve error: %s: %s", 
 			host, gai_strerror(error));
 		return 0;
 	} else if (error) {
-		xwarnx(errwin, "DNS parse error: %s: %s",
+		xwarnx(out, "DNS parse error: %s: %s",
 			host, gai_strerror(error));
 		return 0;
 	}
@@ -126,7 +132,7 @@ dns_resolve(WINDOW *errwin, const char *host, struct dns *vec)
 				INET6_ADDRSTRLEN);
 		}
 		
-		xdbg(errwin, "DNS resolved: %s: %s",
+		xdbg(out, "DNS resolved: %s: %s",
 			host, vec->addrs[vec->addrsz].ip);
 		vec->addrsz++;
 	}
