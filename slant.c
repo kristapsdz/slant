@@ -22,7 +22,6 @@
 #include "slant.h"
 
 static	volatile sig_atomic_t sigged;
-static	int debug = 1;
 
 static void
 dosig(int code)
@@ -230,7 +229,7 @@ xdbg(struct out *out, const char *fmt, ...)
 {
 	va_list ap;
 
-	if ( ! debug) 
+	if ( ! out->debug) 
 		return;
 	xloghead(out);
 	va_start(ap, fmt);
@@ -314,6 +313,8 @@ main(int argc, char *argv[])
 	memset(&out, 0, sizeof(struct out));
 	memset(&d, 0, sizeof(struct draw));
 	memset(&cfg, 0, sizeof(struct config));
+
+	out.debug = 1;
 
 	/*
 	 * Open $HOME/.slant-errlog to catch any errors.

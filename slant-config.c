@@ -98,7 +98,7 @@ config_parse(const char *fn, struct config *cfg)
 	munmap(map, mapsz);
 	close(fd);
 
-	while (NULL != (cp = strsep(&buf, " \t\n"))) {
+	while (NULL != (cp = strsep(&buf, " \t\r\n"))) {
 		if ('\0' == *cp)
 			continue;
 		pp = reallocarray

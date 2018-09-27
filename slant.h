@@ -101,6 +101,9 @@ enum	state {
 	STATE_READ
 };
 
+/*
+ * Data on a current transfer (read/write).
+ */
 struct	xfer {
 	char		*wbuf; /* write buffer for http */
 	size_t		 wbufsz; /* amount left to write */
@@ -113,6 +116,9 @@ struct	xfer {
 	time_t		 start; /* connection start time */
 };
 
+/*
+ * The full status of a single node (URL).
+ */
 struct	node {
 	enum state	 state; /* state of node */
 	const char	*url; /* full URL for connect */
@@ -126,15 +132,22 @@ struct	node {
 	int		 dirty; /* new results */
 };
 
+/*
+ * A parsed configuration file (~/.slantrc or similar).
+ */
 struct	config {
-	char		**urls;
-	size_t		  urlsz;
+	char		**urls; /* nodes (URLs) */
+	size_t		  urlsz; /* number of urls */
 };
 
+/*
+ * Output information (window, etc.).
+ */
 struct	out {
-	WINDOW		*errwin;
-	WINDOW		*mainwin;
-	FILE		*errs;
+	WINDOW		*errwin; /* error panel */
+	WINDOW		*mainwin; /* main panel */
+	FILE		*errs; /* output error file */
+	int		 debug; /* print debugging if non-zero */
 };
 
 __BEGIN_DECLS

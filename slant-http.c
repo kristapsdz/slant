@@ -295,16 +295,21 @@ http_connect(struct out *out, struct node *n)
 {
 	int	  c;
 	int 	  error = 0;
+	time_t	  t = time(NULL);
 	socklen_t len = sizeof(error);
 
 	assert(-1 != n->xfer.pfd->fd);
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		xwarn(out, "poll: %s: %s", n->host, 
+		xwarn(out, "poll: %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
+		xwarnx(out, "poll hangup: %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n);
 	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
