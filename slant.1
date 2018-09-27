@@ -6,20 +6,20 @@
 .Nd client for remote system monitoring
 .Sh SYNOPSIS
 .Nm slant
+.Op Fl f Ar config
 .Op Fl o Ar order
 .Op Fl w Ar waittime
-.Ar url...
 .Sh DESCRIPTION
 The
 .Nm
-utility displays system statistics gathered from
-.Ar url .
-The resource at each
-.Ar url
-must be running
+utility displays system statistics gathered from resources listed in
+.Pa ~/.slantrc .
+These resource must be running
 .Xr slant-cgi 8 .
 Its arguments are as follows:
 .Bl -tag -width Ds
+.It Fl f Ar config
+Specify an alternate configuration location.
 .It Fl o Ar order
 Default order of host listing.
 May be
@@ -36,7 +36,7 @@ Wait time before querying hosts.
 This must be at least 15 seconds (minimum collection interval).
 .El
 .Pp
-By default, hosts are ordered as given on the command line and are
+By default, hosts are ordered as given in the configuration and are
 queried every 60 seconds.
 Data is displayed as a table with the following columns:
 .Bl -tag -width Ds
@@ -132,6 +132,18 @@ unresponsive, their data will not be refreshed til the next access.
 An error and debug log is shown below the table of all hosts.
 The log is saved to
 .Pa ~/.slant-errlog .
+.Ss Configuration file
+The configuration file, which defaults to
+.Pa ~/.slantrc ,
+is structured as follows.
+All tokens are white-space separated, so
+.Li servers foo;
+species a server named
+Literals are case insensitive.
+.Dq foo; .
+.Bd -literal
+"servers" url... ";"
+.Ed
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -145,7 +157,15 @@ The log is saved to
 .Sh EXAMPLES
 To query the localhost and a remote machine:
 .Bd -literal
-% slant -o host localhost/cgi-bin/slant-cgi https://remote/slant-cgi
+% slant -o host
+.Ed
+.Pp
+With the following configuration file:
+.Bd -literal
+servers
+  localhost/cgi-bin/slant-cgi
+  https://remote/slant-cgi
+  ;
 .Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.

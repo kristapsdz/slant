@@ -565,7 +565,7 @@ usage:
 	fprintf(stderr, "usage: %s "
 		"[-f conf] "
 		"[-o order] "
-		"[-w waittime] "
-		"addr...\n", getprogname());
+		"[-w waittime]\n", 
+		getprogname());
 	return EXIT_FAILURE;
 }
