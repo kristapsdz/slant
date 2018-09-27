@@ -6,7 +6,7 @@
 .Nd daemon to collect system statistics
 .Sh SYNOPSIS
 .Nm slant-collectd
-.Op Fl n
+.Op Fl nv
 .Op Fl d Ar discs
 .Op Fl f Ar dbfile
 .Sh DESCRIPTION
@@ -19,7 +19,9 @@ which defaults to
 Its arguments are as follows:
 .Bl -tag -width Ds
 .It Fl n
-Do not open the database: print data as columns to standard output.
+Do not open the database: collect data only.
+.It Fl v
+Print collected data as a table to standard output.
 .It Fl d Ar discs
 Discs to monitor.
 Multiple discs may be separated by a comma.

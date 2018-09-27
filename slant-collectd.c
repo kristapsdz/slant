@@ -75,6 +75,7 @@ printinit(const struct sysinfo *p)
 
 	t = sysinfo_get_boottime(p);
 	printf("# Boottime: %s", ctime(&t));
+	printf("# Version: " VERSION "\n");
 }
 
 static void
@@ -245,7 +246,7 @@ main(int argc, char *argv[])
 	struct kwbp	*db = NULL;
 	struct record_q	*rq;
 	struct sysinfo	*info;
-	int		 c, rc = 0, noop = 0;
+	int		 c, rc = 0, noop = 0, verb = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
 	char		*d, *discs = NULL;
 	struct syscfg	 cfg;
@@ -264,7 +265,7 @@ main(int argc, char *argv[])
 
 	memset(&cfg, 0, sizeof(struct syscfg));
 
-	while (-1 != (c = getopt(argc, argv, "d:nf:")))
+	while (-1 != (c = getopt(argc, argv, "d:nvf:")))
 		switch (c) {
 		case 'd':
 			discs = optarg;
@@ -273,7 +274,10 @@ main(int argc, char *argv[])
 			dbfile = optarg;
 			break;
 		case 'n':
-			noop = 2;
+			noop = 1;
+			break;
+		case 'v':
+			verb = 1;
 			break;
 		default:
 			goto usage;
@@ -331,7 +335,7 @@ main(int argc, char *argv[])
 
 	if (NULL != db)
 		init(db, info);
-	else
+	if (verb)
 		printinit(info);
 
 	/*
@@ -350,7 +354,8 @@ main(int argc, char *argv[])
 			rq = db_record_list_lister(db);
 			update(db, info, rq);
 			db_record_freeq(rq);
-		} else
+		} 
+		if (verb)
 			print(info);
 		if (sleep(15))
 			break;
@@ -363,7 +368,7 @@ out:
 	return rc ? EXIT_SUCCESS : EXIT_FAILURE;
 usage:
 	fprintf(stderr, "usage: %s "
-		"[-n] "
+		"[-nv] "
 		"[-d discs] "
 		"[-f dbfile]\n", getprogname());
 	return EXIT_FAILURE;
