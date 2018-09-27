@@ -87,6 +87,8 @@ struct	recset {
 	size_t		 byweeksz;
 	struct record	*byyear;
 	size_t		 byyearsz;
+	int		 has_system;
+	int		 has_version;
 };
 
 enum	state {
@@ -178,6 +180,8 @@ void	 drawtimes(struct out *, const struct draw *, time_t,
 		const struct node *, size_t, time_t);
 
 int 	 json_parse(struct out *, struct node *n, const char *, size_t);
+
+void	 recset_free(struct recset *);
 
 int 	 config_parse(const char *, struct config *);
 void	 config_free(struct config *);

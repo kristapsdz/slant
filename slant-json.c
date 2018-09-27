@@ -21,85 +21,120 @@ json_parse_obj(struct out *out, const char *str,
 	int	 rc = 0;
 
 	if (jsmn_eq(str, &t[pos], "version")) {
-		if (JSMN_STRING != t[++pos].type) {
-			xwarnx(out, "JSON version node "
+		if (n->recs->has_version) {
+			xwarnx(out, "JSON \"version\" "
+				"duplicated: %s", n->host);
+			return 0;
+		} else if (JSMN_STRING != t[++pos].type) {
+			xwarnx(out, "JSON \"version\" node "
 				"not a string: %s", n->host);
 			return 0;
 		}
 		n->recs->version = strndup
 			(str + t[pos].start,
 			 t[pos].end - t[pos].start);
-		xwarnx(out, "JSON version: %s", n->recs->version);
-		return NULL == n->recs->version ? 0 : 1;
+		if (NULL == n->recs->version) {
+			xwarn(out, NULL);
+			return -1;
+		}
+		n->recs->has_version = 1;
+		return 1;
+	} else if (jsmn_eq(str, &t[pos], "system")) {
+		if (n->recs->has_system) {
+			xwarnx(out, "JSON \"system\" "
+				"duplicated: %s", n->host);
+			return 0;
+		}
+		pos++;
+		rc = jsmn_system(&n->recs->system,
+			 str, &t[pos], toks - pos);
+		if (0 == rc) 
+			xwarnx(out, "malformed JSON "
+				"\"system\" node: %s", n->host);
+		else if (rc < 0)
+			xwarn(out, NULL);
+		else
+			n->recs->has_system = 1;
+		return rc;
 	}
 
 	/* Now we do the qmin, min, hour, day, week, and year arrays. */
 
 	if (jsmn_eq(str, &t[pos], "qmin")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON qmin node "
-				"not an array: %s", n->host);
+		if (n->recs->byqminsz) {
+			xwarnx(out, "JSON \"qmin\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->byqmin,
 			 &n->recs->byqminsz,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "min")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON min node "
-				"not an array: %s", n->host);
+		if (n->recs->byminsz) {
+			xwarnx(out, "JSON \"min\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->bymin,
 			 &n->recs->byminsz,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "hour")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON hour node "
-				"not an array: %s", n->host);
+		if (n->recs->byhoursz) {
+			xwarnx(out, "JSON \"hour\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->byhour,
 			 &n->recs->byhoursz,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "day")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON day node "
-				"not an array: %s", n->host);
+		if (n->recs->bydaysz) {
+			xwarnx(out, "JSON \"day\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->byday,
 			 &n->recs->bydaysz,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "week")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON week node "
-				"not an array: %s", n->host);
+		if (n->recs->byweeksz) {
+			xwarnx(out, "JSON \"week\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->byweek,
 			 &n->recs->byweeksz,
 			 str, &t[pos], toks - pos);
 	} else if (jsmn_eq(str, &t[pos], "year")) {
-		if (JSMN_ARRAY != t[++pos].type) {
-			xwarnx(out, "JSON year node "
-				"not an array: %s", n->host);
+		if (n->recs->byyearsz) {
+			xwarnx(out, "JSON \"year\" "
+				"duplicated: %s", n->host);
 			return 0;
 		}
+		pos++;
 		rc = jsmn_record_array
 			(&n->recs->byyear,
 			 &n->recs->byyearsz,
 			 str, &t[pos], toks - pos);
 	} else {
-		xwarnx(out, "JSON node "
-			"unknown name: %d, %s", t[pos].type, n->host);
+		xwarnx(out, "unknown JSON node: %s", n->host);
 		return 0;
 	}
+
+	if (0 == rc) 
+		xwarnx(out, "JSON record array node failed: %s", n->host);
+	else if (rc < 0)
+		xwarn(out, NULL);
 
 	return rc;
 }
@@ -121,14 +156,7 @@ json_parse(struct out *out, struct node *n, const char *str, size_t sz)
 	    NULL == (n->recs = calloc(1, sizeof(struct recset))))
 		goto syserr;
 
-	free(n->recs->version);
-	free(n->recs->byqmin);
-	free(n->recs->bymin);
-	free(n->recs->byhour);
-	free(n->recs->byday);
-	free(n->recs->byweek);
-	free(n->recs->byyear);
-
+	recset_free(n->recs);
 	memset(n->recs, 0, sizeof(struct recset));
 
 	jsmn_init(&jp);

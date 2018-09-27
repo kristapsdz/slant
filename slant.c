@@ -18,8 +18,12 @@
 #include <tls.h>
 #include <unistd.h>
 
+#include <kcgi.h>
+#include <kcgijson.h>
+
 #include "extern.h"
 #include "slant.h"
+#include "json.h"
 
 static	volatile sig_atomic_t sigged;
 
@@ -28,6 +32,23 @@ dosig(int code)
 {
 
 	sigged = 1;
+}
+
+void
+recset_free(struct recset *r)
+{
+
+	if (NULL == r)
+		return;
+
+	free(r->version);
+	jsmn_system_clear(&r->system);
+	jsmn_record_free_array(r->byqmin, r->byqminsz);
+	jsmn_record_free_array(r->bymin, r->byminsz);
+	jsmn_record_free_array(r->byhour, r->byhoursz);
+	jsmn_record_free_array(r->byday, r->bydaysz);
+	jsmn_record_free_array(r->byweek, r->byweeksz);
+	jsmn_record_free_array(r->byyear, r->byyearsz);
 }
 
 static void
@@ -44,16 +65,8 @@ nodes_free(struct node *n, size_t sz)
 		free(n[i].host);
 		free(n[i].xfer.wbuf);
 		free(n[i].xfer.rbuf);
-		if (NULL != n[i].recs) {
-			free(n[i].recs->version);
-			free(n[i].recs->byqmin);
-			free(n[i].recs->bymin);
-			free(n[i].recs->byhour);
-			free(n[i].recs->byday);
-			free(n[i].recs->byweek);
-			free(n[i].recs->byyear);
-			free(n[i].recs);
-		}
+		recset_free(n[i].recs);
+		free(n[i].recs);
 	}
 
 	free(n);
