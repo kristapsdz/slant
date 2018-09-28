@@ -115,9 +115,7 @@ http_close_done(struct out *out, struct node *n)
 {
 	int	 c;
 
-	if ((c = http_close_inner(out->errwin, n)) < 0)
-		return 0;
-	else if (c > 0)
+	if ((c = http_close_inner(out->errwin, n)) > 0)
 		return http_close_done_ok(out, n);
 
 	n->state = STATE_CLOSE_DONE;
@@ -302,12 +300,12 @@ http_connect(struct out *out, struct node *n)
 
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
-		xwarn(out, "poll: %lld seconds, %s: %s", 
+		xwarn(out, "poll (connect): %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
-		xwarnx(out, "poll hangup: %lld seconds, %s: %s", 
+		xwarnx(out, "poll hup (connect): %lld seconds, %s: %s",
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n);
@@ -351,6 +349,7 @@ int
 http_write(struct out *out, struct node *n)
 {
 	ssize_t	 ssz;
+	time_t	 t = time(NULL);
 
 	assert(-1 != n->xfer.pfd->fd);
 	assert(NULL != n->xfer.wbuf);
@@ -361,8 +360,12 @@ http_write(struct out *out, struct node *n)
 		xwarn(out, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} else if (POLLHUP & n->xfer.pfd->revents)
+	} else if (POLLHUP & n->xfer.pfd->revents) {
+		xwarnx(out, "poll hup (write): %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n);
+	}
 	
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
 	     ! (POLLIN & n->xfer.pfd->revents))
@@ -425,6 +428,7 @@ http_read(struct out *out, struct node *n)
 	ssize_t	 ssz;
 	char	 buf[1024 * 5];
 	void	*pp;
+	time_t	 t = time(NULL);
 
 	assert(STATE_READ == n->state);
 	assert(-1 != n->xfer.pfd->fd);
@@ -436,7 +440,12 @@ http_read(struct out *out, struct node *n)
 		xwarnx(out, "poll errors: %s: %s", n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
-	} 
+	} else if (POLLHUP & n->xfer.pfd->revents) {
+		xwarnx(out, "poll hup (read): %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
+		return http_close_err(out, n);
+	}
 
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
 	     ! (POLLIN & n->xfer.pfd->revents))
