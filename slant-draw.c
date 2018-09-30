@@ -1106,7 +1106,7 @@ draw_header(struct out *out, const struct draw *d,
 }
 
 void
-draw(struct out *out, struct draw *d, time_t timeo,
+draw(struct out *out, struct draw *d, 
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i, sz, maxhostsz, maxipsz,
@@ -1173,7 +1173,7 @@ draw(struct out *out, struct draw *d, time_t timeo,
 		if (d->box_link) {
 			draw_main_separator(out->mainwin);
 			waddch(out->mainwin, ' ');
-			draw_link(d, maxipsz, timeo, t,
+			draw_link(d, maxipsz, n[i].waittime, t,
 				out->mainwin, &n[i], &lastseenpos);
 			waddch(out->mainwin, ' ');
 		} else
@@ -1184,7 +1184,7 @@ draw(struct out *out, struct draw *d, time_t timeo,
 			getyx(out->mainwin, y, x);
 			intervalpos = x;
 			draw_interval(out->mainwin, 15, 
-				timeo, get_last(&n[i]), t);
+				n[i].waittime, get_last(&n[i]), t);
 		} else
 			intervalpos = 0;
 	}
@@ -1208,7 +1208,7 @@ draw(struct out *out, struct draw *d, time_t timeo,
  * and keeps our display running tight.
  */
 void
-drawtimes(struct out *out, const struct draw *d, time_t timeo,
+drawtimes(struct out *out, const struct draw *d, 
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t	 i;
@@ -1229,12 +1229,12 @@ drawtimes(struct out *out, const struct draw *d, time_t timeo,
 		if (d->intervalpos) {
 			wmove(out->mainwin, i + 1, d->intervalpos);
 			draw_interval(out->mainwin, 15, 
-				timeo, get_last(&n[i]), t);
+				n[i].waittime, get_last(&n[i]), t);
 		}
 		if (d->lastseenpos) {
 			wmove(out->mainwin, i + 1, d->lastseenpos);
-			draw_interval(out->mainwin, timeo, 
-				timeo, n[i].lastseen, t);
+			draw_interval(out->mainwin, n[i].waittime, 
+				n[i].waittime, n[i].lastseen, t);
 		}
 	}
 }

@@ -124,6 +124,7 @@ struct	xfer {
 struct	node {
 	enum state	 state; /* state of node */
 	const char	*url; /* full URL for connect */
+	time_t		 waittime; /* inter-connect waittime */
 	char		*host; /* just hostname of connect */
 	char		*path; /* path of connect */
 	struct xfer	 xfer; /* transfer information */
@@ -135,11 +136,20 @@ struct	node {
 };
 
 /*
+ * Per-node configuration.
+ */
+struct	nconfig {
+	char		*url; /* URL */
+	time_t		 waittime; /* waittime (or zero) */
+};
+
+/*
  * A parsed configuration file (~/.slantrc or similar).
  */
 struct	config {
-	char		**urls; /* nodes (URLs) */
+	struct nconfig	 *urls; /* nodes (URLs) */
 	size_t		  urlsz; /* number of urls */
+	size_t		  waittime; /* global timeout */
 };
 
 /*
@@ -174,9 +184,9 @@ int	 http_connect(struct out *, struct node *);
 int	 http_write(struct out *, struct node *n);
 int	 http_read(struct out *, struct node *n);
 
-void	 draw(struct out *, struct draw *, time_t,
+void	 draw(struct out *, struct draw *, 
 		const struct node *, size_t, time_t);
-void	 drawtimes(struct out *, const struct draw *, time_t,
+void	 drawtimes(struct out *, const struct draw *, 
 		const struct node *, size_t, time_t);
 
 int 	 json_parse(struct out *, struct node *n, const char *, size_t);

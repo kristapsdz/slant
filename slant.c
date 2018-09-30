@@ -81,8 +81,7 @@ nodes_free(struct node *n, size_t sz)
  * occur to reflect the change.
  */
 static int
-nodes_update(struct out *out, 
-	time_t waittime, struct node *n, size_t sz)
+nodes_update(struct out *out, struct node *n, size_t sz)
 {
 	size_t	 i;
 	time_t	 t = time(NULL);
@@ -91,7 +90,7 @@ nodes_update(struct out *out,
 	for (i = 0; i < sz; i++) {
 		switch (n[i].state) {
 		case STATE_CONNECT_WAITING:
-			if (n[i].waitstart + waittime >= t) 
+			if (n[i].waitstart + n[i].waittime >= t) 
 				break;
 			n[i].state = STATE_CONNECT_READY;
 			n[i].dirty = 1;
@@ -302,12 +301,12 @@ main(int argc, char *argv[])
 {
 	int	 	 c, first = 1, maxy, maxx;
 	size_t		 i;
-	const char	*er, *cfgfile = NULL;
+	const char	*cfgfile = NULL;
 	struct node	*n = NULL;
 	struct pollfd	*pfds = NULL;
 	struct timespec	 ts;
 	sigset_t	 mask, oldmask;
-	time_t		 last, now, waittime = 60;
+	time_t		 last, now;
 	char		*cp;
 	struct draw	 d;
 	struct config	 cfg;
@@ -396,11 +395,6 @@ main(int argc, char *argv[])
 			else
 				goto usage;
 			break;
-		case 'w':
-			waittime = strtonum(optarg, 15, INT_MAX, &er);
-			if (NULL != er)
-				errx(EXIT_FAILURE, "-w: %s", er);
-			break;
 		default:
 			goto usage;
 		}
@@ -482,7 +476,13 @@ main(int argc, char *argv[])
 	for (i = 0; i < cfg.urlsz; i++) {
 		n[i].xfer.pfd = &pfds[i];
 		n[i].state = STATE_STARTUP;
-		n[i].url = cfg.urls[i];
+		n[i].url = cfg.urls[i].url;
+		if (cfg.urls[i].waittime)
+			n[i].waittime = cfg.urls[i].waittime;
+		else
+			n[i].waittime = cfg.waittime;
+		xdbg(&out, "n[%s].waittime = %lld", 
+			n[i].url, n[i].waittime);
 		if ( ! dns_parse_url(&out, &n[i]))
 			goto out;
 	}
@@ -514,7 +514,7 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		c = nodes_update(&out, waittime, n, cfg.urlsz);
+		c = nodes_update(&out, n, cfg.urlsz);
 		if (c < 0)
 			break;
 
@@ -547,13 +547,13 @@ main(int argc, char *argv[])
 		 */
 
 		if ((c || first) && now > last) {
-			draw(&out, &d, waittime, n, cfg.urlsz, now);
+			draw(&out, &d, n, cfg.urlsz, now);
 			for (i = 0; i < cfg.urlsz; i++) 
 				n[i].dirty = 0;
 			wrefresh(out.mainwin);
 			first = 0;
 		} else if (now > last) {
-			drawtimes(&out, &d, waittime, n, cfg.urlsz, now);
+			drawtimes(&out, &d, n, cfg.urlsz, now);
 			wrefresh(out.mainwin);
 		}
 
@@ -577,8 +577,7 @@ out:
 usage:
 	fprintf(stderr, "usage: %s "
 		"[-f conf] "
-		"[-o order] "
-		"[-w waittime]\n", 
+		"[-o order]\n",
 		getprogname());
 	return EXIT_FAILURE;
 }

@@ -8,7 +8,6 @@
 .Nm slant
 .Op Fl f Ar config
 .Op Fl o Ar order
-.Op Fl w Ar waittime
 .Sh DESCRIPTION
 The
 .Nm
@@ -31,9 +30,6 @@ for hostname,
 for immediate CPU, or
 .Ar mem
 for immediate memory.
-.It Fl w
-Wait time before querying hosts.
-This must be at least 15 seconds (minimum collection interval).
 .El
 .Pp
 By default, hosts are ordered as given in the configuration and are
@@ -142,8 +138,14 @@ species a server named
 Literals are case insensitive.
 .Dq foo; .
 .Bd -literal
-"servers" url... ";"
+"waittime" NUM ";"
+"servers" url [url...] ["{" ["waittime" NUM] "}"] ";"
 .Ed
+.Pp
+There may be several
+.Li servers
+sections, each with different server arguments.
+The minimum wait time (per server or global) is 15 seconds.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -162,11 +164,18 @@ To query the localhost and a remote machine:
 .Pp
 With the following configuration file:
 .Bd -literal
+waittime 60 ;
 servers
-  localhost/cgi-bin/slant-cgi
   https://remote/slant-cgi
   ;
+servers
+  localhost/cgi-bin/slant-cgi
+  { waittime 15 } ;
 .Ed
+.Pp
+This establishes a default wait time of 60 seconds.
+This value is used by the remote host.
+The local host has its wait time overriden at 15 seconds.
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS

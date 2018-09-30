@@ -8,6 +8,7 @@
 #include <curses.h>
 #include <err.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -15,43 +16,142 @@
 #include "extern.h"
 #include "slant.h"
 
+/*
+ * "waittime" num ";"
+ */
+static int
+config_parse_waittime(const char *fn, struct config *cfg, 
+	const char **toks, size_t toksz, size_t *pos)
+{
+	const char	*er;
+
+	if (*pos >= toksz) {
+		warnx("%s: unexpected eof", fn);
+		return 0;
+	}
+
+	cfg->waittime = strtonum(toks[*pos], 15, INT_MAX, &er);
+	if (NULL != er) {
+		warnx("%s: bad waittime: %s", fn, er);
+		return 0;
+	} else if (++(*pos) >= toksz) {
+		warnx("%s: unexpected eof", fn);
+		return 0;
+	} else if (strcmp(toks[*pos], ";")) {
+		warnx("%s: expected semicolon", fn);
+		return 0;
+	}
+
+	(*pos)++;
+	return 1;
+}
+
+/*
+ * ["waittime" num] "}"
+ */
+static int
+config_parse_server_args(const char *fn, struct config *cfg, 
+	const char **toks, size_t toksz, size_t *pos, size_t count)
+{
+	const char	*er;
+	time_t		 waittime = 0;
+	size_t		 i;
+
+	while (*pos < toksz && strcmp(toks[*pos], "}")) {
+		warnx("%s", toks[*pos]);
+		if (0 == strcmp(toks[*pos], "waittime")) {
+			if (++(*pos) >= toksz) {
+				warnx("%s: unexpected eof", fn);
+				return 0;
+			}
+			waittime = strtonum
+				(toks[*pos], 15, INT_MAX, &er);
+			if (NULL != er) {
+				warnx("%s: bad waittime: %s", fn, er);
+				return 0;
+			}
+			if (++(*pos) >= toksz) {
+				warnx("%s: unexpected eof", fn);
+				return 0;
+			}
+			if (0 == strcmp(toks[*pos], ";"))
+				(*pos)++;
+		} else {
+			warnx("%s: unknown token: %s", fn, toks[*pos]);
+			return 0;
+		}
+	}
+
+	if (*pos >= toksz) {
+		warnx("%s: unexpected eof", fn);
+		return 0;
+	}
+
+	(*pos)++;
+
+	assert(cfg->urlsz >= count);
+	if (waittime)
+		for (i = 0; i < count; i++)
+			cfg->urls[cfg->urlsz - 1 - i].waittime = waittime;
+
+	return 1;
+}
+
+/*
+ * "servers" s1 [s2...] ["{" args] ";"
+ */
 static int
 config_parse_servers(const char *fn, struct config *cfg, 
 	const char **toks, size_t toksz, size_t *pos)
 {
 	void	*pp;
-
-	if (*pos >= toksz) {
-		warnx("%s: empty server list", fn);
-		return 0;
-	} else if (cfg->urlsz) {
-		warnx("%s: servers already defined", fn);
-		return 0;
-	}
+	size_t	 count = 0;
 
 	while (*pos < toksz) {
-		if (0 == strcmp(toks[*pos], ";"))
+		if (0 == strcmp(toks[*pos], ";") ||
+	 	    0 == strcmp(toks[*pos], "{"))
 			break;
 		pp = reallocarray
 			(cfg->urls, cfg->urlsz + 1,
-			 sizeof(char *));
+			 sizeof(struct nconfig));
 		if (NULL == pp) {
 			warn(NULL);
 			return 0;
 		}
 		cfg->urls = pp;
-		cfg->urls[cfg->urlsz] = 
+		memset(&cfg->urls[cfg->urlsz], 
+			0, sizeof(struct nconfig));
+		cfg->urlsz++;
+		cfg->urls[cfg->urlsz - 1].url = 
 			strdup(toks[*pos]);
-		if (NULL == cfg->urls[cfg->urlsz]) {
+		if (NULL == cfg->urls[cfg->urlsz - 1].url) {
 			warn(NULL);
 			return 0;
 		}
-		cfg->urlsz++;
 		(*pos)++;
+		count++;
 	}
 
-	if (*pos == toksz)
+	if (0 == count) {
+		warnx("%s: no servers in statement", fn);
 		return 0;
+	} else if (*pos >= toksz) {
+		warnx("%s: unexpected eof", fn);
+		return 0;
+	}
+
+	/* Now the arguments. */
+
+	if (0 == strcmp(toks[*pos], "{")) {
+		(*pos)++;
+		if ( ! config_parse_server_args
+		    (fn, cfg, toks, toksz, pos, count))
+			return 0;
+		if (strcmp(toks[*pos], ";")) {
+			warnx("%s: expected semicolon", fn);
+			return 0;
+		}
+	}
 
 	(*pos)++;
 	return 1;
@@ -69,6 +169,12 @@ config_parse(const char *fn, struct config *cfg)
 	struct stat	  st;
 
 	memset(cfg, 0, sizeof(struct config));
+
+	/* Set some defaults. */
+
+	cfg->waittime = 60;
+
+	/* Open file, map it, create a NUL-terminated string. */
 
 	if (-1 == (fd = open(fn, O_RDONLY, 0))) {
 		warn("%s", fn);
@@ -98,6 +204,12 @@ config_parse(const char *fn, struct config *cfg)
 	munmap(map, mapsz);
 	close(fd);
 
+	/* 
+	 * Step through all space-separated tokens.
+	 * TODO: make this into a proper parsing sequence at some point,
+	 * but for now this will do.
+	 */
+
 	while (NULL != (cp = strsep(&buf, " \t\r\n"))) {
 		if ('\0' == *cp)
 			continue;
@@ -121,6 +233,11 @@ config_parse(const char *fn, struct config *cfg)
 			if ( ! config_parse_servers
 			    (fn, cfg, tokp, toksz, &pos))
 				break;
+		} else if (0 == strcmp(tokp[pos], "waittime")) {
+			pos++;
+			if ( ! config_parse_waittime
+			    (fn, cfg, tokp, toksz, &pos))
+				break;
 		} else {
 			warnx("%s: unknown token: %s", fn, tokp[pos]);
 			break;
@@ -141,7 +258,7 @@ config_free(struct config *cfg)
 		return;
 
 	for (i = 0; i < cfg->urlsz; i++)
-		free(cfg->urls[i]);
+		free(cfg->urls[i].url);
 
 	free(cfg->urls);
 }
