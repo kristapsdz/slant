@@ -9,6 +9,7 @@
 .Op Fl nv
 .Op Fl d Ar discs
 .Op Fl f Ar dbfile
+.Op Fl p Ar procs
 .Sh DESCRIPTION
 The
 .Nm
@@ -26,6 +27,13 @@ Print collected data as a table to standard output.
 Discs to monitor.
 Multiple discs may be separated by a comma.
 By default, all discs are monitored.
+.It Fl p Ar procs
+Processes to monitor.
+Multiple processes may be separated by a comma.
+Processes should be listed by their executable name, e.g.,
+.Ar httpd
+instead of
+.Ar /usr/sbin/httpd .
 .It Fl f Ar dbfile
 The SQLite database file.
 .El
@@ -50,6 +58,11 @@ On a system with software RAID (or software FDE), monitor only the root
 disc to prevent bandwidth duplication.
 .Bd -literal
 # slant-collectd -d sd0
+.Ed
+.Pp
+To additionally monitor CGI and login facilities:
+.Bd -literal
+# slant-collectd -d sd0 -p slowcgi,httpd,sshd
 .Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
