@@ -50,6 +50,7 @@ update_interval(struct kwbp *db, time_t span,
 			first->discread + r->discread, 
 			first->discwrite + r->discwrite, 
 			first->nprocs + r->nprocs,
+			first->rprocs + r->rprocs,
 			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
@@ -58,13 +59,13 @@ update_interval(struct kwbp *db, time_t span,
 		db_record_update_tail(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
 			r->discread, r->discwrite, r->nprocs,
-			last->id);
+			r->rprocs, last->id);
 	} else {
 		/* New entry. */
 		db_record_insert(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
 			r->discread, r->discwrite, r->nprocs, 
-			ival);
+			r->rprocs, ival);
 	}
 }
 
@@ -85,14 +86,15 @@ print(const struct sysinfo *p)
 	printf("%9.1f%% %9.1f%% "
 		"%10" PRId64 " %10" PRId64 " "
 		"%10" PRId64 " %10" PRId64 " "
-		"%9.1f%%\n",
+		"%9.1f%% %9.1f%%\n",
 		sysinfo_get_cpu_avg(p),
 		sysinfo_get_mem_avg(p),
 		sysinfo_get_nettx_avg(p),
 		sysinfo_get_netrx_avg(p),
 		sysinfo_get_discread_avg(p),
 		sysinfo_get_discwrite_avg(p),
-		sysinfo_get_nprocs(p));
+		sysinfo_get_nprocs(p),
+		sysinfo_get_rprocs(p));
 }
 
 static void
@@ -141,6 +143,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 	rr.discread = sysinfo_get_discread_avg(p);
 	rr.discwrite = sysinfo_get_discwrite_avg(p);
 	rr.nprocs = sysinfo_get_nprocs(p);
+	rr.rprocs = sysinfo_get_rprocs(p);
 
 	/* 
 	 * First count what we have.
@@ -200,12 +203,12 @@ update(struct kwbp *db, const struct sysinfo *p,
 		db_record_update_tail(db, t, 1, 
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
 			rr.discread, rr.discwrite, rr.nprocs,
-			last_byqmin->id);
+			rr.rprocs, last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
 			rr.discread, rr.discwrite, rr.nprocs,
-			INTERVAL_byqmin);
+			rr.rprocs, INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */
 
@@ -240,6 +243,20 @@ update(struct kwbp *db, const struct sysinfo *p,
 	db_trans_commit(db, 0);
 }
 
+static void
+cfg_free(struct syscfg *cfg)
+{
+	size_t	 i;
+
+	for (i = 0; i < cfg->discsz; i++)
+		free(cfg->discs[i]);
+	for (i = 0; i < cfg->cmdsz; i++)
+		free(cfg->cmds[i]);
+
+	free(cfg->discs);
+	free(cfg->cmds);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -248,7 +265,7 @@ main(int argc, char *argv[])
 	struct sysinfo	*info;
 	int		 c, rc = 0, noop = 0, verb = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
-	char		*d, *discs = NULL;
+	char		*d, *discs = NULL, *procs = NULL;
 	struct syscfg	 cfg;
 
 	/*
@@ -265,7 +282,7 @@ main(int argc, char *argv[])
 
 	memset(&cfg, 0, sizeof(struct syscfg));
 
-	while (-1 != (c = getopt(argc, argv, "d:nvf:")))
+	while (-1 != (c = getopt(argc, argv, "d:nvf:p:")))
 		switch (c) {
 		case 'd':
 			discs = optarg;
@@ -276,6 +293,9 @@ main(int argc, char *argv[])
 		case 'n':
 			noop = 1;
 			break;
+		case 'p':
+			procs = optarg;
+			break;
 		case 'v':
 			verb = 1;
 			break;
@@ -285,18 +305,6 @@ main(int argc, char *argv[])
 
 	argc -= optind;
 	argv += optind;
-
-	if (NULL != discs)
-		while (NULL != (d = strsep(&discs, ","))) {
-			cfg.discs = reallocarray
-				(cfg.discs, 
-				 cfg.discsz + 1,
-				 sizeof(char *));
-			cfg.discs[cfg.discsz] = strdup(d);
-			if (NULL == cfg.discs[cfg.discsz]) 
-				err(EXIT_FAILURE, NULL);
-			cfg.discsz++;
-		}
 
 	/* XXX: hack around ksql(3) exit when receives signal. */
 
@@ -323,6 +331,38 @@ main(int argc, char *argv[])
 	 * which will clean up behind us.
 	 * Let SIGINT and SIGTERM trigger us into exiting safely.
 	 */
+
+	if (NULL != discs)
+		while (NULL != (d = strsep(&discs, ","))) {
+			if ('\0' == d[0])
+				continue;
+			cfg.discs = reallocarray
+				(cfg.discs, 
+				 cfg.discsz + 1,
+				 sizeof(char *));
+			if (NULL == cfg.discs)
+				err(EXIT_FAILURE, NULL);
+			cfg.discs[cfg.discsz] = strdup(d);
+			if (NULL == cfg.discs[cfg.discsz]) 
+				err(EXIT_FAILURE, NULL);
+			cfg.discsz++;
+		}
+
+	if (NULL != procs)
+		while (NULL != (d = strsep(&procs, ","))) {
+			if ('\0' == d[0])
+				continue;
+			cfg.cmds = reallocarray
+				(cfg.cmds, 
+				 cfg.cmdsz + 1,
+				 sizeof(char *));
+			if (NULL == cfg.cmds)
+				err(EXIT_FAILURE, NULL);
+			cfg.cmds[cfg.cmdsz] = strdup(d);
+			if (NULL == cfg.cmds[cfg.cmdsz]) 
+				err(EXIT_FAILURE, NULL);
+			cfg.cmdsz++;
+		}
 
 	if (NULL == (info = sysinfo_alloc()))
 		goto out;
@@ -363,6 +403,7 @@ main(int argc, char *argv[])
 
 	rc = 1;
 out:
+	cfg_free(&cfg);
 	sysinfo_free(info);
 	db_close(db);
 	return rc ? EXIT_SUCCESS : EXIT_FAILURE;

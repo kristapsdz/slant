@@ -66,6 +66,9 @@ struct	record {
 	field nprocs double default 0 comment
 		"The percentage of processes running over the maximum
 		 number of possible processes.";
+	field rprocs double default 0 comment
+		"The percentage of matches over all configured 
+		 commands to search for.";
 
 	field interval enum interval comment
 		"The type of record.";
@@ -79,11 +82,11 @@ struct	record {
 		"List all entries, ordered by record time.";
 
 	update ctime, entries, cpu, mem, nettx, netrx, discread,
-		discwrite, nprocs: id: name tail comment
+		discwrite, nprocs, rprocs: id: name tail comment
 		"Take the tail of the circular queue and refresh its
 		contents, making it the new head.";
 	update entries, cpu, mem, nettx, netrx, discread, discwrite,
-		nprocs: id: name current comment
+		nprocs, rprocs: id: name current comment
 		"Update the current record.
 		 This is the record within the current quarter-minute
 		 (if qmin), minute (if min), or hour (if hour).";

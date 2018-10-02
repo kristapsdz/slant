@@ -59,6 +59,7 @@
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -103,6 +104,7 @@ struct	sysinfo {
 	int64_t        **cp_old; /* used for cpu compute */
 	int64_t        **cp_diff; /* used for cpu compute */
 	size_t		 ncpu; /* number cpus */
+	double		 rproc_pct; /* pct command (by name) found */
 	struct ifstat	*ifstats; /* used for inet compute */
 	size_t		 ifstatsz; /* used for inet compute */
 	struct ifcount	 ifsum; /* average inet */
@@ -297,20 +299,17 @@ sysinfo_update_mem(struct sysinfo *p)
 }
 
 static int
-sysinfo_update_nprocs(struct sysinfo *p)
+sysinfo_update_nprocs(const struct syscfg *cfg, struct sysinfo *p)
 {
-	size_t	 size;
-	int	 nprocs, maxproc;
-	int 	 cp_nproc_mib[] = { CTL_KERN, KERN_NPROCS },
-		 cp_maxproc_mib[] = { CTL_KERN, KERN_MAXPROC };
+	size_t	 i, j, size, len, rprocs = 0;
+	int	 maxproc, nprocs;
+	int	 cp_nproc_mib[] = { CTL_KERN, KERN_NPROCS },
+		 cp_maxproc_mib[] = { CTL_KERN, KERN_MAXPROC },
+		 cp_procs_mib[] = { CTL_KERN, KERN_PROC, 
+			 0, 0, sizeof(struct kinfo_proc), 0};
+	struct kinfo_proc *pb = NULL;
 
 	size = sizeof(int);
-
-	if (sysctl(cp_nproc_mib, 2, &nprocs, &size, NULL, 0) < 0) {
-		warn("sysctl: CTL_KERN, KERN_NPROCS");
-		return 0;
-	}
-
 	if (sysctl(cp_maxproc_mib, 2, &maxproc, &size, NULL, 0) < 0) {
 		warn("sysctl: CTL_KERN, KERN_MAXPROC");
 		return 0;
@@ -319,7 +318,62 @@ sysinfo_update_nprocs(struct sysinfo *p)
 		return 0;
 	}
 
-	p->nproc_pct = 100.0 * nprocs / (double)maxproc;
+	/*
+	 * If we're only going to look at the number of processes, then
+	 * there's no need for us to look at the kinfo_proc: we always
+	 * have 100% running (of... none).
+	 * So short-circuit here.
+	 */
+
+	if (0 == cfg->cmdsz) {
+		size = sizeof(int);
+		if (sysctl(cp_nproc_mib, 2, 
+		    &nprocs, &size, NULL, 0) < 0) {
+			warn("sysctl: CTL_KERN, KERN_NPROCS");
+			return 0;
+		}
+		p->nproc_pct = 100.0 * nprocs / (double)maxproc;
+		p->rproc_pct = 100.0;
+		return 1;
+	}
+retry:
+	free(pb);
+	size = sizeof(int);
+	if (sysctl(cp_procs_mib, 6, NULL, &size, NULL, 0) < 0) {
+		warn("sysctl: CTL_KERN, KERN_PROC");
+		return 0;
+	}
+
+	/* Add extra slop for new interim processes. */
+
+	size = 5 * size / 4;
+	if (NULL == (pb = malloc(size))) {
+		warn(NULL);
+		return 0;
+	}
+
+	cp_procs_mib[5] = (int)(size / sizeof(struct kinfo_proc));
+	if (sysctl(cp_procs_mib, 6, pb, &size, NULL, 0) < 0) {
+		if (errno == ENOMEM)
+			goto retry;
+		warn("sysctl: CTL_KERN, KERN_PROC");
+		free(pb);
+		return 0;
+	}
+
+	len = size / sizeof(struct kinfo_proc);
+	for (j = 0; j < cfg->cmdsz; j++) {
+		for (i = 0; i < len; i++) {
+			if (0 == strcmp(pb[i].p_comm, cfg->cmds[j]))
+				break;
+		}
+		if (i < len)
+			rprocs++;
+	}
+
+	free(pb);
+	p->nproc_pct = 100.0 * len / (double)maxproc;
+	p->rproc_pct = 100.0 * rprocs / (double)cfg->cmdsz;
 	return 1;
 }
 
@@ -336,6 +390,8 @@ sysinfo_update_cpu(struct sysinfo *p)
 		int cp_time_mib[] = 
 			{ CTL_KERN, KERN_CPTIME2, /*fillme*/0 };
 		size = CPUSTATES * sizeof(int64_t);
+
+		/* FIXME: ENODEV */
 
 		for (i = 0; i < p->ncpu; i++) {
 			cp_time_mib[2] = i;
@@ -533,7 +589,7 @@ int
 sysinfo_update(const struct syscfg *cfg, struct sysinfo *p)
 {
 
-	if ( ! sysinfo_update_nprocs(p))
+	if ( ! sysinfo_update_nprocs(cfg, p))
 		return 0;
 	if ( ! sysinfo_update_cpu(p))
 		return 0;
@@ -596,6 +652,13 @@ sysinfo_get_discwrite_avg(const struct sysinfo *p)
 	if (1 == p->sample)
 		return 0;
 	return p->disc_wavg;
+}
+
+double
+sysinfo_get_rprocs(const struct sysinfo *p)
+{
+
+	return p->rproc_pct;
 }
 
 double

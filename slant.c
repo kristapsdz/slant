@@ -481,8 +481,6 @@ main(int argc, char *argv[])
 			n[i].waittime = cfg.urls[i].waittime;
 		else
 			n[i].waittime = cfg.waittime;
-		xdbg(&out, "n[%s].waittime = %lld", 
-			n[i].url, n[i].waittime);
 		if ( ! dns_parse_url(&out, &n[i]))
 			goto out;
 	}
