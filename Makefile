@@ -131,7 +131,7 @@ slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
 
 db.o slant-collectd.o slant-cgi.o: db.h
 
-json.o slant-cgi.o slant-json.o: json.h
+json.o slant-cgi.o slant-json.o slant.o: json.h
 
 $(SLANT_OBJS): slant.h
 
