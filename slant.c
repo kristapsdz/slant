@@ -274,9 +274,10 @@ layout(struct out *out, size_t maxx,
 #define	ORD_NET		3
 #define	ORD_DISC	4
 #define	ORD_LINK	5
-#define	ORD_HOST	6
+#define	ORD_RPROCS	6
+#define	ORD_HOST	7
 
-	d->boxsz = 7;
+	d->boxsz = 8;
 	d->box = calloc(d->boxsz, sizeof(struct drawbox));
 	if (NULL == d->box) {
 		xwarn(out, NULL);
@@ -289,6 +290,7 @@ layout(struct out *out, size_t maxx,
 	d->box[ORD_DISC].cat = DRAWCAT_DISC;
 	d->box[ORD_PROCS].cat = DRAWCAT_PROCS;
 	d->box[ORD_LINK].cat = DRAWCAT_LINK;
+	d->box[ORD_RPROCS].cat = DRAWCAT_RPROCS;
 	d->box[ORD_HOST].cat = DRAWCAT_HOST;
 
 	d->box[ORD_CPU].args = CPU_QMIN_BARS | CPU_QMIN | CPU_HOUR;
@@ -298,6 +300,7 @@ layout(struct out *out, size_t maxx,
 	d->box[ORD_PROCS].args = PROCS_QMIN_BARS | 
 		PROCS_QMIN | PROCS_HOUR;
 	d->box[ORD_LINK].args = LINK_IP | LINK_STATE | LINK_ACCESS;
+	d->box[ORD_RPROCS].args = RPROCS_QMIN;
 	d->box[ORD_HOST].args = HOST_ACCESS;
 
 	if (maxx > compute_width(n, nsz, d)) 

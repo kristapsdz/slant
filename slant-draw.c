@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <curses.h>
+#include <float.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +27,6 @@ static const char *const states[] = {
 	"wrte", /* STATE_WRITE */
 	"read" /* STATE_READ */
 };
-
 
 /*
  * Return the last time for which we have some data.
@@ -178,6 +178,20 @@ draw_bars(WINDOW *win, double vv)
 
 	for (++i; i <= 10; i++)
 		waddch(win, ' ');
+}
+
+/*
+ * Draw percentage that should be 100%.
+ * Anything less than 100% is red.
+ */
+static void
+draw_rpct(WINDOW *win, double vv)
+{
+	if (vv < 100.0 - FLT_EPSILON)
+		wattron(win, COLOR_PAIR(2));
+	wprintw(win, "%5.1f%%", vv);
+	if (vv < 100.0 - FLT_EPSILON)
+		wattroff(win, COLOR_PAIR(2));
 }
 
 /*
@@ -480,17 +494,74 @@ draw_inet(unsigned int bits, WINDOW *win, const struct node *n)
 }
 
 static void
+draw_rprocs(unsigned int bits, WINDOW *win, const struct node *n)
+{
+	double	 vv;
+	const struct recset *r = n->recs;
+
+	if (RPROCS_QMIN & bits) {
+		bits &= ~RPROCS_QMIN;
+		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
+			vv = r->byqmin[0].rprocs / r->byqmin[0].entries;
+			wattron(win, A_BOLD);
+			draw_rpct(win, vv);
+			wattroff(win, A_BOLD);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " ");
+		} else 
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (RPROCS_MIN & bits) {
+		bits &= ~RPROCS_MIN;
+		if (NULL != r && r->byminsz && r->bymin[0].entries) {
+			vv = r->bymin[0].rprocs / r->bymin[0].entries;
+			draw_rpct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (RPROCS_HOUR & bits) {
+		bits &= ~PROCS_HOUR;
+		if (NULL != r && r->byhoursz && r->byhour[0].entries) {
+			vv = r->byhour[0].rprocs / r->byhour[0].entries;
+			draw_rpct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+		if (bits)
+			draw_sub_separator(win);
+	}
+
+	if (RPROCS_DAY & bits) {
+		bits &= ~PROCS_DAY;
+		if (NULL != r && r->bydaysz && r->byday[0].entries) {
+			vv = r->byday[0].rprocs / r->byday[0].entries;
+			draw_rpct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+}
+
+static void
 draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
+	const struct recset *r = n->recs;
 
 	if (PROCS_QMIN_BARS & bits) {
 		bits &= ~PROCS_QMIN_BARS;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].nprocs /
-				n->recs->byqmin[0].entries;
+		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
+			vv = r->byqmin[0].nprocs / r->byqmin[0].entries;
 			draw_bars(win, vv);
 		} else
 			wprintw(win, "%10s", " ");
@@ -500,11 +571,8 @@ draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 
 	if (PROCS_QMIN & bits) {
 		bits &= ~PROCS_QMIN;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].nprocs /
-				n->recs->byqmin[0].entries;
+		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
+			vv = r->byqmin[0].nprocs / r->byqmin[0].entries;
 			wattron(win, A_BOLD);
 			draw_pct(win, vv);
 			wattroff(win, A_BOLD);
@@ -518,11 +586,8 @@ draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 
 	if (PROCS_MIN & bits) {
 		bits &= ~PROCS_MIN;
-		if (NULL != n->recs &&
-		    n->recs->byminsz &&
-		    n->recs->bymin[0].entries) {
-			vv = n->recs->bymin[0].nprocs /
-				n->recs->bymin[0].entries;
+		if (NULL != r && r->byminsz && r->bymin[0].entries) {
+			vv = r->bymin[0].nprocs / r->bymin[0].entries;
 			draw_pct(win, vv);
 		} else if (NULL != n->recs) {
 			wprintw(win, "%6s", " "); 
@@ -534,11 +599,8 @@ draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 
 	if (PROCS_HOUR & bits) {
 		bits &= ~PROCS_HOUR;
-		if (NULL != n->recs &&
-	 	    n->recs->byhoursz &&
-		    n->recs->byhour[0].entries) {
-			vv = n->recs->byhour[0].nprocs /
-				n->recs->byhour[0].entries;
+		if (NULL != r && r->byhoursz && r->byhour[0].entries) {
+			vv = r->byhour[0].nprocs / r->byhour[0].entries;
 			draw_pct(win, vv);
 		} else if (NULL != n->recs) {
 			wprintw(win, "%6s", " "); 
@@ -550,11 +612,8 @@ draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 
 	if (PROCS_DAY & bits) {
 		bits &= ~PROCS_DAY;
-		if (NULL != n->recs &&
-		    n->recs->bydaysz &&
-		    n->recs->byday[0].entries) {
-			vv = n->recs->byday[0].nprocs /
-				n->recs->byday[0].entries;
+		if (NULL != r && r->bydaysz && r->byday[0].entries) {
+			vv = r->byday[0].nprocs / r->byday[0].entries;
 			draw_pct(win, vv);
 		} else if (NULL != n->recs) {
 			wprintw(win, "%6s", " "); 
@@ -769,13 +828,13 @@ compute_width(const struct node *n, size_t nsz,
 			maxipsz = sz;
 	}
 
-	for (sz = 0, i = 0; i < d->boxsz; i++) {
+	for (sz = maxhostsz + 1, i = 0; i < d->boxsz; i++) {
 		if (0 == d->box[i].args)
 			continue;
+		bits = d->box[i].args;
+		sz += 3;
 		switch (d->box[i].cat) {
 		case DRAWCAT_CPU:
-			bits = d->box[i].args;
-			sz += 3;
 			if (CPU_QMIN_BARS & bits) {
 				bits &= ~CPU_QMIN_BARS;
 				sz += 10 + (bits ? 1 : 0);
@@ -798,8 +857,6 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			break;
 		case DRAWCAT_MEM:
-			bits = d->box[i].args;
-			sz += 3;
 			if (MEM_QMIN_BARS & bits) {
 				bits &= ~MEM_QMIN_BARS;
 				sz += 10 + (bits ? 1 : 0);
@@ -822,8 +879,6 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			break;
 		case DRAWCAT_PROCS:
-			bits = d->box[i].args;
-			sz += 3;
 			if (PROCS_QMIN_BARS & bits) {
 				bits &= ~PROCS_QMIN_BARS;
 				sz += 10 + (bits ? 1 : 0);
@@ -845,9 +900,25 @@ compute_width(const struct node *n, size_t nsz,
 				sz += 6;
 			}
 			break;
+		case DRAWCAT_RPROCS:
+			if (RPROCS_QMIN & bits) {
+				bits &= ~RPROCS_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_MIN & bits) {
+				bits &= ~RPROCS_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_HOUR & bits) {
+				bits &= ~RPROCS_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_DAY & bits) {
+				bits &= ~RPROCS_DAY;
+				sz += 6;
+			}
+			break;
 		case DRAWCAT_NET:
-			bits = d->box[i].args;
-			sz += 3;
 			if (NET_QMIN & bits) {
 				bits &= ~NET_QMIN;
 				sz += 13 + (bits ? 1 : 0);
@@ -866,8 +937,6 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			break;
 		case DRAWCAT_DISC:
-			bits = d->box[i].args;
-			sz += 3;
 			if (DISC_QMIN & bits) {
 				bits &= ~DISC_QMIN;
 				sz += 13 + (bits ? 1 : 0);
@@ -884,9 +953,8 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~DISC_DAY;
 				sz += 13;
 			}
+			break;
 		case DRAWCAT_LINK:
-			bits = d->box[i].args;
-			sz += 3;
 			if (LINK_IP & bits) {
 				bits &= ~LINK_IP;
 				sz += maxipsz + 
@@ -902,7 +970,6 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			break;
 		case DRAWCAT_HOST:
-			sz += 3;
 			/* "Last" time. */
 			sz += 9;
 			break;
@@ -1000,6 +1067,29 @@ draw_header(struct out *out, const struct draw *d,
 			}
 			draw_centre(out->mainwin, "procs", sz);
 			break;
+		case DRAWCAT_RPROCS:
+			if (RPROCS_QMIN & bits) {
+				bits &= ~RPROCS_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_MIN & bits) {
+				bits &= ~RPROCS_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_HOUR & bits) {
+				bits &= ~RPROCS_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (RPROCS_DAY & bits) {
+				bits &= ~RPROCS_DAY;
+				sz += 6;
+			}
+			if (sz < 9) {
+				draw_centre(out->mainwin, "run", sz);
+				break;
+			}
+			draw_centre(out->mainwin, "running", sz);
+			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
 				bits &= ~NET_QMIN;
@@ -1081,7 +1171,7 @@ draw(struct out *out, struct draw *d,
 	size_t		 i, j, sz, maxhostsz, maxipsz,
 			 lastseenpos = 0, intervalpos = 0, chhead;
 	int		 x, y, maxy, maxx;
-	unsigned int	 args;
+	unsigned int	 bits;
 
 	/* Don't let us run off the window. */
 
@@ -1112,25 +1202,25 @@ draw(struct out *out, struct draw *d,
 		waddch(out->mainwin, ' ');
 
 		for (j = 0; j < d->boxsz; j++) {
-			if (0 == (args = d->box[j].args))
+			if (0 == (bits = d->box[j].args))
 				continue;
 			draw_main_separator(out->mainwin);
 			waddch(out->mainwin, ' ');
 			switch (d->box[j].cat) {
 			case DRAWCAT_CPU:
-				draw_cpu(args, out->mainwin, &n[i]);
+				draw_cpu(bits, out->mainwin, &n[i]);
 				break;
 			case DRAWCAT_MEM:
-				draw_mem(args, out->mainwin, &n[i]);
+				draw_mem(bits, out->mainwin, &n[i]);
 				break;
 			case DRAWCAT_NET:
-				draw_inet(args, out->mainwin, &n[i]);
+				draw_inet(bits, out->mainwin, &n[i]);
 				break;
 			case DRAWCAT_DISC:
-				draw_disc(args, out->mainwin, &n[i]);
+				draw_disc(bits, out->mainwin, &n[i]);
 				break;
 			case DRAWCAT_LINK:
-				draw_link(args, maxipsz, 
+				draw_link(bits, maxipsz, 
 					n[i].waittime, t, 
 					out->mainwin, &n[i], 
 					&lastseenpos);
@@ -1142,7 +1232,10 @@ draw(struct out *out, struct draw *d,
 					n[i].waittime, get_last(&n[i]), t);
 				break;
 			case DRAWCAT_PROCS:
-				draw_procs(args, out->mainwin, &n[i]);
+				draw_procs(bits, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_RPROCS:
+				draw_rprocs(bits, out->mainwin, &n[i]);
 				break;
 			}
 			waddch(out->mainwin, ' ');

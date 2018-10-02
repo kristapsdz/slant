@@ -30,7 +30,8 @@ enum	drawcat {
 	DRAWCAT_DISC,
 	DRAWCAT_LINK,
 	DRAWCAT_HOST,
-	DRAWCAT_PROCS
+	DRAWCAT_PROCS,
+	DRAWCAT_RPROCS
 };
 
 struct	drawbox {
@@ -63,6 +64,10 @@ struct	drawbox {
 #define	PROCS_HOUR 	 0x0004
 #define	PROCS_DAY	 0x0008
 #define	PROCS_QMIN_BARS	 0x0010
+#define	RPROCS_QMIN	 0x0001
+#define	RPROCS_MIN	 0x0002
+#define	RPROCS_HOUR 	 0x0004
+#define	RPROCS_DAY	 0x0008
 };
 
 /*
