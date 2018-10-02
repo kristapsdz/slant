@@ -769,7 +769,7 @@ compute_width(const struct node *n, size_t nsz,
 			maxipsz = sz;
 	}
 
-	for (i = 0; i < d->boxsz; i++) {
+	for (sz = 0, i = 0; i < d->boxsz; i++) {
 		if (0 == d->box[i].args)
 			continue;
 		switch (d->box[i].cat) {
@@ -1079,7 +1079,7 @@ draw(struct out *out, struct draw *d,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t		 i, j, sz, maxhostsz, maxipsz,
-			 lastseenpos, intervalpos, chhead;
+			 lastseenpos = 0, intervalpos = 0, chhead;
 	int		 x, y, maxy, maxx;
 	unsigned int	 args;
 
@@ -1110,10 +1110,6 @@ draw(struct out *out, struct draw *d,
 		wprintw(out->mainwin, "%*s", (int)maxhostsz, n[i].host);
 		wattroff(out->mainwin, A_BOLD);
 		waddch(out->mainwin, ' ');
-
-		/* FIXME: muliple lastseen/intervals? */
-
-		lastseenpos = intervalpos = 0;
 
 		for (j = 0; j < d->boxsz; j++) {
 			if (0 == (args = d->box[j].args))
@@ -1154,6 +1150,7 @@ draw(struct out *out, struct draw *d,
 	}
 
 	/* Remember for updating times. */
+	/* FIXME: muliple lastseen/intervals? */
 
 	chhead = intervalpos != d->intervalpos ||
 		lastseenpos != d->lastseenpos;
