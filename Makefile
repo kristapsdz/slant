@@ -16,7 +16,7 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.5
+VERSION	   = 0.0.6
 CFLAGS	  += -DVERSION=\"$(VERSION)\"
 
 DOTAR	   = Makefile \
