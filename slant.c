@@ -256,43 +256,75 @@ xdbg(struct out *out, const char *fmt, ...)
 	fflush(out->errs);
 }
 
+/*
+ * Construct a default layout depending on "maxx", the maximum number of
+ * available columns, and "n" nodes of length "nsz".
+ * Put the results in "d".
+ * Return zero on failure (fatal), non-zero on success.
+ */
 static int
-layout(size_t maxx, const struct node *n, size_t nsz, struct draw *d)
+layout(struct out *out, size_t maxx, 
+	const struct node *n, size_t nsz, struct draw *d)
 {
+	/* Default order. */
 
-	d->box_cpu = CPU_QMIN_BARS | CPU_QMIN | CPU_HOUR;
-	d->box_mem = MEM_QMIN_BARS | MEM_QMIN | MEM_HOUR;
-	d->box_net = NET_QMIN | NET_HOUR;
-	d->box_disc = DISC_QMIN | DISC_HOUR;
-	d->box_procs = PROCS_QMIN_BARS | PROCS_QMIN | PROCS_HOUR;
-	d->box_link = LINK_IP | LINK_STATE | LINK_ACCESS;
-	d->box_host = HOST_ACCESS;
+#define	ORD_CPU 	0
+#define	ORD_MEM		1
+#define	ORD_PROCS	2
+#define	ORD_NET		3
+#define	ORD_DISC	4
+#define	ORD_LINK	5
+#define	ORD_HOST	6
+
+	d->boxsz = 7;
+	d->box = calloc(d->boxsz, sizeof(struct drawbox));
+	if (NULL == d->box) {
+		xwarn(out, NULL);
+		return 0;
+	}
+
+	d->box[ORD_CPU].cat = DRAWCAT_CPU;
+	d->box[ORD_MEM].cat = DRAWCAT_MEM;
+	d->box[ORD_NET].cat = DRAWCAT_NET;
+	d->box[ORD_DISC].cat = DRAWCAT_DISC;
+	d->box[ORD_PROCS].cat = DRAWCAT_PROCS;
+	d->box[ORD_LINK].cat = DRAWCAT_LINK;
+	d->box[ORD_HOST].cat = DRAWCAT_HOST;
+
+	d->box[ORD_CPU].args = CPU_QMIN_BARS | CPU_QMIN | CPU_HOUR;
+	d->box[ORD_MEM].args = MEM_QMIN_BARS | MEM_QMIN | MEM_HOUR;
+	d->box[ORD_NET].args = NET_QMIN | NET_HOUR;
+	d->box[ORD_DISC].args = DISC_QMIN | DISC_HOUR;
+	d->box[ORD_PROCS].args = PROCS_QMIN_BARS | 
+		PROCS_QMIN | PROCS_HOUR;
+	d->box[ORD_LINK].args = LINK_IP | LINK_STATE | LINK_ACCESS;
+	d->box[ORD_HOST].args = HOST_ACCESS;
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_cpu &= ~CPU_QMIN_BARS;
-	d->box_mem &= ~MEM_QMIN_BARS;
-	d->box_procs &= ~PROCS_QMIN_BARS;
+	d->box[ORD_CPU].args &= ~CPU_QMIN_BARS;
+	d->box[ORD_MEM].args &= ~MEM_QMIN_BARS;
+	d->box[ORD_PROCS].args &= ~PROCS_QMIN_BARS;
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_cpu &= ~CPU_HOUR;
-	d->box_mem &= ~MEM_HOUR;
-	d->box_net &= ~NET_HOUR;
-	d->box_disc &= ~DISC_HOUR;
-	d->box_procs &= ~PROCS_HOUR;
+	d->box[ORD_CPU].args &= ~CPU_HOUR;
+	d->box[ORD_MEM].args &= ~MEM_HOUR;
+	d->box[ORD_NET].args &= ~NET_HOUR;
+	d->box[ORD_DISC].args &= ~DISC_HOUR;
+	d->box[ORD_PROCS].args &= ~PROCS_HOUR;
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	d->box_link &= ~(LINK_IP | LINK_STATE);
+	d->box[ORD_LINK].args &= ~(LINK_IP | LINK_STATE);
 
 	if (maxx > compute_width(n, nsz, d)) 
 		return 1;
 
-	warnx("screen too narrow");
+	xwarnx(out, "screen too narrow");
 	return 0;
 }
 
@@ -300,7 +332,7 @@ int
 main(int argc, char *argv[])
 {
 	int	 	 c, first = 1, maxy, maxx;
-	size_t		 i;
+	size_t		 i, sz;
 	const char	*cfgfile = NULL;
 	struct node	*n = NULL;
 	struct pollfd	*pfds = NULL;
@@ -502,7 +534,7 @@ main(int argc, char *argv[])
 
 	/* Configure what we see. */
 
-	if ( ! layout(maxx, n, cfg.urlsz, &d))
+	if ( ! layout(&out, maxx, n, cfg.urlsz, &d))
 		goto out;
 
 	/* Main loop. */
@@ -512,30 +544,28 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		c = nodes_update(&out, n, cfg.urlsz);
-		if (c < 0)
+		if ((c = nodes_update(&out, n, cfg.urlsz)) < 0)
 			break;
 
 		/* Re-sort, if applicable. */
 
+		sz = sizeof(struct node);
 		switch (d.order) {
 		case DRAWORD_CMDLINE:
 			break;
 		case DRAWORD_CPU:
-			qsort(n, cfg.urlsz, sizeof(struct node), cmp_cpu);
+			qsort(n, cfg.urlsz, sz, cmp_cpu);
 			break;
 		case DRAWORD_HOST:
 			/* Only do this once. */
 			if (0 == first)
 				break;
-			qsort(n, cfg.urlsz, sizeof(struct node), cmp_host);
+			qsort(n, cfg.urlsz, sz, cmp_host);
 			break;
 		case DRAWORD_MEM:
-			qsort(n, cfg.urlsz, sizeof(struct node), cmp_mem);
+			qsort(n, cfg.urlsz, sz, cmp_mem);
 			break;
 		}
-
-		now = time(NULL);
 
 		/*
 		 * Update if our data is dirty (c > 0) or if we're on
@@ -544,6 +574,7 @@ main(int argc, char *argv[])
 		 * passed, then simply update the time displays.
 		 */
 
+		now = time(NULL);
 		if ((c || first) && now > last) {
 			draw(&out, &d, n, cfg.urlsz, now);
 			for (i = 0; i < cfg.urlsz; i++) 
@@ -556,7 +587,6 @@ main(int argc, char *argv[])
 		}
 
 		last = now;
-
 		if (ppoll(pfds, cfg.urlsz, &ts, &oldmask) < 0 && 
 		    EINTR != errno) {
 			xwarn(&out, "poll");
@@ -570,6 +600,7 @@ out:
 	endwin();
 	nodes_free(n, cfg.urlsz);
 	config_free(&cfg);
+	free(d.box);
 	free(pfds);
 	return EXIT_SUCCESS;
 usage:

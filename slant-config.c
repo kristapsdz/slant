@@ -58,7 +58,6 @@ config_parse_server_args(const char *fn, struct config *cfg,
 	size_t		 i;
 
 	while (*pos < toksz && strcmp(toks[*pos], "}")) {
-		warnx("%s", toks[*pos]);
 		if (0 == strcmp(toks[*pos], "waittime")) {
 			if (++(*pos) >= toksz) {
 				warnx("%s: unexpected eof", fn);

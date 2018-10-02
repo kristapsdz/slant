@@ -290,10 +290,10 @@ draw_xfer(WINDOW *win, double vv, int left)
 }
 
 static void
-draw_link(const struct draw *d, size_t maxipsz, time_t timeo,
+draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 	time_t t, WINDOW *win, const struct node *n, size_t *lastseen)
 {
-	int	 x, y, bits = d->box_link;
+	int	 x, y;
 
 	*lastseen = 0;
 
@@ -320,10 +320,9 @@ draw_link(const struct draw *d, size_t maxipsz, time_t timeo,
 }
 
 static void
-draw_disc(const struct draw *d, WINDOW *win, const struct node *n)
+draw_disc(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
-	int	 bits = d->box_disc;
 
 	if (DISC_QMIN & bits) {
 		bits &= ~DISC_QMIN;
@@ -401,10 +400,9 @@ draw_disc(const struct draw *d, WINDOW *win, const struct node *n)
 }
 
 static void
-draw_inet(const struct draw *d, WINDOW *win, const struct node *n)
+draw_inet(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
-	int	 bits = d->box_net;
 
 	if (NET_QMIN & bits) {
 		bits &= ~NET_QMIN;
@@ -482,10 +480,9 @@ draw_inet(const struct draw *d, WINDOW *win, const struct node *n)
 }
 
 static void
-draw_procs(const struct draw *d, WINDOW *win, const struct node *n)
+draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
-	int	 bits = d->box_procs;
 
 	if (PROCS_QMIN_BARS & bits) {
 		bits &= ~PROCS_QMIN_BARS;
@@ -567,10 +564,9 @@ draw_procs(const struct draw *d, WINDOW *win, const struct node *n)
 }
 
 static void
-draw_mem(const struct draw *d, WINDOW *win, const struct node *n)
+draw_mem(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
-	int	 bits = d->box_mem;
 
 	if (MEM_QMIN_BARS & bits) {
 		bits &= ~MEM_QMIN_BARS;
@@ -652,10 +648,9 @@ draw_mem(const struct draw *d, WINDOW *win, const struct node *n)
 }
 
 static void
-draw_cpu(const struct draw *d, WINDOW *win, const struct node *n)
+draw_cpu(unsigned int bits, WINDOW *win, const struct node *n)
 {
 	double	 vv;
-	int	 bits = d->box_cpu;
 
 	if (CPU_QMIN_BARS & bits) {
 		bits &= ~CPU_QMIN_BARS;
@@ -774,145 +769,144 @@ compute_width(const struct node *n, size_t nsz,
 			maxipsz = sz;
 	}
 
-	if (d->box_cpu) {
-		bits = d->box_cpu;
-		sz += 3;
-		if (CPU_QMIN_BARS & bits) {
-			bits &= ~CPU_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (CPU_QMIN & bits) {
-			bits &= ~CPU_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_MIN & bits) {
-			bits &= ~CPU_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_HOUR & bits) {
-			bits &= ~CPU_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_DAY & bits) {
-			bits &= ~CPU_DAY;
-			sz += 6;
-		}
-	}
-
-	if (d->box_mem) {
-		bits = d->box_mem;
-		sz += 3;
-		if (MEM_QMIN_BARS & bits) {
-			bits &= ~MEM_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (MEM_QMIN & bits) {
-			bits &= ~MEM_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_MIN & bits) {
-			bits &= ~MEM_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_HOUR & bits) {
-			bits &= ~MEM_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_DAY & bits) {
-			bits &= ~MEM_DAY;
-			sz += 6;
-		}
-	}
-
-	if (d->box_procs) {
-		bits = d->box_procs;
-		sz += 3;
-		if (PROCS_QMIN_BARS & bits) {
-			bits &= ~PROCS_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (PROCS_QMIN & bits) {
-			bits &= ~PROCS_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_MIN & bits) {
-			bits &= ~PROCS_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_HOUR & bits) {
-			bits &= ~PROCS_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_DAY & bits) {
-			bits &= ~PROCS_DAY;
-			sz += 6;
-		}
-	}
-
-	if (d->box_net) {
-		bits = d->box_net;
-		sz += 3;
-		if (NET_QMIN & bits) {
-			bits &= ~NET_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_MIN & bits) {
-			bits &= ~NET_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_HOUR & bits) {
-			bits &= ~NET_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_DAY & bits) {
-			bits &= ~NET_DAY;
-			sz += 13;
-		}
-	}
-
-	if (d->box_disc) {
-		bits = d->box_disc;
-		sz += 3;
-		if (DISC_QMIN & bits) {
-			bits &= ~DISC_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_MIN & bits) {
-			bits &= ~DISC_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_HOUR & bits) {
-			bits &= ~DISC_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_DAY & bits) {
-			bits &= ~DISC_DAY;
-			sz += 13;
-		}
-	}
-
-	if (d->box_link) {
-		bits = d->box_link;
-		sz += 3;
-		if (LINK_IP & bits) {
-			bits &= ~LINK_IP;
-			sz += maxipsz + 
-				((bits & LINK_STATE) ? 1 : 0);
-		}
-		if (LINK_STATE & bits) {
-			bits &= ~LINK_STATE;
-			sz += 4 + (bits ? 1 : 0);
-		}
-		if (LINK_ACCESS & bits) {
-			bits &= ~LINK_ACCESS;
+	for (i = 0; i < d->boxsz; i++) {
+		if (0 == d->box[i].args)
+			continue;
+		switch (d->box[i].cat) {
+		case DRAWCAT_CPU:
+			bits = d->box[i].args;
+			sz += 3;
+			if (CPU_QMIN_BARS & bits) {
+				bits &= ~CPU_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (CPU_QMIN & bits) {
+				bits &= ~CPU_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_MIN & bits) {
+				bits &= ~CPU_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_HOUR & bits) {
+				bits &= ~CPU_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_DAY & bits) {
+				bits &= ~CPU_DAY;
+				sz += 6;
+			}
+			break;
+		case DRAWCAT_MEM:
+			bits = d->box[i].args;
+			sz += 3;
+			if (MEM_QMIN_BARS & bits) {
+				bits &= ~MEM_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (MEM_QMIN & bits) {
+				bits &= ~MEM_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_MIN & bits) {
+				bits &= ~MEM_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_HOUR & bits) {
+				bits &= ~MEM_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_DAY & bits) {
+				bits &= ~MEM_DAY;
+				sz += 6;
+			}
+			break;
+		case DRAWCAT_PROCS:
+			bits = d->box[i].args;
+			sz += 3;
+			if (PROCS_QMIN_BARS & bits) {
+				bits &= ~PROCS_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (PROCS_QMIN & bits) {
+				bits &= ~PROCS_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_MIN & bits) {
+				bits &= ~PROCS_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_HOUR & bits) {
+				bits &= ~PROCS_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_DAY & bits) {
+				bits &= ~PROCS_DAY;
+				sz += 6;
+			}
+			break;
+		case DRAWCAT_NET:
+			bits = d->box[i].args;
+			sz += 3;
+			if (NET_QMIN & bits) {
+				bits &= ~NET_QMIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_MIN & bits) {
+				bits &= ~NET_MIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_HOUR & bits) {
+				bits &= ~NET_HOUR;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_DAY & bits) {
+				bits &= ~NET_DAY;
+				sz += 13;
+			}
+			break;
+		case DRAWCAT_DISC:
+			bits = d->box[i].args;
+			sz += 3;
+			if (DISC_QMIN & bits) {
+				bits &= ~DISC_QMIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_MIN & bits) {
+				bits &= ~DISC_MIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_HOUR & bits) {
+				bits &= ~DISC_HOUR;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_DAY & bits) {
+				bits &= ~DISC_DAY;
+				sz += 13;
+			}
+		case DRAWCAT_LINK:
+			bits = d->box[i].args;
+			sz += 3;
+			if (LINK_IP & bits) {
+				bits &= ~LINK_IP;
+				sz += maxipsz + 
+					((bits & LINK_STATE) ? 1 : 0);
+			}
+			if (LINK_STATE & bits) {
+				bits &= ~LINK_STATE;
+				sz += 4 + (bits ? 1 : 0);
+			}
+			if (LINK_ACCESS & bits) {
+				bits &= ~LINK_ACCESS;
+				sz += 9;
+			}
+			break;
+		case DRAWCAT_HOST:
+			sz += 3;
+			/* "Last" time. */
 			sz += 9;
+			break;
 		}
-	}
-
-	if (d->box_host) {
-		sz += 2;
-		/* "Last" time. */
-		sz += 9;
 	}
 
 	return sz;
@@ -922,7 +916,7 @@ static void
 draw_header(struct out *out, const struct draw *d, 
 	size_t maxhostsz, size_t maxipsz)
 {
-	size_t	 sz;
+	size_t	 i, sz;
 	int	 bits;
 
 	wmove(out->mainwin, 0, 1);
@@ -930,178 +924,153 @@ draw_header(struct out *out, const struct draw *d,
 	wprintw(out->mainwin, "%*s", (int)maxhostsz, "hostname");
 	waddch(out->mainwin, ' ');
 
-	if (d->box_cpu) {
-		bits = d->box_cpu;
+	for (i = 0; i < d->boxsz; i++) {
+		if (0 == (bits = d->box[i].args))
+			continue;
+		sz = 0;
 		draw_main_separator(out->mainwin);
 		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (CPU_QMIN_BARS & bits) {
-			bits &= ~CPU_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (CPU_QMIN & bits) {
-			bits &= ~CPU_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_MIN & bits) {
-			bits &= ~CPU_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_HOUR & bits) {
-			bits &= ~CPU_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (CPU_DAY & bits) {
-			bits &= ~CPU_DAY;
-			sz += 6;
-		}
-		draw_centre(out->mainwin, "cpu", sz);
-		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_mem) {
-		bits = d->box_mem;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (MEM_QMIN_BARS & bits) {
-			bits &= ~MEM_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (MEM_QMIN & bits) {
-			bits &= ~MEM_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_MIN & bits) {
-			bits &= ~MEM_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_HOUR & bits) {
-			bits &= ~MEM_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (MEM_DAY & bits) {
-			bits &= ~MEM_DAY;
-			sz += 6;
-		}
-		draw_centre(out->mainwin, "mem", sz);
-		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_procs) {
-		bits = d->box_procs;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (PROCS_QMIN_BARS & bits) {
-			bits &= ~PROCS_QMIN_BARS;
-			sz += 10 + (bits ? 1 : 0);
-		}
-		if (PROCS_QMIN & bits) {
-			bits &= ~PROCS_QMIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_MIN & bits) {
-			bits &= ~PROCS_MIN;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_HOUR & bits) {
-			bits &= ~PROCS_HOUR;
-			sz += 6 + (bits ? 1 : 0);
-		}
-		if (PROCS_DAY & bits) {
-			bits &= ~PROCS_DAY;
-			sz += 6;
-		}
-		draw_centre(out->mainwin, "procs", sz);
-		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_net) {
-		bits = d->box_net;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (NET_QMIN & bits) {
-			bits &= ~NET_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_MIN & bits) {
-			bits &= ~NET_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_HOUR & bits) {
-			bits &= ~NET_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_DAY & bits) {
-			bits &= ~NET_DAY;
-			sz += 13;
-		}
-		if (sz < 12)
-			draw_centre(out->mainwin, "inet", sz);
-		else
+		switch (d->box[i].cat) {
+		case DRAWCAT_CPU:
+			if (CPU_QMIN_BARS & bits) {
+				bits &= ~CPU_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (CPU_QMIN & bits) {
+				bits &= ~CPU_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_MIN & bits) {
+				bits &= ~CPU_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_HOUR & bits) {
+				bits &= ~CPU_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (CPU_DAY & bits) {
+				bits &= ~CPU_DAY;
+				sz += 6;
+			}
+			draw_centre(out->mainwin, "cpu", sz);
+			break;
+		case DRAWCAT_MEM:
+			if (MEM_QMIN_BARS & bits) {
+				bits &= ~MEM_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (MEM_QMIN & bits) {
+				bits &= ~MEM_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_MIN & bits) {
+				bits &= ~MEM_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_HOUR & bits) {
+				bits &= ~MEM_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (MEM_DAY & bits) {
+				bits &= ~MEM_DAY;
+				sz += 6;
+			}
+			draw_centre(out->mainwin, "mem", sz);
+			break;
+		case DRAWCAT_PROCS:
+			if (PROCS_QMIN_BARS & bits) {
+				bits &= ~PROCS_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (PROCS_QMIN & bits) {
+				bits &= ~PROCS_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_MIN & bits) {
+				bits &= ~PROCS_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_HOUR & bits) {
+				bits &= ~PROCS_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (PROCS_DAY & bits) {
+				bits &= ~PROCS_DAY;
+				sz += 6;
+			}
+			draw_centre(out->mainwin, "procs", sz);
+			break;
+		case DRAWCAT_NET:
+			if (NET_QMIN & bits) {
+				bits &= ~NET_QMIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_MIN & bits) {
+				bits &= ~NET_MIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_HOUR & bits) {
+				bits &= ~NET_HOUR;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (NET_DAY & bits) {
+				bits &= ~NET_DAY;
+				sz += 13;
+			}
+			if (sz < 12) {
+				draw_centre(out->mainwin, "inet", sz);
+				break;
+			}
 			draw_centre(out->mainwin, "inet rx:tx", sz);
-		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_disc) {
-		bits = d->box_disc;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (DISC_QMIN & bits) {
-			bits &= ~DISC_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_MIN & bits) {
-			bits &= ~DISC_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_HOUR & bits) {
-			bits &= ~DISC_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_DAY & bits) {
-			bits &= ~DISC_DAY;
-			sz += 13;
-		}
-		if (sz < 17)
-			draw_centre(out->mainwin, "disc r:w", sz);
-		else
+			break;
+		case DRAWCAT_DISC:
+			if (DISC_QMIN & bits) {
+				bits &= ~DISC_QMIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_MIN & bits) {
+				bits &= ~DISC_MIN;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_HOUR & bits) {
+				bits &= ~DISC_HOUR;
+				sz += 13 + (bits ? 1 : 0);
+			}
+			if (DISC_DAY & bits) {
+				bits &= ~DISC_DAY;
+				sz += 13;
+			}
+			if (sz < 17) {
+				draw_centre(out->mainwin, "disc r:w", sz);
+				break;
+			}
 			draw_centre(out->mainwin, "disc read:write", sz);
-		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_link) {
-		bits = d->box_link;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		sz = 0;
-		if (LINK_IP & bits) {
-			bits &= ~LINK_IP;
-			sz += maxipsz + 
-				((bits & LINK_STATE) ? 1 : 0);
-		}
-		if (LINK_STATE & bits) {
-			bits &= ~LINK_STATE;
-			sz += 4 + (bits ? 1 : 0);
-		}
-		if (LINK_ACCESS & bits) {
-			bits &= ~LINK_ACCESS;
-			sz += 9;
-		}
-		if (sz < 12)
-			draw_centre(out->mainwin, "link", sz);
-		else
+			break;
+		case DRAWCAT_LINK:
+			if (LINK_IP & bits) {
+				bits &= ~LINK_IP;
+				sz += maxipsz + 
+					((bits & LINK_STATE) ? 1 : 0);
+			}
+			if (LINK_STATE & bits) {
+				bits &= ~LINK_STATE;
+				sz += 4 + (bits ? 1 : 0);
+			}
+			if (LINK_ACCESS & bits) {
+				bits &= ~LINK_ACCESS;
+				sz += 9;
+			}
+			if (sz < 12) {
+				draw_centre(out->mainwin, "link", sz);
+				break;
+			}
 			draw_centre(out->mainwin, "link state", sz);
+			break;
+		case DRAWCAT_HOST:
+			wprintw(out->mainwin, "%9s", "last");
+			break;
+		}
 		waddch(out->mainwin, ' ');
-	}
-
-	if (d->box_host) {
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		wprintw(out->mainwin, "%9s", "last");
 	}
 }
 
@@ -1109,9 +1078,10 @@ void
 draw(struct out *out, struct draw *d, 
 	const struct node *n, size_t nsz, time_t t)
 {
-	size_t	 i, sz, maxhostsz, maxipsz,
-		 lastseenpos, intervalpos, chhead;
-	int	 x, y, maxy, maxx;
+	size_t		 i, j, sz, maxhostsz, maxipsz,
+			 lastseenpos, intervalpos, chhead;
+	int		 x, y, maxy, maxx;
+	unsigned int	 args;
 
 	/* Don't let us run off the window. */
 
@@ -1140,53 +1110,47 @@ draw(struct out *out, struct draw *d,
 		wprintw(out->mainwin, "%*s", (int)maxhostsz, n[i].host);
 		wattroff(out->mainwin, A_BOLD);
 		waddch(out->mainwin, ' ');
-		if (d->box_cpu) {
+
+		/* FIXME: muliple lastseen/intervals? */
+
+		lastseenpos = intervalpos = 0;
+
+		for (j = 0; j < d->boxsz; j++) {
+			if (0 == (args = d->box[j].args))
+				continue;
 			draw_main_separator(out->mainwin);
 			waddch(out->mainwin, ' ');
-			draw_cpu(d, out->mainwin, &n[i]);
+			switch (d->box[j].cat) {
+			case DRAWCAT_CPU:
+				draw_cpu(args, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_MEM:
+				draw_mem(args, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_NET:
+				draw_inet(args, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_DISC:
+				draw_disc(args, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_LINK:
+				draw_link(args, maxipsz, 
+					n[i].waittime, t, 
+					out->mainwin, &n[i], 
+					&lastseenpos);
+				break;
+			case DRAWCAT_HOST:
+				getyx(out->mainwin, y, x);
+				intervalpos = x;
+				draw_interval(out->mainwin, 15, 
+					n[i].waittime, get_last(&n[i]), t);
+				break;
+			case DRAWCAT_PROCS:
+				draw_procs(args, out->mainwin, &n[i]);
+				break;
+			}
 			waddch(out->mainwin, ' ');
 		}
-		if (d->box_mem) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			draw_mem(d, out->mainwin, &n[i]);
-			waddch(out->mainwin, ' ');
-		}
-		if (d->box_procs) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			draw_procs(d, out->mainwin, &n[i]);
-			waddch(out->mainwin, ' ');
-		}
-		if (d->box_net) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			draw_inet(d, out->mainwin, &n[i]);
-			waddch(out->mainwin, ' ');
-		}
-		if (d->box_disc) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			draw_disc(d, out->mainwin, &n[i]);
-			waddch(out->mainwin, ' ');
-		}
-		if (d->box_link) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			draw_link(d, maxipsz, n[i].waittime, t,
-				out->mainwin, &n[i], &lastseenpos);
-			waddch(out->mainwin, ' ');
-		} else
-			lastseenpos = 0;
-		if (d->box_host) {
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			getyx(out->mainwin, y, x);
-			intervalpos = x;
-			draw_interval(out->mainwin, 15, 
-				n[i].waittime, get_last(&n[i]), t);
-		} else
-			intervalpos = 0;
 	}
 
 	/* Remember for updating times. */

@@ -23,49 +23,59 @@ enum	draword {
 	DRAWORD_MEM,
 };
 
+enum	drawcat {
+	DRAWCAT_CPU,
+	DRAWCAT_MEM,
+	DRAWCAT_NET,
+	DRAWCAT_DISC,
+	DRAWCAT_LINK,
+	DRAWCAT_HOST,
+	DRAWCAT_PROCS
+};
+
+struct	drawbox {
+	enum drawcat	 cat;
+	unsigned int	 args;
+#define	CPU_QMIN	 0x0001
+#define	CPU_MIN	 	 0x0002
+#define	CPU_HOUR 	 0x0004
+#define	CPU_DAY	 	 0x0008
+#define	CPU_QMIN_BARS	 0x0010
+#define	MEM_QMIN	 0x0001
+#define	MEM_MIN	 	 0x0002
+#define	MEM_HOUR 	 0x0004
+#define	MEM_DAY	 	 0x0008
+#define	MEM_QMIN_BARS	 0x0010
+#define	NET_QMIN	 0x0001
+#define	NET_MIN	 	 0x0002
+#define	NET_HOUR 	 0x0004
+#define	NET_DAY	 	 0x0008
+#define	DISC_QMIN	 0x0001
+#define	DISC_MIN	 0x0002
+#define	DISC_HOUR 	 0x0004
+#define	DISC_DAY	 0x0008
+#define	LINK_IP		 0x0001
+#define LINK_STATE	 0x0002
+#define LINK_ACCESS	 0x0004
+#define	HOST_ACCESS	 0x0001
+#define	PROCS_QMIN	 0x0001
+#define	PROCS_MIN	 0x0002
+#define	PROCS_HOUR 	 0x0004
+#define	PROCS_DAY	 0x0008
+#define	PROCS_QMIN_BARS	 0x0010
+};
+
 /*
  * We use this structure to keep track of key parts of our UI.
  * It lets us optimise repainting the screen per second to keep track of
  * our last-seen intervals.
  */
 struct	draw {
+	struct drawbox	*box;
+	size_t		 boxsz;
 	size_t		 lastseenpos; /* location of last seen stamp */
 	size_t		 intervalpos; /* location of interval stamp */
 	enum draword	 order;
-	int		 box_cpu;
-#define	CPU_QMIN	 0x0001
-#define	CPU_MIN	 	 0x0002
-#define	CPU_HOUR 	 0x0004
-#define	CPU_DAY	 	 0x0008
-#define	CPU_QMIN_BARS	 0x0010
-	int		 box_mem;
-#define	MEM_QMIN	 0x0001
-#define	MEM_MIN	 	 0x0002
-#define	MEM_HOUR 	 0x0004
-#define	MEM_DAY	 	 0x0008
-#define	MEM_QMIN_BARS	 0x0010
-	int		 box_net;
-#define	NET_QMIN	 0x0001
-#define	NET_MIN	 	 0x0002
-#define	NET_HOUR 	 0x0004
-#define	NET_DAY	 	 0x0008
-	int		 box_disc;
-#define	DISC_QMIN	 0x0001
-#define	DISC_MIN	 0x0002
-#define	DISC_HOUR 	 0x0004
-#define	DISC_DAY	 0x0008
-	int		 box_link;
-#define	LINK_IP		 0x0001
-#define LINK_STATE	 0x0002
-#define LINK_ACCESS	 0x0004
-	int		 box_host;
-#define	HOST_ACCESS	 0x0001
-	int		 box_procs;
-#define	PROCS_QMIN	 0x0001
-#define	PROCS_MIN	 0x0002
-#define	PROCS_HOUR 	 0x0004
-#define	PROCS_DAY	 0x0008
-#define	PROCS_QMIN_BARS	 0x0010
 };
 
 /*
