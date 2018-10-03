@@ -1165,7 +1165,7 @@ draw_header(struct out *out, const struct draw *d,
 }
 
 void
-draw(struct out *out, struct draw *d, 
+draw(struct out *out, struct draw *d, int first,
 	const struct node *n, size_t nsz, time_t t)
 {
 	size_t		 i, j, sz, maxhostsz, maxipsz,
@@ -1194,7 +1194,7 @@ draw(struct out *out, struct draw *d,
 	}
 
 	for (i = 0; i < nsz; i++) {
-		wmove(out->mainwin, i + 1, 1);
+		wmove(out->mainwin, i + d->header, 1);
 		wclrtoeol(out->mainwin);
 		wattron(out->mainwin, A_BOLD);
 		wprintw(out->mainwin, "%*s", (int)maxhostsz, n[i].host);
@@ -1251,7 +1251,7 @@ draw(struct out *out, struct draw *d,
 	d->intervalpos = intervalpos;
 	d->lastseenpos = lastseenpos;
 
-	if (chhead)
+	if (d->header && (chhead || first))
 		draw_header(out, d, maxhostsz, maxipsz);
 }
 

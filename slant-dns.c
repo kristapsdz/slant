@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include <err.h>
 #include <netdb.h>
 #include <ncurses.h>
 #include <stdio.h>
@@ -16,7 +17,7 @@
  * Parse the url in n->url into its component parts.
  * Returns zero on error, non-zero on success.
  */
-int
+void
 dns_parse_url(struct out *out, struct node *n)
 {
 	char		*cp;
@@ -25,8 +26,6 @@ dns_parse_url(struct out *out, struct node *n)
  	n->addrs.https = 0;
 	n->addrs.port = 80;
 
-	xdbg(out, "parsing: %s", n->url);
-
 	if (0 == strncasecmp(s, "https://", 8)) {
 	 	n->addrs.https = 1;
 		n->addrs.port = 443;
@@ -34,17 +33,13 @@ dns_parse_url(struct out *out, struct node *n)
 	} else if (0 == strncasecmp(s, "http://", 7))
 		s += 7;
 
-	if (NULL == (n->host = strdup(s))) {
-		xwarn(out, NULL);
-		return 0;
-	}
+	if (NULL == (n->host = strdup(s)))
+		err(EXIT_FAILURE, NULL);
 
 	for (cp = n->host; '\0' != *cp; cp++)
 		if ('/' == *cp) {
-			if (NULL == (n->path = strdup(cp))) {
-				xwarn(out, NULL);
-				return 0;
-			}
+			if (NULL == (n->path = strdup(cp)))
+				err(EXIT_FAILURE, NULL);
 			*cp = '\0';
 			for (cp = n->path; '\0' != *cp; cp++)
 				if ('?' == *cp || '#' == *cp) {
@@ -57,14 +52,9 @@ dns_parse_url(struct out *out, struct node *n)
 			break;
 		}
 
-	if (NULL == n->path)
-		if (NULL == (n->path = strdup("/"))) {
-			xwarn(out, NULL);
-			return 0;
-		}
-
-	xdbg(out, "parsed: [%s][%s]", n->host, n->path);
-	return 1;
+	if (NULL == n->path &&
+	    NULL == (n->path = strdup("/")))
+		err(EXIT_FAILURE, NULL);
 }
 
 /*

@@ -130,6 +130,10 @@ nodes_update(struct out *out, struct node *n, size_t sz)
 	return dirty;
 }
 
+/*
+ * Sort comparator for memory usage.
+ * Needs to be run once per iteration.
+ */
 static int
 cmp_mem(const void *p1, const void *p2)
 {
@@ -150,6 +154,10 @@ cmp_mem(const void *p1, const void *p2)
 	return 0;
 }
 
+/*
+ * Sort comparator for CPU time.
+ * Needs to be run once per iteration.
+ */
 static int
 cmp_cpu(const void *p1, const void *p2)
 {
@@ -170,6 +178,10 @@ cmp_cpu(const void *p1, const void *p2)
 	return 0;
 }
 
+/*
+ * Sort comparator for hostnames.
+ * Needs to only be run once for the list.
+ */
 static int
 cmp_host(const void *p1, const void *p2)
 {
@@ -178,6 +190,9 @@ cmp_host(const void *p1, const void *p2)
 	return strcmp(n1->host, n2->host);
 }
 
+/*
+ * Common leading material for all logging messages.
+ */
 static void
 xloghead(struct out *out)
 {
@@ -185,6 +200,7 @@ xloghead(struct out *out)
 	struct tm	*tm;
 	time_t		 t = time(NULL);
 
+	assert(NULL != out->errwin);
 	tm = localtime(&t);
 	strftime(buf, sizeof(buf), "%F %T", tm);
 	waddstr(out->errwin, buf);
@@ -192,50 +208,65 @@ xloghead(struct out *out)
 	wprintw(out->errwin, " %lc ", L'\x2502');
 }
 
+/*
+ * Emit warning message with errno.
+ */
 void
 xwarn(struct out *out, const char *fmt, ...)
 {
 	va_list  ap;
 	int	 er = errno;
 
-	xloghead(out);
-	va_start(ap, fmt);
-	vwprintw(out->errwin, fmt, ap);
-	va_end(ap);
+	if (NULL != out->errwin) {
+		xloghead(out);
+		va_start(ap, fmt);
+		vwprintw(out->errwin, fmt, ap);
+		va_end(ap);
+		wprintw(out->errwin, "%s%s\n", 
+			NULL == fmt ? "" : ": ", strerror(er));
+		wrefresh(out->errwin);
+	}
+
 	va_start(ap, fmt);
 	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
-	wprintw(out->errwin, "%s%s\n", 
-		NULL == fmt ? "" : ": ", strerror(er));
 	fprintf(out->errs, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
-	wrefresh(out->errwin);
 	fflush(out->errs);
 }
 
+/*
+ * Emit warning message.
+ */
 void
 xwarnx(struct out *out, const char *fmt, ...)
 {
 	va_list ap;
 
-	xloghead(out);
-	wattron(out->errwin, A_BOLD);
-	waddstr(out->errwin, "Warning");
-	wattroff(out->errwin, A_BOLD);
-	waddstr(out->errwin, ": ");
+	if (NULL != out->errwin) {
+		xloghead(out);
+		wattron(out->errwin, A_BOLD);
+		waddstr(out->errwin, "Warning");
+		wattroff(out->errwin, A_BOLD);
+		waddstr(out->errwin, ": ");
+		va_start(ap, fmt);
+		vwprintw(out->errwin, fmt, ap);
+		va_end(ap);
+		waddch(out->errwin, '\n');
+		wrefresh(out->errwin);
+	}
+
 	fprintf(out->errs, "Warning: ");
-	va_start(ap, fmt);
-	vwprintw(out->errwin, fmt, ap);
-	va_end(ap);
 	va_start(ap, fmt);
 	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
-	waddch(out->errwin, '\n');
 	fputc('\n', out->errs);
-	wrefresh(out->errwin);
 	fflush(out->errs);
 }
 
+/*
+ * Emit debugging message if "out->debug" has been set.
+ */
 void
 xdbg(struct out *out, const char *fmt, ...)
 {
@@ -243,32 +274,50 @@ xdbg(struct out *out, const char *fmt, ...)
 
 	if ( ! out->debug) 
 		return;
-	xloghead(out);
+
+	if (NULL != out->errwin) {
+		xloghead(out);
+		va_start(ap, fmt);
+		vwprintw(out->errwin, fmt, ap);
+		va_end(ap);
+		waddch(out->errwin, '\n');
+		wrefresh(out->errwin);
+	}
+
 	va_start(ap, fmt);
 	vfprintf(out->errs, fmt, ap);
 	va_end(ap);
-	va_start(ap, fmt);
-	vwprintw(out->errwin, fmt, ap);
-	va_end(ap);
-	waddch(out->errwin, '\n');
 	fputc('\n', out->errs);
-	wrefresh(out->errwin);
 	fflush(out->errs);
 }
 
 /*
  * Construct a default layout depending on "maxx", the maximum number of
- * available columns, and "n" nodes of length "nsz".
+ * available columns, "maxy" for rows, and "n" nodes of length "nsz".
  * Put the results in "d".
+ * This copies from the configuration, if applicable, or sets defaults.
  * Return zero on failure (fatal), non-zero on success.
  */
 static int
-layout(struct out *out, size_t maxx, 
-	const struct node *n, size_t nsz, struct draw *d)
+layout(struct config *cfg, struct out *out, size_t maxx, 
+	size_t maxy, const struct node *n, size_t nsz, struct draw *d)
 {
-	/* Default order. */
+	size_t	 i;
 
-#define	ORD_CPU 	0
+	if (NULL != cfg->draw) {
+		d->header = cfg->draw->header;
+		d->errlog = cfg->draw->errlog;
+		if (d->errlog >= maxy - d->header) 
+			return 0;
+	} else {
+		d->header = 1;
+		if (maxy > 80)
+			d->errlog = 10;
+		else if (maxy > 40)
+			d->errlog = 5;
+	}
+
+#define	ORD_CPU 	0 /* Default order... */
 #define	ORD_MEM		1
 #define	ORD_PROCS	2
 #define	ORD_NET		3
@@ -277,58 +326,64 @@ layout(struct out *out, size_t maxx,
 #define	ORD_RPROCS	6
 #define	ORD_HOST	7
 
-	d->boxsz = 8;
-	d->box = calloc(d->boxsz, sizeof(struct drawbox));
-	if (NULL == d->box) {
-		xwarn(out, NULL);
-		return 0;
+	if (NULL != cfg->draw && cfg->draw->boxsz) {
+		d->boxsz = cfg->draw->boxsz;
+		d->box = calloc(d->boxsz, sizeof(struct drawbox));
+		if (NULL == d->box)
+			return -1;
+		for (i = 0; i < d->boxsz; i++)
+			d->box[i] = cfg->draw->box[i];
+	} else {
+		d->boxsz = 8;
+		d->box = calloc(d->boxsz, sizeof(struct drawbox));
+		if (NULL == d->box)
+			return -1;
+
+		d->box[ORD_CPU].cat = DRAWCAT_CPU;
+		d->box[ORD_MEM].cat = DRAWCAT_MEM;
+		d->box[ORD_NET].cat = DRAWCAT_NET;
+		d->box[ORD_DISC].cat = DRAWCAT_DISC;
+		d->box[ORD_PROCS].cat = DRAWCAT_PROCS;
+		d->box[ORD_LINK].cat = DRAWCAT_LINK;
+		d->box[ORD_RPROCS].cat = DRAWCAT_RPROCS;
+		d->box[ORD_HOST].cat = DRAWCAT_HOST;
+
+		d->box[ORD_CPU].args = CPU_QMIN_BARS | 
+			CPU_QMIN | CPU_HOUR;
+		d->box[ORD_MEM].args = MEM_QMIN_BARS | 
+			MEM_QMIN | MEM_HOUR;
+		d->box[ORD_NET].args = NET_QMIN | NET_HOUR;
+		d->box[ORD_DISC].args = DISC_QMIN | DISC_HOUR;
+		d->box[ORD_PROCS].args = PROCS_QMIN_BARS | 
+			PROCS_QMIN | PROCS_HOUR;
+		d->box[ORD_LINK].args = LINK_IP | 
+			LINK_STATE | LINK_ACCESS;
+		d->box[ORD_RPROCS].args = RPROCS_QMIN;
+		d->box[ORD_HOST].args = HOST_ACCESS;
+
+		if (maxx > compute_width(n, nsz, d)) 
+			return 1;
+
+		d->box[ORD_CPU].args &= ~CPU_QMIN_BARS;
+		d->box[ORD_MEM].args &= ~MEM_QMIN_BARS;
+		d->box[ORD_PROCS].args &= ~PROCS_QMIN_BARS;
+
+		if (maxx > compute_width(n, nsz, d)) 
+			return 1;
+
+		d->box[ORD_CPU].args &= ~CPU_HOUR;
+		d->box[ORD_MEM].args &= ~MEM_HOUR;
+		d->box[ORD_NET].args &= ~NET_HOUR;
+		d->box[ORD_DISC].args &= ~DISC_HOUR;
+		d->box[ORD_PROCS].args &= ~PROCS_HOUR;
+
+		if (maxx > compute_width(n, nsz, d)) 
+			return 1;
+
+		d->box[ORD_LINK].args &= ~(LINK_IP | LINK_STATE);
 	}
 
-	d->box[ORD_CPU].cat = DRAWCAT_CPU;
-	d->box[ORD_MEM].cat = DRAWCAT_MEM;
-	d->box[ORD_NET].cat = DRAWCAT_NET;
-	d->box[ORD_DISC].cat = DRAWCAT_DISC;
-	d->box[ORD_PROCS].cat = DRAWCAT_PROCS;
-	d->box[ORD_LINK].cat = DRAWCAT_LINK;
-	d->box[ORD_RPROCS].cat = DRAWCAT_RPROCS;
-	d->box[ORD_HOST].cat = DRAWCAT_HOST;
-
-	d->box[ORD_CPU].args = CPU_QMIN_BARS | CPU_QMIN | CPU_HOUR;
-	d->box[ORD_MEM].args = MEM_QMIN_BARS | MEM_QMIN | MEM_HOUR;
-	d->box[ORD_NET].args = NET_QMIN | NET_HOUR;
-	d->box[ORD_DISC].args = DISC_QMIN | DISC_HOUR;
-	d->box[ORD_PROCS].args = PROCS_QMIN_BARS | 
-		PROCS_QMIN | PROCS_HOUR;
-	d->box[ORD_LINK].args = LINK_IP | LINK_STATE | LINK_ACCESS;
-	d->box[ORD_RPROCS].args = RPROCS_QMIN;
-	d->box[ORD_HOST].args = HOST_ACCESS;
-
-	if (maxx > compute_width(n, nsz, d)) 
-		return 1;
-
-	d->box[ORD_CPU].args &= ~CPU_QMIN_BARS;
-	d->box[ORD_MEM].args &= ~MEM_QMIN_BARS;
-	d->box[ORD_PROCS].args &= ~PROCS_QMIN_BARS;
-
-	if (maxx > compute_width(n, nsz, d)) 
-		return 1;
-
-	d->box[ORD_CPU].args &= ~CPU_HOUR;
-	d->box[ORD_MEM].args &= ~MEM_HOUR;
-	d->box[ORD_NET].args &= ~NET_HOUR;
-	d->box[ORD_DISC].args &= ~DISC_HOUR;
-	d->box[ORD_PROCS].args &= ~PROCS_HOUR;
-
-	if (maxx > compute_width(n, nsz, d)) 
-		return 1;
-
-	d->box[ORD_LINK].args &= ~(LINK_IP | LINK_STATE);
-
-	if (maxx > compute_width(n, nsz, d)) 
-		return 1;
-
-	xwarnx(out, "screen too narrow");
-	return 0;
+	return maxx > compute_width(n, nsz, d);
 }
 
 int
@@ -457,11 +512,15 @@ main(int argc, char *argv[])
 
 	c = config_parse(cfgfile, &cfg);
 	free(cp);
-
 	if ( ! c)
 		return EXIT_FAILURE;
 
-	/* Initialise data. */
+	/* 
+	 * Initialise data.
+	 * On any failure---which in this block will be memory
+	 * failure---just exit the program immediately.
+	 * We don't really have any state to clean up at this point.
+	 */
 	
 	if (0 == cfg.urlsz)
 		errx(EXIT_FAILURE, "no urls given");
@@ -474,8 +533,17 @@ main(int argc, char *argv[])
 	if (NULL == pfds)
 		err(EXIT_FAILURE, NULL);
 
-	for (i = 0; i < cfg.urlsz; i++)
+	for (i = 0; i < cfg.urlsz; i++) {
 		pfds[i].fd = -1;
+		n[i].xfer.pfd = &pfds[i];
+		n[i].state = STATE_STARTUP;
+		n[i].url = cfg.urls[i].url;
+		if (cfg.urls[i].waittime)
+			n[i].waittime = cfg.urls[i].waittime;
+		else
+			n[i].waittime = cfg.waittime;
+		dns_parse_url(&out, &n[i]);
+	}
 
 	/* 
 	 * All data initialised.
@@ -496,28 +564,25 @@ main(int argc, char *argv[])
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(2, COLOR_RED, COLOR_BLACK);
 	getmaxyx(stdscr, maxy, maxx);
-	out.mainwin = subwin(stdscr, maxy - 10, maxx, 0, 0);
-	out.errwin = subwin(stdscr, 0, maxx, maxy - 10, 0);
-	scrollok(out.errwin, 1);
 
-	/*
-	 * All terminal windows initialised.
-	 * From here on out, we want to use ncurses for reporting
-	 * whatever we can.
-	 * Initialise hosts and perform DNS callbacks.
-	 * TODO: put DNS init into the main loop.
-	 */
+	/* Configure what we see, bailing if it's not possible. */
 
-	for (i = 0; i < cfg.urlsz; i++) {
-		n[i].xfer.pfd = &pfds[i];
-		n[i].state = STATE_STARTUP;
-		n[i].url = cfg.urls[i].url;
-		if (cfg.urls[i].waittime)
-			n[i].waittime = cfg.urls[i].waittime;
-		else
-			n[i].waittime = cfg.waittime;
-		if ( ! dns_parse_url(&out, &n[i]))
-			goto out;
+	c = layout(&cfg, &out, maxx, maxy, n, cfg.urlsz, &d);
+	if (c < 0) {
+		endwin();
+		warn(NULL);
+		goto out;
+	} else if (0 == c) {
+		endwin();
+		warnx("insufficient screen dimensions");
+		goto out;
+	}
+
+	assert((size_t)maxy > d.errlog);
+	out.mainwin = subwin(stdscr, maxy - d.errlog, maxx, 0, 0);
+	if (d.errlog) {
+		out.errwin = subwin(stdscr, 0, maxx, maxy - d.errlog, 0);
+		scrollok(out.errwin, 1);
 	}
 
 	for (i = 0; i < cfg.urlsz; i++) {
@@ -534,11 +599,6 @@ main(int argc, char *argv[])
 
 	if (-1 == pledge("tty rpath inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
-
-	/* Configure what we see. */
-
-	if ( ! layout(&out, maxx, n, cfg.urlsz, &d))
-		goto out;
 
 	/* Main loop. */
 
@@ -579,7 +639,7 @@ main(int argc, char *argv[])
 
 		now = time(NULL);
 		if ((c || first) && now > last) {
-			draw(&out, &d, n, cfg.urlsz, now);
+			draw(&out, &d, first, n, cfg.urlsz, now);
 			for (i = 0; i < cfg.urlsz; i++) 
 				n[i].dirty = 0;
 			wrefresh(out.mainwin);
@@ -598,9 +658,12 @@ main(int argc, char *argv[])
 	}
 
 out:
-	delwin(out.errwin);
-	delwin(out.mainwin);
-	endwin();
+	if ( ! isendwin()) {
+		if (NULL != out.errwin)
+			delwin(out.errwin);
+		delwin(out.mainwin);
+		endwin();
+	}
 	nodes_free(n, cfg.urlsz);
 	config_free(&cfg);
 	free(d.box);

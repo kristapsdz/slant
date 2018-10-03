@@ -34,9 +34,12 @@ enum	drawcat {
 	DRAWCAT_RPROCS
 };
 
+/*
+ * A box (column) to draw in the output.
+ */
 struct	drawbox {
-	enum drawcat	 cat;
-	unsigned int	 args;
+	enum drawcat	 cat; /* the box category */
+	unsigned int	 args; /* what we show in the box */
 #define	CPU_QMIN	 0x0001
 #define	CPU_MIN	 	 0x0002
 #define	CPU_HOUR 	 0x0004
@@ -80,6 +83,8 @@ struct	draw {
 	size_t		 boxsz;
 	size_t		 lastseenpos; /* location of last seen stamp */
 	size_t		 intervalpos; /* location of interval stamp */
+	int		 header; /* boolean for header */
+	size_t		 errlog; /* lines in errlog */
 	enum draword	 order;
 };
 
@@ -162,6 +167,7 @@ struct	nconfig {
  * A parsed configuration file (~/.slantrc or similar).
  */
 struct	config {
+	struct draw	 *draw; /* draw config or NULL */
 	struct nconfig	 *urls; /* nodes (URLs) */
 	size_t		  urlsz; /* number of urls */
 	size_t		  waittime; /* global timeout */
@@ -189,7 +195,7 @@ void	 xwarn(struct out *, const char *, ...)
 size_t	 compute_width(const struct node *, size_t,
 		const struct draw *);
 
-int	 dns_parse_url(struct out *, struct node *);
+void	 dns_parse_url(struct out *, struct node *);
 int	 dns_resolve(struct out *, const char *, struct dns *);
 
 int	 http_init_connect(struct out *, struct node *);
@@ -199,7 +205,7 @@ int	 http_connect(struct out *, struct node *);
 int	 http_write(struct out *, struct node *n);
 int	 http_read(struct out *, struct node *n);
 
-void	 draw(struct out *, struct draw *, 
+void	 draw(struct out *, struct draw *, int,
 		const struct node *, size_t, time_t);
 void	 drawtimes(struct out *, const struct draw *, 
 		const struct node *, size_t, time_t);
