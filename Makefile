@@ -16,8 +16,8 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.6
-CFLAGS	  += -DVERSION=\"$(VERSION)\"
+VERSION	   = 0.0.7
+CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 DOTAR	   = Makefile \
 	     slant-cgi.c \
