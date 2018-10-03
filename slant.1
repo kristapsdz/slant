@@ -33,45 +33,143 @@ for immediate memory.
 .El
 .Pp
 By default, hosts are ordered as given in the configuration and are
-queried every 60 seconds.
-Data is displayed as a table with the following columns:
+Iueried every 60 seconds.
+.Pp
+If not overridden in the configuration, host status is displayed as
+if given the following configuration:
+.Bd -literal -offset indent
+layout {
+  header ;
+  errlog 10 ;
+  host {
+    cpu qmin_bars qmin hour ;
+    mem qmin_bars qmin hour ;
+    nprocs qmin_bars qmin hour ;
+    net qmin hour ;
+    disc qmin hour ;
+    link ip state access ;
+    rprocs qmin ;
+    host ;
+  } ;
+} ;
+.Ed
+.Pp
+.Nm
+needs a minimum of about 90 columns to display data, plus more depending
+upon the length of the domain names.
+If the window isn't wide enough, the following are elided until the
+minimum size is reached:
+.Pp
+.Bl -enum -compact
+.It
+bar charts
+.It
+hourly records
+.It
+link IP and state
+.El
+.Pp
+Data is not recorded to the local machine: it is
+.Qq live .
+So if the front-end is shut down and restarted with hosts that are
+unresponsive, their data will not be refreshed til the next access.
+.Pp
+An error and debug log is shown below the table of all hosts.
+The log is saved to
+.Pa ~/.slant-errlog .
+.Ss Configuration file
+The configuration file, which defaults to
+.Pa ~/.slantrc ,
+is structured with the following top-level nodes.
+All tokens are white-space separated, so
+.Qq servers foo;
+species a server named
+.Qq foo; .
+Literals are case sensitive.
+.Bd -literal -offset indent
+"waittime" NUM ";"
+.Ed
+.Pp
+The global waiting time before each host is processed.
+The countdown for each host begins after its last disconnect.
+The minimum is 15 secons.
+.Bd -literal -offset indent
+"servers" url [url...] ["{" ["waittime" NUM] "}"] ";"
+.Ed
+.Pp
+There may be several
+.Cm servers
+sections, each with different server arguments.
+The minimum wait time is 15 seconds.
+.Bd -literal -offset indent
+"layout" {"
+  ["header" ";"]
+  ["host" "{"
+    [["cpu" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
+      "mem" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
+      "net" ["qmin"|"min"|hour"|"day"]+ |
+      "disc" ["qmin"|"min"|hour"|"day"]+ |
+      "link" ["ip"|"state"|"access"]+ |
+      "host" |
+      "nprocs" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
+      "rprocs" ["qmin"|"min"|hour"|"day"]+ ]
+     ";"]*
+   "}" ";"]
+  ["errlog" NUM ";"]
+"}" ";"
+.Ed
+.Pp
+The
+.Cm layout
+block configures how host are displayed.
+If
+.Cm header
+is specified, a column header is shown at the top of the screen.
+If
+.Cm errlog
+is non-zero, it is the rows in the error/debug window.
+.Pp
+The
+.Cm host
+block consists of column (box) specifiers.
+These begin with a category followed by displayed fields within the box.
+The displayed fields generally consist of
+.Cm qmin_bars ,
+for a coloured bar graph of the instantaneous view;
+.Cm qmin ,
+for the quarter-minute summary;
+.Cm min ,
+for the minute summary;
+.Cm hour ,
+for the hourly summary; or
+.Cm day ,
+for the daily summary.
+These summaries depend upon the category.
 .Bl -tag -width Ds
-.It hostname
-The collection domain name.
-.It processor Pq cpu
+.It Cm cpu
 CPU time averaged across all cores/CPUs on the system.
-Shown as an average over two intervals: in the last 15 seconds
-(instantaneous) and in the last hour.
+Summaries are shown as percentages.
 Percentages more than 80% are coloured red; more than 50%, yellow.
-Preceded by a bar graph of the instantaneous view coloured in the same
-way.
-.It memory Pq mem
+The bar graph of the instantaneous view coloured in the same way.
+.It Cm mem
 Memory usage (all active memory over all pages).
-Shown as an average over two intervals: in the last 15 seconds
-(instantaneous) and in the last hour.
+Summaries are shown as percentage.
 Percentages more than 80% are coloured red; more than 50%, yellow.
-Preceded by a bar graph of the instantaneous view coloured in the same
-way.
-.It processes Pq procs
-The number of running processes over the maximum configured amount.
-Shown as an average over two intervals: in the last 15 seconds
-(instantaneous) and in the last hour.
-Percentages more than 80% are coloured red; more than 50%, yellow.
-Preceded by a bar graph of the instantaneous view coloured in the same
-way.
-.It network rx:tx Pq inet rx:tx
+The bar graph of the instantaneous view coloured in the same way.
+.It Cm net
 Data received and transmitted as averaged over all network devices.
-Shown as an average over two intervals: in the last 15 seconds
-(instantaneous) and in the last hour.
-Units are human-readably scaled.
-.It disc read:write
+Summaries are in human-readable scaled units (e.g., KB/s).
+.It Cm disc
 Data read and written as averaged over all configured devices.
 This is shown as an average over two intervals: in the last 15
-seconds (instantaneous) and in the last hour.
-Units are human-readably scaled.
-.It link state
-The IP address (IPV4 or IPV6) of the host and the connection state.
-This may be one of 
+Summaries are in human-readable scaled units (e.g., KB/s).
+.It Cm link
+If requesting
+.Cm ip ,
+the IP address (IPV4 or IPV6) of the host and the connection state.
+If
+.Cm state ,
+may be one of
 .Li strt ,
 startup;
 .Li rslv ,
@@ -90,67 +188,40 @@ connection finished (error);
 writing request; or
 .Li read ,
 reading response.
-.It running Pq run
-Of the commands given to the collector for monitoring, the percentage
-that are running.
-If no commands were given, is always 100%.
-If less than 100%, shown in red.
-.It last
+Lastly,
+.Cm access
+is the time since last ping.
+Shown as hours, minutes, seconds elapsed.
+If a worrying amount of elapsed time has shown, the time will be shown
+in yellow.
+If the amount indicates problems, it will be shown in red.
+.It Cm host
 The last data collection time as recorded by the remote host's
 collection system.
 Shown as hours, minutes, seconds elapsed.
 If a worrying amount of elapsed time has shown, the time will be shown
 in yellow.
 If the amount indicates problems, it will be shown in red.
-.It ping
 The last connection time as recorded by the local host's
 Shown as hours, minutes, seconds elapsed.
 If a worrying amount of elapsed time has shown, the time will be shown
 in yellow.
 If the amount indicates problems, it will be shown in red.
+.It Cm nprocs
+The number of running processes over the maximum configured amount.
+Summaries are in percentages.
+Percentages more than 80% are coloured red; more than 50%, yellow.
+Preceded by a bar graph of the instantaneous view coloured in the same
+way.
+.It Cm rprocs
+Of the commands given to the collector for monitoring, the percentage
+that are running.
+Summaries are in percentages.
+If no commands were given, is always 100%.
+If less than 100%, shown in red.
 .El
 .Pp
-.Nm
-needs a minimum of about 90 columns to display data, plus more depending
-upon the length of the domain names.
-If the window isn't wide enough, the following are elided until the
-minimum size is reached:
-.Pp
-.Bl -enum -compact
-.It
-bar charts
-.It
-hourly records
-.It
-link IP and state
-.El
-.Pp
-Data is not recorded to the local machine: it is
-.Dq live .
-So if the front-end is shut down and restarted with hosts that are
-unresponsive, their data will not be refreshed til the next access.
-.Pp
-An error and debug log is shown below the table of all hosts.
-The log is saved to
-.Pa ~/.slant-errlog .
-.Ss Configuration file
-The configuration file, which defaults to
-.Pa ~/.slantrc ,
-is structured as follows.
-All tokens are white-space separated, so
-.Li servers foo;
-species a server named
-Literals are case insensitive.
-.Dq foo; .
-.Bd -literal
-"waittime" NUM ";"
-"servers" url [url...] ["{" ["waittime" NUM] "}"] ";"
-.Ed
-.Pp
-There may be several
-.Li servers
-sections, each with different server arguments.
-The minimum wait time (per server or global) is 15 seconds.
+The hostname (domain name) is always shown first.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
@@ -168,7 +239,7 @@ To query the localhost and a remote machine:
 .Ed
 .Pp
 With the following configuration file:
-.Bd -literal
+.Bd -literal -offset indent
 waittime 60 ;
 servers
   https://remote/slant-cgi
@@ -181,6 +252,28 @@ servers
 This establishes a default wait time of 60 seconds.
 This value is used by the remote host.
 The local host has its wait time overriden at 15 seconds.
+It uses the default node display.
+.Pp
+The following is optimised for a quick look at memory and CPU usage of
+many hosts, so the error log and header are suppressed.
+.Bd -literal -offset indent
+waittime 60 ;
+servers
+  https://remote1/slant-cgi
+  https://remote2/slant-cgi
+  https://remote3/slant-cgi
+  ;
+servers
+  localhost/cgi-bin/slant-cgi
+  { waittime 15 } ;
+layout {
+  host {
+    cpu qmin_bars qmin min hour day ;
+    mem qmin_bars qmin min hour day ;
+    link access ;
+  }
+} ;
+.Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS
