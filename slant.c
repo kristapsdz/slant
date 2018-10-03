@@ -311,7 +311,7 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 			return 0;
 	} else {
 		d->header = 1;
-		if (maxy > 80)
+		if (maxy > 60)
 			d->errlog = 10;
 		else if (maxy > 40)
 			d->errlog = 5;
