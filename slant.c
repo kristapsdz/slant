@@ -219,17 +219,21 @@ xwarn(struct out *out, const char *fmt, ...)
 
 	if (NULL != out->errwin) {
 		xloghead(out);
-		va_start(ap, fmt);
-		vwprintw(out->errwin, fmt, ap);
-		va_end(ap);
+		if (NULL != fmt) {
+			va_start(ap, fmt);
+			vwprintw(out->errwin, fmt, ap);
+			va_end(ap);
+		}
 		wprintw(out->errwin, "%s%s\n", 
 			NULL == fmt ? "" : ": ", strerror(er));
 		wrefresh(out->errwin);
 	}
 
-	va_start(ap, fmt);
-	vfprintf(out->errs, fmt, ap);
-	va_end(ap);
+	if (NULL != fmt) {
+		va_start(ap, fmt);
+		vfprintf(out->errs, fmt, ap);
+		va_end(ap);
+	}
 	fprintf(out->errs, "%s%s\n", 
 		NULL == fmt ? "" : ": ", strerror(er));
 	fflush(out->errs);
@@ -249,9 +253,11 @@ xwarnx(struct out *out, const char *fmt, ...)
 		waddstr(out->errwin, "Warning");
 		wattroff(out->errwin, A_BOLD);
 		waddstr(out->errwin, ": ");
-		va_start(ap, fmt);
-		vwprintw(out->errwin, fmt, ap);
-		va_end(ap);
+		if (NULL != fmt) {
+			va_start(ap, fmt);
+			vwprintw(out->errwin, fmt, ap);
+			va_end(ap);
+		}
 		waddch(out->errwin, '\n');
 		wrefresh(out->errwin);
 	}
@@ -277,16 +283,20 @@ xdbg(struct out *out, const char *fmt, ...)
 
 	if (NULL != out->errwin) {
 		xloghead(out);
-		va_start(ap, fmt);
-		vwprintw(out->errwin, fmt, ap);
-		va_end(ap);
+		if (NULL != fmt) {
+			va_start(ap, fmt);
+			vwprintw(out->errwin, fmt, ap);
+			va_end(ap);
+		}
 		waddch(out->errwin, '\n');
 		wrefresh(out->errwin);
 	}
 
-	va_start(ap, fmt);
-	vfprintf(out->errs, fmt, ap);
-	va_end(ap);
+	if (NULL != fmt) {
+		va_start(ap, fmt);
+		vfprintf(out->errs, fmt, ap);
+		va_end(ap);
+	}
 	fputc('\n', out->errs);
 	fflush(out->errs);
 }
