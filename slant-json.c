@@ -191,6 +191,7 @@ json_parse(struct out *out, struct node *n, const char *str, size_t sz)
 		j += 1 + rc;
 	}
 
+	free(t);
 	return 1;
 syserr:
 	xwarn(out, NULL);
