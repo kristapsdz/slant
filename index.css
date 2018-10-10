@@ -1,0 +1,62 @@
+html				{ font-family: 'Alegreya sans', sans-serif; 
+				  font-weight: 400;
+				  color: #444;
+				  font-size: 14pt; }
+body				{ margin: 0 auto; }
+
+header, 
+article,
+footer				{ padding-left: 20%;
+				  padding-right: 20%; }
+footer				{ text-align: center; 
+				  font-size: smaller;
+				  opacity: 0.75;
+				  margin: 3rem 0; }
+a				{ text-decoration: none; }
+
+header				{ display: flex; 
+				  background-color: #2c363f;
+				  padding-top: 6rem;
+				  padding-bottom: 1rem;
+				  box-shadow: 0px 1px 3px #8f6500;
+				  color: #fff;
+				  align-items: flex-end; }
+header > :first-child		{ flex: 1; }
+h1				{ font-weight: 100;
+				  line-height: 40pt;
+				  font-size: 48pt;
+				  margin: 0; }
+h2				{ font-weight: inherit;
+				  text-align: center;
+				  margin-top: 4rem;
+				  color: #000;
+				  font-variant: small-caps; }
+header .title			{ color: #aaa; }
+header .title a			{ color: #fff; }
+header nav a			{ color: #ffc530; 
+				  display: inline-block;
+				  font-weight: 500; }
+header nav a + a		{ margin-left: 1rem; }
+header nav a:hover		{ text-decoration: underline; }
+
+.screens img			{ flex: 1; 
+				  border: 3px solid orange; }
+.screens img:last-child		{ flex: 2; 
+				  margin-left: 1rem; }
+.screens			{ display: flex;
+				  margin: 0;
+				  width: 100%; }
+.graphs				{ text-align: center; }
+.graphs img			{ width: 100%; }
+#index1 img			{ max-width: 450px; }
+.tagline			{ margin-top: 4rem; 
+				  text-align: center;
+				  font-size: 20pt;
+				  color: #2c363f; }
+.version			{ margin-bottom: 4rem; 
+			 	  text-align: center;
+				  color: #aaa; }
+.version span			{ color: #666; }
+strong				{ font-weight: 500; 
+				  color: #000; }
+.nm				{ font-style: italic; }

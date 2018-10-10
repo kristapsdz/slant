@@ -1,0 +1,12 @@
+digraph figure1 {
+	rankdir="LR";
+	subgraph cluster0 {
+		collector -> db;
+		db -> cgi;
+		db[shape=square, fontcolor="#888888"];
+		cgi[label="slant-cgi(8)"];
+		collector[label="slant-collectd(8)"];
+	}
+	client -> cgi;
+	client[label="slant(1)"];
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta charset="utf-8" /> 
+		<title>slant: remote system monitoring</title>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
+		<link rel="stylesheet" href="index.css" />
+	</head>
+	<body itemscope="itemscope" itemtype="http://schema.org/SoftwareApplication">
+		<header>
+			<div>
+				<h1>slant</h1>
+				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project</div>
+			</div>
+			<nav>
+				<a href="#overview">overview</a>
+				<a href="#operation">operation</a>
+			</nav>
+		</header>
+		<article>
+			<div class="tagline">
+				a minimal open source monitoring system for remote UNIX machines
+			</div>
+			<div class="version">
+				version: <span>0.2.3</span>, released <span>06-08-2018</span>
+			</div>
+			<figure class="screens">
+				<img src="screen2.jpg" />
+				<img src="screen1.jpg" />
+			</figure>
+			<h2 id="overview">overview</h2>
+			<p>
+				<span class="nm">Slant</span> is a minimal remote host monitor.
+				It models these hosts via a set of numeric quantifiers, both
+				at the current instant and in the past as averaged behaviour.
+				For instance, CPU usage is quantified as a percent average
+				over all CPUs, or memory usage over available memory, or number of
+				processors, etc.
+				As for the past, <span class="nm">slant</span> maintains a set of
+				time-interval circular queues (hourly, daily, etc.) averaging the
+				instantaneous view over the given time interval.
+			</p>
+			<p>
+				It is <strong>not</strong> designed for detailed analysis: there are
+				plenty of other tools for that.  
+				(<a href="https://mmonit.com/monit/">Monit</a>, 
+				 <a href="https://zabbix.org">zabbix</a>, etc.)
+			</p>
+			<p>
+				The current version of <span class="nm">slant</span> has a single
+				graphing front-end inspired by <a href="https://man.openbsd.org/top.1">top</a>.
+				The goal of this tool is to answer, at a single glance, the question
+				of <q>has anything gone to hell with my systems</q>.
+			</p>
+			<h2 id="operation">operation</h2>
+			<p>
+				<span class="nm">Slant</span> currently runs on <a
+					href="https://www.openbsd.org">OpenBSD</a> only.  It's
+				relatively easy to port to other UNIX (especially BSD) systems.
+				The source code is in clean, well-documented C code.
+			</p>
+			<p>
+				There are two main components of the <span class="nm">slant</span>
+				system.
+				The first is the server; the second is the client.
+			</p>
+			<figure class="graphs" id="index1">
+				<img src="index1.svg" />
+			</figure>
+			<p>
+				The server is divided into a collector, <a
+					href="slant-collectd.8.html">slant-collectd(8)</a>, which
+				collects system statistics and writes to a database; and a CGI
+				script, <a href="slant-cgi.8.html">slant-cgi(8)</a>, which exports
+				the database to clients.
+				The collector is a simple daemon that interacts with an <a
+					href="https://sqlite.org">SQLite</a> database via <a
+					href="https://kristaps.bsd.lv/ksql">ksql</a>.
+				The database is well-documented and consists of a set of circular
+				buffers for accumulating historical data.
+				(There is also an instantaneous buffer, which <q>averages</q> only
+				the last entry.)
+				The database is in practise bounded in size, seeming to average in
+				size to 50K.
+				The full transmitted JSON output is about 100K, compressed 17K.
+				The JSON is well-documented in  <a
+					href="slant-cgi.8.html">slant-cgi(8)</a>.
+			</p>
+			<p>
+				The current client, <a href="slant.1.html">slant(1)</a>, is a
+				fully-configurable <a
+					href="https://man.openbsd.org/ncurses.3">ncurses</a> system.
+				It has simple defaults for laying out monitored data (according to
+				screen size), and all output may be customised in the configuration
+				file.
+				The utility and its configuration are well-documented in <a
+					href="slant.1.html">slant(1)</a>.
+			</p>
+		</article>
+		<footer>
+			<div>
+				&#169; 2018, 
+				<a itemprop="author" itemscope="itemscope" itemtype="http://schema.org/Person" rel="author" href="https://github.com/kristapsdz">
+					<span itemprop="name">Kristaps Dzonsons</span>
+				</a>
+			</div>
+			<nav>
+				<a href="snapshots/sblg.tar.gz"><i class="fa fa-fw fa-gears"></i></a>
+				<a href="snapshots/sblg.tar.gz.sha512"><i class="fa fa-fw fa-lock"></i></a>
+				<a href="snapshots"><i class="fa fa-fw fa-file-o"></i></a>
+				<a href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
+				<a href="https://github.com/kristapsdz/sblg"><i class="fa fa-fw fa-github"></i></a>
+			</nav>
+		</footer>
+	</body>
+</html>

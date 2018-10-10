@@ -1,3 +1,5 @@
+.SUFFIXES: .xml .html .8 .8.html .1 .1.html .dot .svg
+
 PREFIX	   = /usr/local
 WPREFIX	   = /var/www
 
@@ -19,6 +21,11 @@ sinclude Makefile.local
 VERSION	   = 0.0.7
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
+WWW	   = index.html \
+	     index1.svg \
+	     slant.1.html \
+	     slant-cgi.8.html \
+	     slant-collectd.8.html 
 DOTAR	   = Makefile \
 	     slant-cgi.c \
 	     slant-cgi.8 \
@@ -47,7 +54,7 @@ SLANT_OBJS = slant.o \
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
-www: slant.tar.gz
+www: slant.tar.gz $(WWW)
 
 installwww: www
 	mkdir -p $(WWWDIR)
@@ -119,6 +126,7 @@ clean:
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
 	rm -f slant $(SLANT_OBJS)
+	rm -f $(WWW)
 
 slant.db: slant.sql
 	rm -f $@
@@ -155,3 +163,12 @@ db.c: slant.kwbp
 
 json.c: slant.kwbp
 	kwebapp-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
+
+.xml.html:
+	cp -f $< $@
+
+.8.8.html .1.1.html:
+	mandoc -Thtml $< >$@
+
+.dot.svg:
+	dot -Tsvg $< | xsltproc --novalid notugly.xsl - >$@

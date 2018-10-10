@@ -1,0 +1,3 @@
+- support compression in slant-http.c
+- add week/year time intervals for display
+- show more things: boottime, etc.
