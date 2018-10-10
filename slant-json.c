@@ -14,6 +14,11 @@
 #include "slant.h"
 #include "json.h"
 
+/*
+ * Parse the top-level objects of our JSON body.
+ * Returns >1 on success, 0 on transient failure (malformatted), <0 on
+ * system error (the system should halt).
+ */
 static int
 json_parse_obj(struct out *out, const char *str, 
 	const jsmntok_t *t, size_t pos, struct node *n, int toks)
@@ -140,7 +145,11 @@ json_parse_obj(struct out *out, const char *str,
 }
 
 /*
- * Parse the full response.
+ * Parse the full JSON response for a given node.
+ * We use the JSMN interface produced by kwebapp.
+ * This is a somewhat... abstruse interface, but simple and robust.
+ * Returns >0 on success, 0 on transient failure (malformed JSON or
+ * other recoverable error), <0 on fatal error (system should halt).
  */
 int
 json_parse(struct out *out, struct node *n, const char *str, size_t sz)
@@ -159,17 +168,27 @@ json_parse(struct out *out, struct node *n, const char *str, size_t sz)
 	recset_free(n->recs);
 	memset(n->recs, 0, sizeof(struct recset));
 
+	/* Parse to get token length. */
+
 	jsmn_init(&jp);
 	if (-1 == (toks = jsmn_parse(&jp, str, sz, NULL, 0)))
 		goto syserr;
 	else if (toks <= 0)
 		goto err;
 
+	/* Allocate tokens and re-parse. */
+
 	if (NULL == (t = calloc(toks, sizeof(jsmntok_t))))
 		goto syserr;
 
 	jsmn_init(&jp);
 	ntoks = jsmn_parse(&jp, str, sz, t, toks);
+
+	/* 
+	 * I'm not sure why this happens, but jsmn_parse() can return a
+	 * different result if "toks" is set.
+	 * Catch that here.
+	 */
 
 	if (ntoks != toks) {
 		xwarnx(out, "token count: %d != %d: %s", 
@@ -180,6 +199,8 @@ json_parse(struct out *out, struct node *n, const char *str, size_t sz)
 			"node not object: %s", n->host);
 		goto err;
 	}
+
+	/* Parse each of our top-level objects. */
 
 	for (i = 0, j = 1; i < t[0].size; i++) {
 		rc = json_parse_obj
