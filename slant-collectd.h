@@ -23,6 +23,7 @@ int64_t		 sysinfo_get_nettx_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_netrx_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_discread_avg(const struct sysinfo *);
 int64_t		 sysinfo_get_discwrite_avg(const struct sysinfo *);
+double		 sysinfo_get_nfiles(const struct sysinfo *);
 double		 sysinfo_get_nprocs(const struct sysinfo *);
 double		 sysinfo_get_rprocs(const struct sysinfo *);
 time_t		 sysinfo_get_boottime(const struct sysinfo *);

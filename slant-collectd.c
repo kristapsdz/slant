@@ -51,6 +51,7 @@ update_interval(struct kwbp *db, time_t span,
 			first->discwrite + r->discwrite, 
 			first->nprocs + r->nprocs,
 			first->rprocs + r->rprocs,
+			first->nfiles + r->nfiles,
 			first->id);
 	} else if (have > allowed) {
 		/* New entry: shift end of circular queue. */
@@ -59,13 +60,13 @@ update_interval(struct kwbp *db, time_t span,
 		db_record_update_tail(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
 			r->discread, r->discwrite, r->nprocs,
-			r->rprocs, last->id);
+			r->rprocs, r->nfiles, last->id);
 	} else {
 		/* New entry. */
 		db_record_insert(db, now, 1, 
 			r->cpu, r->mem, r->nettx, r->netrx,
 			r->discread, r->discwrite, r->nprocs, 
-			r->rprocs, ival);
+			r->rprocs, r->nfiles, ival);
 	}
 }
 
@@ -86,7 +87,7 @@ print(const struct sysinfo *p)
 	printf("%9.1f%% %9.1f%% "
 		"%10" PRId64 " %10" PRId64 " "
 		"%10" PRId64 " %10" PRId64 " "
-		"%9.1f%% %9.1f%%\n",
+		"%9.1f%% %9.1f%% %9.1f%%\n",
 		sysinfo_get_cpu_avg(p),
 		sysinfo_get_mem_avg(p),
 		sysinfo_get_nettx_avg(p),
@@ -94,7 +95,8 @@ print(const struct sysinfo *p)
 		sysinfo_get_discread_avg(p),
 		sysinfo_get_discwrite_avg(p),
 		sysinfo_get_nprocs(p),
-		sysinfo_get_rprocs(p));
+		sysinfo_get_rprocs(p),
+		sysinfo_get_nfiles(p));
 }
 
 static void
@@ -144,6 +146,7 @@ update(struct kwbp *db, const struct sysinfo *p,
 	rr.discwrite = sysinfo_get_discwrite_avg(p);
 	rr.nprocs = sysinfo_get_nprocs(p);
 	rr.rprocs = sysinfo_get_rprocs(p);
+	rr.nfiles = sysinfo_get_nfiles(p);
 
 	/* 
 	 * First count what we have.
@@ -203,12 +206,12 @@ update(struct kwbp *db, const struct sysinfo *p,
 		db_record_update_tail(db, t, 1, 
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
 			rr.discread, rr.discwrite, rr.nprocs,
-			rr.rprocs, last_byqmin->id);
+			rr.rprocs, rr.nfiles, last_byqmin->id);
 	} else
 		db_record_insert(db, t, 1,
 			rr.cpu, rr.mem, rr.nettx, rr.netrx,
 			rr.discread, rr.discwrite, rr.nprocs,
-			rr.rprocs, INTERVAL_byqmin);
+			rr.rprocs, rr.nfiles, INTERVAL_byqmin);
 
 	/* 300 (5 hours) backlog of by-minute entries. */
 
