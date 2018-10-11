@@ -1,4 +1,4 @@
-.SUFFIXES: .xml .html .8 .8.html .1 .1.html .dot .svg
+.SUFFIXES: .xml .html .8 .8.html .1 .1.html .dot .svg .ts .js
 
 PREFIX	   = /usr/local
 WPREFIX	   = /var/www
@@ -22,6 +22,7 @@ VERSION	   = 0.0.7
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
+	     index.js \
 	     index1.svg \
 	     slant.1.html \
 	     slant-cgi.8.html \
@@ -172,3 +173,6 @@ json.c: slant.kwbp
 
 .dot.svg:
 	dot -Tsvg $< | xsltproc --novalid notugly.xsl - >$@
+
+.ts.js:
+	tsc --strict --alwaysStrict --removeComments --outFile $@ $<

@@ -6,6 +6,7 @@
 		<title>slant: remote system monitoring</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
 		<link rel="stylesheet" href="index.css" />
+		<script src="index.js"></script>
 	</head>
 	<body itemscope="itemscope" itemtype="http://schema.org/SoftwareApplication">
 		<header>
@@ -14,8 +15,10 @@
 				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project</div>
 			</div>
 			<nav>
+				<a href="https://github.com/kristapsdz/slant">github</a>
 				<a href="#overview">overview</a>
 				<a href="#operation">operation</a>
+				<a href="#data">data</a>
 			</nav>
 		</header>
 		<article>
@@ -26,8 +29,14 @@
 				version: <span>0.2.3</span>, released <span>06-08-2018</span>
 			</div>
 			<figure class="screens">
-				<img src="screen2.jpg" />
-				<img src="screen1.jpg" />
+				<div class="popup" id="screen2">
+					<div class="pop"><img src="screen2.jpg" alt="screenshot" /></div>
+					<img src="screen2.jpg" alt="screenshot" />
+				</div>
+				<div class="popup" id="screen1">
+					<div class="pop"><img src="screen1.jpg" alt="screenshot" /></div>
+					<img src="screen1.jpg" alt="screenshot" />
+				</div>
 			</figure>
 			<h2 id="overview">overview</h2>
 			<p>
@@ -96,6 +105,41 @@
 				file.
 				The utility and its configuration are well-documented in <a
 					href="slant.1.html">slant(1)</a>.
+			</p>
+			<h2 id="data">data</h2>
+			<p>
+				<span class="nm">Slant</span> collects enough data to minimally represent system health.
+				For the time being, the following are present as both instantaneous and past averages:
+			</p>
+			<ul>
+				<li>
+					<strong>processor</strong>:
+					percentage of non-idle processor time averaged over all processing units
+				</li>
+				<li>
+					<strong>memory</strong>:
+					percentage of active over available memory
+				</li>
+				<li>
+					<strong>network</strong>:
+					inbound and outbound network traffic averaged over configured interfaces
+				</li>
+				<li>
+					<strong>disc</strong>:
+					reads and writes averaged over configured interfaces
+				</li>
+				<li>
+					<strong>processes</strong>:
+					percentage of running over possible processes
+				</li>
+				<li>
+					<strong>runnables</strong>:
+					percentage of configured processes (e.g., <q>sshd</q>) currently running
+				</li>
+			</ul>
+			<p>
+				Beyond numerical (<q>aggregatable</q>) data, <span
+					class="nm">slant</span> also records the system boot time.
 			</p>
 		</article>
 		<footer>

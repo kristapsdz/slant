@@ -1,13 +1,16 @@
 html				{ font-family: 'Alegreya sans', sans-serif; 
 				  font-weight: 400;
+				  height: 100%;
 				  color: #444;
 				  font-size: 14pt; }
-body				{ margin: 0 auto; }
+body				{ margin: 0 auto; 
+				  height: 100%;
+				  position: relative; }
 
 header, 
 article,
-footer				{ padding-left: 20%;
-				  padding-right: 20%; }
+footer				{ padding-left: 25%;
+				  padding-right: 25%; }
 footer				{ text-align: center; 
 				  font-size: smaller;
 				  opacity: 0.75;
@@ -37,12 +40,14 @@ header nav a			{ color: #ffc530;
 				  display: inline-block;
 				  font-weight: 500; }
 header nav a + a		{ margin-left: 1rem; }
-header nav a:hover		{ text-decoration: underline; }
+header a:hover			{ text-decoration: underline; }
 
-.screens img			{ flex: 1; 
-				  border: 3px solid orange; }
-.screens img:last-child		{ flex: 2; 
+.screens div			{ flex: 1.01; }
+.screens div:last-child		{ flex: 2; 
 				  margin-left: 1rem; }
+.screens img			{ box-shadow: 1px 1px 4px orange; 
+				  cursor: pointer;
+				  width: 100%; }
 .screens			{ display: flex;
 				  margin: 0;
 				  width: 100%; }
@@ -60,3 +65,40 @@ header nav a:hover		{ text-decoration: underline; }
 strong				{ font-weight: 500; 
 				  color: #000; }
 .nm				{ font-style: italic; }
+
+.popup .pop			{ display: none; }
+.popup .pop img			{ border: none; 
+				  width: 90%; }
+#screen2 img			{ max-width: 1024px; }
+#screen1 img			{ max-width: 1280px; }
+.popup.shown .pop		{ position: fixed;
+				  width: 100%;
+				  cursor: pointer;
+				  z-index: 5;
+				  display: flex;
+				  align-items: center;
+				  justify-content: center;
+				  background-color: rgba(255, 255, 255, 0.9);
+				  text-align: center;
+				  height: 100%; 
+				  left: 0;
+				  top: 0; }
+
+@media only screen and (max-width: 1280px), only screen and (max-device-width: 1280px) {
+  header, 
+  article,
+  footer			{ padding-left: 10%;
+				  padding-right: 10%; }
+}
+
+@media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
+  header, 
+  article,
+  footer			{ padding-left: 0.5rem;
+				  padding-right: 0.5rem; }
+  .tagline			{ font-size: inherit; }
+  header			{ padding-top: 3rem; }
+  header nav a			{ margin: 0 0.5em; }
+  header nav a + a		{ margin-left: 0; }
+  header nav 			{ text-align: right; }
+}
