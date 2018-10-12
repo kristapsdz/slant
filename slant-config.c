@@ -219,6 +219,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= CPU_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= CPU_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= CPU_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= CPU_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -238,6 +242,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= MEM_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= MEM_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= MEM_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= MEM_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -255,6 +263,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= NET_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= NET_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= NET_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= NET_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -272,6 +284,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= DISC_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= DISC_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= DISC_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= DISC_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -316,6 +332,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= PROCS_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= PROCS_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= PROCS_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= PROCS_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -333,6 +353,10 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					b->args |= RPROCS_HOUR;
 				else if (tok_eq_adv(p, "day"))
 					b->args |= RPROCS_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= RPROCS_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= RPROCS_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))

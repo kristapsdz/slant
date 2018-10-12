@@ -105,14 +105,14 @@ The minimum wait time is 15 seconds.
 "layout" {"
   ["header" ";"]
   ["host" "{"
-    [["cpu" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
-      "mem" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
-      "net" ["qmin"|"min"|hour"|"day"]+ |
-      "disc" ["qmin"|"min"|hour"|"day"]+ |
+    [["cpu" ["qmin_bars"|time_interval]+ |
+      "mem" ["qmin_bars"|time_interval]+ |
+      "net" [time_interval]+ |
+      "disc" [time_interval]+ |
       "link" ["ip"|"state"|"access"]+ |
       "host" |
-      "nprocs" ["qmin_bars"|"qmin"|"min"|hour"|"day"]+ |
-      "rprocs" ["qmin"|"min"|hour"|"day"]+ ]
+      "nprocs" ["qmin_bars"|time_interval]+ |
+      "rprocs" [time_interval]+ ]
      ";"]*
    "}" ";"]
   ["errlog" NUM ";"]
@@ -136,14 +136,20 @@ These begin with a category followed by displayed fields within the box.
 The displayed fields generally consist of
 .Cm qmin_bars ,
 for a coloured bar graph of the instantaneous view;
+then
+.Cm time_interval, which may be one of
 .Cm qmin ,
 for the quarter-minute summary;
 .Cm min ,
 for the minute summary;
 .Cm hour ,
-for the hourly summary; or
+for the hourly summary;
 .Cm day ,
-for the daily summary.
+for the daily summary;
+.Cm week ,
+for the weekly summary; or
+.Cm year ,
+for the yearly summary;
 These summaries depend upon the category.
 .Bl -tag -width Ds
 .It Cm cpu
