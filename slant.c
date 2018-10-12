@@ -695,7 +695,8 @@ out:
 usage:
 	fprintf(stderr, "usage: %s "
 		"[-f conf] "
-		"[-o order]\n",
+		"[-o order] "
+		"[url...]\n",
 		getprogname());
 	return EXIT_FAILURE;
 }
