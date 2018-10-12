@@ -24,6 +24,7 @@
 .Nm slant
 .Op Fl f Ar config
 .Op Fl o Ar order
+.Op Ar url...
 .Sh DESCRIPTION
 The
 .Nm
@@ -46,10 +47,15 @@ for hostname,
 for immediate CPU, or
 .Ar mem
 for immediate memory.
+.It Ar url
+Override the configuration's hosts with those provided.
 .El
 .Pp
 By default, hosts are ordered as given in the configuration and are
 queried every 60 seconds.
+If hosts are passed as arguments to
+.Nm ,
+they are used instead of the configuration file's.
 .Pp
 If not overridden in the configuration, host status is displayed as
 if given the following configuration:
