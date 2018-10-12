@@ -270,9 +270,9 @@ draw_interval(WINDOW *win, time_t waittime,
 			else if (ospan >= waittime * 4)
 				wattron(win, attrs = b1);
 		} else {
-			if (ospan >= waittime * 4)
+			if (ospan >= waittime * 6)
 				wattron(win, attrs = b2);
-			else if (ospan >= waittime * 2)
+			else if (ospan >= waittime * 3)
 				wattron(win, attrs = b1);
 		}
 	} else {
