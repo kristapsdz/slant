@@ -1,3 +1,4 @@
+/*	$Id$ */
 /*
  * A lot of this file is a restatement of OpenBSD's top(1) machine.c.
  * Its copyright and license file is retained below.
@@ -35,6 +36,7 @@
  */
 /*
  * Copyright (c) 2004 Markus Friedl <markus@openbsd.org>
+ * Copyright (c) 2018 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
