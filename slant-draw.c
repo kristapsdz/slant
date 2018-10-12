@@ -327,10 +327,13 @@ draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 	}
 
 	if (LINK_ACCESS & bits) {
+		bits &= ~LINK_ACCESS;
 		getyx(win, y, x);
 		*lastseen= x;
 		draw_interval(win, timeo, timeo, n->lastseen, t);
 	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -411,6 +414,40 @@ draw_disc(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			waddstr(win, "------:------");
 	}
+
+	if (DISC_WEEK & bits) {
+		bits &= ~DISC_WEEK;
+		if (NULL != n->recs &&
+		    n->recs->byweeksz &&
+		    n->recs->byweek[0].entries) {
+			vv = n->recs->byweek[0].discread /
+				(double)n->recs->byweek[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byweek[0].discwrite /
+				(double)n->recs->byweek[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+	}
+
+	if (DISC_YEAR & bits) {
+		bits &= ~DISC_YEAR;
+		if (NULL != n->recs &&
+		    n->recs->byyearsz &&
+		    n->recs->byyear[0].entries) {
+			vv = n->recs->byyear[0].discread /
+				(double)n->recs->byyear[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byyear[0].discwrite /
+				(double)n->recs->byyear[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -491,6 +528,40 @@ draw_inet(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			waddstr(win, "------:------");
 	}
+
+	if (NET_WEEK & bits) {
+		bits &= ~NET_WEEK;
+		if (NULL != n->recs &&
+		    n->recs->byweeksz &&
+		    n->recs->byweek[0].entries) {
+			vv = n->recs->byweek[0].netrx /
+				(double)n->recs->byweek[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byweek[0].nettx /
+				(double)n->recs->byweek[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+	}
+
+	if (NET_YEAR & bits) {
+		bits &= ~NET_YEAR;
+		if (NULL != n->recs &&
+		    n->recs->byyearsz &&
+		    n->recs->byyear[0].entries) {
+			vv = n->recs->byyear[0].netrx /
+				(double)n->recs->byyear[0].entries;
+			draw_xfer(win, vv, 0);
+			waddch(win, ':');
+			vv = n->recs->byyear[0].nettx /
+				(double)n->recs->byyear[0].entries;
+			draw_xfer(win, vv, 1);
+		} else
+			waddstr(win, "------:------");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -550,6 +621,30 @@ draw_rprocs(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			wprintw(win, "------%");
 	}
+
+	if (RPROCS_WEEK & bits) {
+		bits &= ~PROCS_WEEK;
+		if (NULL != r && r->byweeksz && r->byweek[0].entries) {
+			vv = r->byweek[0].rprocs / r->byweek[0].entries;
+			draw_rpct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	if (RPROCS_YEAR & bits) {
+		bits &= ~PROCS_YEAR;
+		if (NULL != r && r->byyearsz && r->byyear[0].entries) {
+			vv = r->byyear[0].rprocs / r->byyear[0].entries;
+			draw_rpct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -620,6 +715,30 @@ draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			wprintw(win, "------%");
 	}
+
+	if (PROCS_WEEK & bits) {
+		bits &= ~PROCS_WEEK;
+		if (NULL != r && r->byweeksz && r->byweek[0].entries) {
+			vv = r->byweek[0].nprocs / r->byweek[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	if (PROCS_YEAR & bits) {
+		bits &= ~PROCS_YEAR;
+		if (NULL != r && r->byyearsz && r->byyear[0].entries) {
+			vv = r->byyear[0].nprocs / r->byyear[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -704,6 +823,36 @@ draw_mem(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			wprintw(win, "------%");
 	}
+
+	if (MEM_WEEK & bits) {
+		bits &= ~MEM_WEEK;
+		if (NULL != n->recs &&
+		    n->recs->byweeksz &&
+		    n->recs->byweek[0].entries) {
+			vv = n->recs->byweek[0].mem /
+				n->recs->byweek[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	if (MEM_YEAR & bits) {
+		bits &= ~MEM_YEAR;
+		if (NULL != n->recs &&
+		    n->recs->byyearsz &&
+		    n->recs->byyear[0].entries) {
+			vv = n->recs->byyear[0].mem /
+				n->recs->byyear[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -788,6 +937,36 @@ draw_cpu(unsigned int bits, WINDOW *win, const struct node *n)
 		} else
 			wprintw(win, "------%");
 	}
+
+	if (CPU_WEEK & bits) {
+		bits &= ~CPU_WEEK;
+		if (NULL != n->recs &&
+		    n->recs->byweeksz &&
+		    n->recs->byweek[0].entries) {
+			vv = n->recs->byweek[0].cpu /
+				n->recs->byweek[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	if (CPU_YEAR & bits) {
+		bits &= ~CPU_YEAR;
+		if (NULL != n->recs &&
+		    n->recs->byyearsz &&
+		    n->recs->byyear[0].entries) {
+			vv = n->recs->byyear[0].cpu /
+				n->recs->byyear[0].entries;
+			draw_pct(win, vv);
+		} else if (NULL != n->recs) {
+			wprintw(win, "%6s", " "); 
+		} else
+			wprintw(win, "------%");
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -855,6 +1034,15 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~CPU_DAY;
 				sz += 6;
 			}
+			if (CPU_WEEK & bits) {
+				bits &= ~CPU_WEEK;
+				sz += 6;
+			}
+			if (CPU_YEAR & bits) {
+				bits &= ~CPU_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_MEM:
 			if (MEM_QMIN_BARS & bits) {
@@ -877,6 +1065,15 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~MEM_DAY;
 				sz += 6;
 			}
+			if (MEM_WEEK & bits) {
+				bits &= ~MEM_WEEK;
+				sz += 6;
+			}
+			if (MEM_YEAR & bits) {
+				bits &= ~MEM_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_PROCS:
 			if (PROCS_QMIN_BARS & bits) {
@@ -899,6 +1096,15 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~PROCS_DAY;
 				sz += 6;
 			}
+			if (PROCS_WEEK & bits) {
+				bits &= ~PROCS_WEEK;
+				sz += 6;
+			}
+			if (PROCS_YEAR & bits) {
+				bits &= ~PROCS_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_RPROCS:
 			if (RPROCS_QMIN & bits) {
@@ -917,6 +1123,7 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~RPROCS_DAY;
 				sz += 6;
 			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
@@ -935,6 +1142,15 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~NET_DAY;
 				sz += 13;
 			}
+			if (NET_WEEK & bits) {
+				bits &= ~NET_WEEK;
+				sz += 13;
+			}
+			if (NET_YEAR & bits) {
+				bits &= ~NET_YEAR;
+				sz += 13;
+			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_DISC:
 			if (DISC_QMIN & bits) {
@@ -953,6 +1169,15 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~DISC_DAY;
 				sz += 13;
 			}
+			if (DISC_WEEK & bits) {
+				bits &= ~DISC_WEEK;
+				sz += 13;
+			}
+			if (DISC_YEAR & bits) {
+				bits &= ~DISC_YEAR;
+				sz += 13;
+			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_LINK:
 			if (LINK_IP & bits) {
@@ -968,6 +1193,7 @@ compute_width(const struct node *n, size_t nsz,
 				bits &= ~LINK_ACCESS;
 				sz += 9;
 			}
+			assert(0 == bits);
 			break;
 		case DRAWCAT_HOST:
 			/* "Last" time. */
@@ -1019,6 +1245,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~CPU_DAY;
 				sz += 6;
 			}
+			if (CPU_WEEK & bits) {
+				bits &= ~CPU_WEEK;
+				sz += 6;
+			}
+			if (CPU_YEAR & bits) {
+				bits &= ~CPU_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			draw_centre(out->mainwin, "cpu", sz);
 			break;
 		case DRAWCAT_MEM:
@@ -1042,6 +1277,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~MEM_DAY;
 				sz += 6;
 			}
+			if (MEM_WEEK & bits) {
+				bits &= ~MEM_WEEK;
+				sz += 6;
+			}
+			if (MEM_YEAR & bits) {
+				bits &= ~MEM_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			draw_centre(out->mainwin, "mem", sz);
 			break;
 		case DRAWCAT_PROCS:
@@ -1065,6 +1309,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~PROCS_DAY;
 				sz += 6;
 			}
+			if (PROCS_WEEK & bits) {
+				bits &= ~PROCS_WEEK;
+				sz += 6;
+			}
+			if (PROCS_YEAR & bits) {
+				bits &= ~PROCS_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			draw_centre(out->mainwin, "procs", sz);
 			break;
 		case DRAWCAT_RPROCS:
@@ -1084,6 +1337,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~RPROCS_DAY;
 				sz += 6;
 			}
+			if (RPROCS_WEEK & bits) {
+				bits &= ~RPROCS_WEEK;
+				sz += 6;
+			}
+			if (RPROCS_YEAR & bits) {
+				bits &= ~RPROCS_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
 			if (sz < 9) {
 				draw_centre(out->mainwin, "run", sz);
 				break;
@@ -1107,6 +1369,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~NET_DAY;
 				sz += 13;
 			}
+			if (NET_WEEK & bits) {
+				bits &= ~NET_WEEK;
+				sz += 13;
+			}
+			if (NET_YEAR & bits) {
+				bits &= ~NET_YEAR;
+				sz += 13;
+			}
+			assert(0 == bits);
 			if (sz < 12) {
 				draw_centre(out->mainwin, "inet", sz);
 				break;
@@ -1130,6 +1401,15 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~DISC_DAY;
 				sz += 13;
 			}
+			if (DISC_WEEK & bits) {
+				bits &= ~DISC_WEEK;
+				sz += 13;
+			}
+			if (DISC_YEAR & bits) {
+				bits &= ~DISC_YEAR;
+				sz += 13;
+			}
+			assert(0 == bits);
 			if (sz < 17) {
 				draw_centre(out->mainwin, "disc r:w", sz);
 				break;
@@ -1150,6 +1430,7 @@ draw_header(struct out *out, const struct draw *d,
 				bits &= ~LINK_ACCESS;
 				sz += 9;
 			}
+			assert(0 == bits);
 			if (sz < 12) {
 				draw_centre(out->mainwin, "link", sz);
 				break;
