@@ -511,8 +511,12 @@ config_cmdline(struct config *cfg, int argc, char *argv[])
 
 	assert(argc);
 
+	if (0 == argc)
+		return 1;
+
 	cfg->urlsz = argc;
 	cfg->urls = calloc(cfg->urlsz, sizeof(struct nconfig));
+
 	if (NULL == cfg->urls) {
 		warn(NULL);
 		return 0;
@@ -551,7 +555,7 @@ config_parse(const char *fn, struct config *cfg,
 	/* Open file, map it, create a NUL-terminated string. */
 
 	if (-1 == (fd = open(fn, O_RDONLY, 0))) {
-		if (ENOENT == errno && argc > 0)
+		if (ENOENT == errno)
 			return config_cmdline(cfg, argc, argv);
 		warn("%s", fn);
 		return 0;
