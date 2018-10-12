@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <curses.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -503,14 +504,40 @@ parse_servers(struct parse *p, struct config *cfg)
 	return 1;
 }
 
+static int
+config_cmdline(struct config *cfg, int argc, char *argv[])
+{
+	size_t	 i;
+
+	assert(argc);
+
+	cfg->urlsz = argc;
+	cfg->urls = calloc(cfg->urlsz, sizeof(struct nconfig));
+	if (NULL == cfg->urls) {
+		warn(NULL);
+		return 0;
+	}
+
+	for (i = 0; i < cfg->urlsz; i++) {
+		cfg->urls[i].url = strdup(argv[i]);
+		if (NULL == cfg->urls[i].url) {
+			warn(NULL);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 int
-config_parse(const char *fn, struct config *cfg)
+config_parse(const char *fn, struct config *cfg,
+	int argc, char *argv[])
 {
 	int		  fd;
 	void		 *map, *pp;
 	char		 *buf, *bufsv, *cp;
 	char		**toks = NULL;
-	size_t		  mapsz;
+	size_t		  mapsz, i;
 	struct stat	  st;
 	struct parse	  p;
 
@@ -524,6 +551,8 @@ config_parse(const char *fn, struct config *cfg)
 	/* Open file, map it, create a NUL-terminated string. */
 
 	if (-1 == (fd = open(fn, O_RDONLY, 0))) {
+		if (ENOENT == errno && argc > 0)
+			return config_cmdline(cfg, argc, argv);
 		warn("%s", fn);
 		return 0;
 	} else if (-1 == fstat(fd, &st)) {
@@ -595,7 +624,22 @@ config_parse(const char *fn, struct config *cfg)
 
 	free(toks);
 	free(bufsv);
-	return p.pos == p.toksz;
+	if (p.pos != p.toksz)
+		return 0;
+
+	if (0 == argc)
+		return 1;
+
+	/* Use only our command line entries. */
+
+	for (i = 0; i < cfg->urlsz; i++)
+		free(cfg->urls[i].url);
+
+	free(cfg->urls);
+	cfg->urls = NULL;
+	cfg->urlsz = 0;
+
+	return config_cmdline(cfg, argc, argv);
 }
 
 void

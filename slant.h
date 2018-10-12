@@ -242,7 +242,7 @@ int 	 json_parse(struct out *, struct node *n, const char *, size_t);
 
 void	 recset_free(struct recset *);
 
-int 	 config_parse(const char *, struct config *);
+int 	 config_parse(const char *, struct config *, int, char *[]);
 void	 config_free(struct config *);
 
 __END_DECLS

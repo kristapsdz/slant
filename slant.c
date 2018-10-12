@@ -518,9 +518,6 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc)
-		goto usage;
-	
 	/*
 	 * Parse our configuration file.
 	 * This will tell us all we need to know about our runtime.
@@ -536,7 +533,7 @@ main(int argc, char *argv[])
 		cfgfile = cp;
 	} 
 
-	c = config_parse(cfgfile, &cfg);
+	c = config_parse(cfgfile, &cfg, argc, argv);
 	free(cp);
 	if ( ! c)
 		return EXIT_FAILURE;
