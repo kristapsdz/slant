@@ -146,6 +146,43 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 	assert(0 == bits); \
 }
 
+#define DEFINE_size_bars(_NAME, _QMIN_BARS, _QMIN, \
+	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+static size_t \
+_NAME(unsigned int bits) \
+{ \
+	size_t sz = 0; \
+	if (_QMIN_BARS & bits) { \
+		bits &= ~_QMIN_BARS; \
+		sz += 10 + (bits ? 1 : 0); \
+	} \
+	if (_QMIN & bits) { \
+		bits &= ~_QMIN; \
+		sz += 6 + (bits ? 1 : 0); \
+	} \
+	if (_MIN & bits) { \
+		bits &= ~_MIN; \
+		sz += 6 + (bits ? 1 : 0); \
+	} \
+	if (_HOUR & bits) { \
+		bits &= ~_HOUR; \
+		sz += 6 + (bits ? 1 : 0); \
+	} \
+	if (_DAY & bits) { \
+		bits &= ~_DAY; \
+		sz += 6; \
+	} \
+	if (_WEEK & bits) { \
+		bits &= ~_WEEK; \
+		sz += 6; \
+	} \
+	if (_YEAR & bits) { \
+		bits &= ~_YEAR; \
+		sz += 6; \
+	} \
+	return sz; \
+}
+
 /*
  * Return the last time for which we have some data.
  * This can come from any of the intervals.
@@ -687,30 +724,40 @@ DEFINE_draw_bars(draw_files, nfiles, draw_pct,
 	FILES_QMIN, FILES_MIN, 
 	FILES_HOUR, FILES_DAY,
 	FILES_WEEK, FILES_YEAR)
+DEFINE_size_bars(size_files, FILES_QMIN_BARS, FILES_QMIN, FILES_MIN, 
+	FILES_HOUR, FILES_DAY, FILES_WEEK, FILES_YEAR)
 
 DEFINE_draw_bars(draw_procs, nprocs, draw_pct,
 	PROCS_QMIN_BARS, 
 	PROCS_QMIN, PROCS_MIN, 
 	PROCS_HOUR, PROCS_DAY,
 	PROCS_WEEK, PROCS_YEAR)
+DEFINE_size_bars(size_procs, PROCS_QMIN_BARS, PROCS_QMIN, PROCS_MIN, 
+	PROCS_HOUR, PROCS_DAY, PROCS_WEEK, PROCS_YEAR)
 
 DEFINE_draw_bars(draw_rprocs, rprocs, draw_rpct,
 	RPROCS_QMIN_BARS, 
 	RPROCS_QMIN, RPROCS_MIN, 
 	RPROCS_HOUR, RPROCS_DAY,
 	RPROCS_WEEK, RPROCS_YEAR)
+DEFINE_size_bars(size_rprocs, RPROCS_QMIN_BARS, RPROCS_QMIN, 
+	RPROCS_MIN, RPROCS_HOUR, RPROCS_DAY, RPROCS_WEEK, RPROCS_YEAR)
 
 DEFINE_draw_bars(draw_mem, mem, draw_pct,
 	MEM_QMIN_BARS, 
 	MEM_QMIN, MEM_MIN, 
 	MEM_HOUR, MEM_DAY,
 	MEM_WEEK, MEM_YEAR)
+DEFINE_size_bars(size_mem, MEM_QMIN_BARS, MEM_QMIN, 
+	MEM_MIN, MEM_HOUR, MEM_DAY, MEM_WEEK, MEM_YEAR)
 
 DEFINE_draw_bars(draw_cpu, cpu, draw_pct,
 	CPU_QMIN_BARS, 
 	CPU_QMIN, CPU_MIN, 
 	CPU_HOUR, CPU_DAY,
 	CPU_WEEK, CPU_YEAR)
+DEFINE_size_bars(size_cpu, CPU_QMIN_BARS, CPU_QMIN, 
+	CPU_MIN, CPU_HOUR, CPU_DAY, CPU_WEEK, CPU_YEAR)
 
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)
@@ -757,159 +804,19 @@ compute_width(const struct node *n, size_t nsz,
 		sz += 3;
 		switch (d->box[i].cat) {
 		case DRAWCAT_CPU:
-			if (CPU_QMIN_BARS & bits) {
-				bits &= ~CPU_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (CPU_QMIN & bits) {
-				bits &= ~CPU_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_MIN & bits) {
-				bits &= ~CPU_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_HOUR & bits) {
-				bits &= ~CPU_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_DAY & bits) {
-				bits &= ~CPU_DAY;
-				sz += 6;
-			}
-			if (CPU_WEEK & bits) {
-				bits &= ~CPU_WEEK;
-				sz += 6;
-			}
-			if (CPU_YEAR & bits) {
-				bits &= ~CPU_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_cpu(bits);
 			break;
 		case DRAWCAT_MEM:
-			if (MEM_QMIN_BARS & bits) {
-				bits &= ~MEM_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (MEM_QMIN & bits) {
-				bits &= ~MEM_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_MIN & bits) {
-				bits &= ~MEM_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_HOUR & bits) {
-				bits &= ~MEM_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_DAY & bits) {
-				bits &= ~MEM_DAY;
-				sz += 6;
-			}
-			if (MEM_WEEK & bits) {
-				bits &= ~MEM_WEEK;
-				sz += 6;
-			}
-			if (MEM_YEAR & bits) {
-				bits &= ~MEM_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_mem(bits);
 			break;
 		case DRAWCAT_PROCS:
-			if (PROCS_QMIN_BARS & bits) {
-				bits &= ~PROCS_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (PROCS_QMIN & bits) {
-				bits &= ~PROCS_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_MIN & bits) {
-				bits &= ~PROCS_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_HOUR & bits) {
-				bits &= ~PROCS_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_DAY & bits) {
-				bits &= ~PROCS_DAY;
-				sz += 6;
-			}
-			if (PROCS_WEEK & bits) {
-				bits &= ~PROCS_WEEK;
-				sz += 6;
-			}
-			if (PROCS_YEAR & bits) {
-				bits &= ~PROCS_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_procs(bits);
 			break;
 		case DRAWCAT_RPROCS:
-			if (RPROCS_QMIN_BARS & bits) {
-				bits &= ~RPROCS_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (RPROCS_QMIN & bits) {
-				bits &= ~RPROCS_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_MIN & bits) {
-				bits &= ~RPROCS_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_HOUR & bits) {
-				bits &= ~RPROCS_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_DAY & bits) {
-				bits &= ~RPROCS_DAY;
-				sz += 6;
-			}
-			if (RPROCS_WEEK & bits) {
-				bits &= ~RPROCS_WEEK;
-				sz += 6;
-			}
-			if (RPROCS_YEAR & bits) {
-				bits &= ~RPROCS_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_rprocs(bits);
 			break;
 		case DRAWCAT_FILES:
-			if (FILES_QMIN_BARS & bits) {
-				bits &= ~FILES_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (FILES_QMIN & bits) {
-				bits &= ~FILES_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_MIN & bits) {
-				bits &= ~FILES_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_HOUR & bits) {
-				bits &= ~FILES_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_DAY & bits) {
-				bits &= ~FILES_DAY;
-				sz += 6;
-			}
-			if (FILES_WEEK & bits) {
-				bits &= ~FILES_WEEK;
-				sz += 6;
-			}
-			if (FILES_YEAR & bits) {
-				bits &= ~FILES_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_files(bits);
 			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
@@ -1011,131 +918,19 @@ draw_header(struct out *out, const struct draw *d,
 		waddch(out->mainwin, ' ');
 		switch (d->box[i].cat) {
 		case DRAWCAT_CPU:
-			if (CPU_QMIN_BARS & bits) {
-				bits &= ~CPU_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (CPU_QMIN & bits) {
-				bits &= ~CPU_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_MIN & bits) {
-				bits &= ~CPU_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_HOUR & bits) {
-				bits &= ~CPU_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (CPU_DAY & bits) {
-				bits &= ~CPU_DAY;
-				sz += 6;
-			}
-			if (CPU_WEEK & bits) {
-				bits &= ~CPU_WEEK;
-				sz += 6;
-			}
-			if (CPU_YEAR & bits) {
-				bits &= ~CPU_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_cpu(bits);
 			draw_centre(out->mainwin, "cpu", sz);
 			break;
 		case DRAWCAT_MEM:
-			if (MEM_QMIN_BARS & bits) {
-				bits &= ~MEM_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (MEM_QMIN & bits) {
-				bits &= ~MEM_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_MIN & bits) {
-				bits &= ~MEM_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_HOUR & bits) {
-				bits &= ~MEM_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (MEM_DAY & bits) {
-				bits &= ~MEM_DAY;
-				sz += 6;
-			}
-			if (MEM_WEEK & bits) {
-				bits &= ~MEM_WEEK;
-				sz += 6;
-			}
-			if (MEM_YEAR & bits) {
-				bits &= ~MEM_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_mem(bits);
 			draw_centre(out->mainwin, "mem", sz);
 			break;
 		case DRAWCAT_PROCS:
-			if (PROCS_QMIN_BARS & bits) {
-				bits &= ~PROCS_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (PROCS_QMIN & bits) {
-				bits &= ~PROCS_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_MIN & bits) {
-				bits &= ~PROCS_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_HOUR & bits) {
-				bits &= ~PROCS_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (PROCS_DAY & bits) {
-				bits &= ~PROCS_DAY;
-				sz += 6;
-			}
-			if (PROCS_WEEK & bits) {
-				bits &= ~PROCS_WEEK;
-				sz += 6;
-			}
-			if (PROCS_YEAR & bits) {
-				bits &= ~PROCS_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_procs(bits);
 			draw_centre(out->mainwin, "procs", sz);
 			break;
 		case DRAWCAT_RPROCS:
-			if (RPROCS_QMIN_BARS & bits) {
-				bits &= ~RPROCS_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (RPROCS_QMIN & bits) {
-				bits &= ~RPROCS_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_MIN & bits) {
-				bits &= ~RPROCS_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_HOUR & bits) {
-				bits &= ~RPROCS_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (RPROCS_DAY & bits) {
-				bits &= ~RPROCS_DAY;
-				sz += 6;
-			}
-			if (RPROCS_WEEK & bits) {
-				bits &= ~RPROCS_WEEK;
-				sz += 6;
-			}
-			if (RPROCS_YEAR & bits) {
-				bits &= ~RPROCS_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_rprocs(bits);
 			if (sz < 9) {
 				draw_centre(out->mainwin, "run", sz);
 				break;
@@ -1143,35 +938,7 @@ draw_header(struct out *out, const struct draw *d,
 			draw_centre(out->mainwin, "running", sz);
 			break;
 		case DRAWCAT_FILES:
-			if (FILES_QMIN_BARS & bits) {
-				bits &= ~FILES_QMIN_BARS;
-				sz += 10 + (bits ? 1 : 0);
-			}
-			if (FILES_QMIN & bits) {
-				bits &= ~FILES_QMIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_MIN & bits) {
-				bits &= ~FILES_MIN;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_HOUR & bits) {
-				bits &= ~FILES_HOUR;
-				sz += 6 + (bits ? 1 : 0);
-			}
-			if (FILES_DAY & bits) {
-				bits &= ~FILES_DAY;
-				sz += 6;
-			}
-			if (FILES_WEEK & bits) {
-				bits &= ~FILES_WEEK;
-				sz += 6;
-			}
-			if (FILES_YEAR & bits) {
-				bits &= ~FILES_YEAR;
-				sz += 6;
-			}
-			assert(0 == bits);
+			sz = size_files(bits);
 			draw_centre(out->mainwin, "procs", sz);
 			break;
 		case DRAWCAT_NET:
