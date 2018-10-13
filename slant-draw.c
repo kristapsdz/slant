@@ -232,8 +232,8 @@ draw_pct(WINDOW *win, double vv)
  * Draw the amount of time elased from "last" to "now", unless "last" is
  * zero, in which case draw something that indicates no time exists.
  * Bound below at zero elapsed time.
- * If the time is greater than 60 seconds, draw it as yellow; if more
- * than 120 seconds, draw as red.
+ * If the time is "worrisome", draw it as yellow; if "probably wrong",
+ * draw as red.
  */
 static void
 draw_interval(WINDOW *win, time_t waittime, 
