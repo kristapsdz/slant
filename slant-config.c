@@ -364,6 +364,8 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin"))
 					b->args |= RPROCS_QMIN;
+				else if (tok_eq_adv(p, "qmin_bars"))
+					b->args |= RPROCS_QMIN_BARS;
 				else if (tok_eq_adv(p, "min"))
 					b->args |= RPROCS_MIN;
 				else if (tok_eq_adv(p, "hour"))

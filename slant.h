@@ -107,6 +107,7 @@ struct	drawbox {
 #define	RPROCS_DAY	 0x0008
 #define	RPROCS_WEEK	 0x0010
 #define	RPROCS_YEAR	 0x0020
+#define	RPROCS_QMIN_BARS 0x0040
 };
 
 /*

@@ -44,7 +44,7 @@ static const char *const states[] = {
 	"read" /* STATE_READ */
 };
 
-#define DEFINE_draw_bars(_NAME, _MEMBER, \
+#define DEFINE_draw_bars(_NAME, _MEMBER, _DRAW_PCT, \
 	_QMIN_BARS, _QMIN, _MIN, _HOUR, _DAY, _WEEK, _YEAR) \
 static void \
 _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
@@ -70,7 +70,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 			vv = r->byqmin[0]._MEMBER / \
 			     r->byqmin[0].entries; \
 			wattron(win, A_BOLD); \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 			wattroff(win, A_BOLD); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " "); \
@@ -85,7 +85,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		    r->byminsz && r->bymin[0].entries) { \
 			vv = r->bymin[0]._MEMBER / \
 		   	     r->bymin[0].entries; \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " ");  \
 		} else \
@@ -99,7 +99,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		    r->byhoursz && r->byhour[0].entries) { \
 			vv = r->byhour[0]._MEMBER / \
 		   	     r->byhour[0].entries; \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " ");  \
 		} else \
@@ -113,7 +113,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		    r->bydaysz && r->byday[0].entries) { \
 			vv = r->byday[0]._MEMBER / \
 			     r->byday[0].entries; \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " ");  \
 		} else \
@@ -125,7 +125,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		    r->byweeksz && r->byweek[0].entries) { \
 			vv = r->byweek[0]._MEMBER / \
 		  	     r->byweek[0].entries; \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " ");  \
 		} else \
@@ -137,7 +137,7 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		    r->byyearsz && r->byyear[0].entries) { \
 			vv = r->byyear[0]._MEMBER / \
 			     r->byyear[0].entries; \
-			draw_pct(win, vv); \
+			_DRAW_PCT(win, vv); \
 		} else if (NULL != n->recs) { \
 			wprintw(win, "%6s", " ");  \
 		} else \
@@ -682,108 +682,31 @@ draw_inet(unsigned int bits, WINDOW *win, const struct node *n)
 	assert(0 == bits);
 }
 
-static void
-draw_rprocs(unsigned int bits, WINDOW *win, const struct node *n)
-{
-	double	 vv;
-	const struct recset *r = n->recs;
-
-	if (RPROCS_QMIN & bits) {
-		bits &= ~RPROCS_QMIN;
-		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
-			vv = r->byqmin[0].rprocs / r->byqmin[0].entries;
-			wattron(win, A_BOLD);
-			draw_rpct(win, vv);
-			wattroff(win, A_BOLD);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " ");
-		} else 
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (RPROCS_MIN & bits) {
-		bits &= ~RPROCS_MIN;
-		if (NULL != r && r->byminsz && r->bymin[0].entries) {
-			vv = r->bymin[0].rprocs / r->bymin[0].entries;
-			draw_rpct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (RPROCS_HOUR & bits) {
-		bits &= ~PROCS_HOUR;
-		if (NULL != r && r->byhoursz && r->byhour[0].entries) {
-			vv = r->byhour[0].rprocs / r->byhour[0].entries;
-			draw_rpct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (RPROCS_DAY & bits) {
-		bits &= ~PROCS_DAY;
-		if (NULL != r && r->bydaysz && r->byday[0].entries) {
-			vv = r->byday[0].rprocs / r->byday[0].entries;
-			draw_rpct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (RPROCS_WEEK & bits) {
-		bits &= ~PROCS_WEEK;
-		if (NULL != r && r->byweeksz && r->byweek[0].entries) {
-			vv = r->byweek[0].rprocs / r->byweek[0].entries;
-			draw_rpct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (RPROCS_YEAR & bits) {
-		bits &= ~PROCS_YEAR;
-		if (NULL != r && r->byyearsz && r->byyear[0].entries) {
-			vv = r->byyear[0].rprocs / r->byyear[0].entries;
-			draw_rpct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	assert(0 == bits);
-}
-
-DEFINE_draw_bars(draw_files, nfiles,
+DEFINE_draw_bars(draw_files, nfiles, draw_pct,
 	FILES_QMIN_BARS, 
 	FILES_QMIN, FILES_MIN, 
 	FILES_HOUR, FILES_DAY,
 	FILES_WEEK, FILES_YEAR)
 
-DEFINE_draw_bars(draw_procs, nprocs,
+DEFINE_draw_bars(draw_procs, nprocs, draw_pct,
 	PROCS_QMIN_BARS, 
 	PROCS_QMIN, PROCS_MIN, 
 	PROCS_HOUR, PROCS_DAY,
 	PROCS_WEEK, PROCS_YEAR)
 
-DEFINE_draw_bars(draw_mem, mem,
+DEFINE_draw_bars(draw_rprocs, rprocs, draw_rpct,
+	RPROCS_QMIN_BARS, 
+	RPROCS_QMIN, RPROCS_MIN, 
+	RPROCS_HOUR, RPROCS_DAY,
+	RPROCS_WEEK, RPROCS_YEAR)
+
+DEFINE_draw_bars(draw_mem, mem, draw_pct,
 	MEM_QMIN_BARS, 
 	MEM_QMIN, MEM_MIN, 
 	MEM_HOUR, MEM_DAY,
 	MEM_WEEK, MEM_YEAR)
 
-DEFINE_draw_bars(draw_cpu, cpu,
+DEFINE_draw_bars(draw_cpu, cpu, draw_pct,
 	CPU_QMIN_BARS, 
 	CPU_QMIN, CPU_MIN, 
 	CPU_HOUR, CPU_DAY,
@@ -927,6 +850,10 @@ compute_width(const struct node *n, size_t nsz,
 			assert(0 == bits);
 			break;
 		case DRAWCAT_RPROCS:
+			if (RPROCS_QMIN_BARS & bits) {
+				bits &= ~RPROCS_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
 			if (RPROCS_QMIN & bits) {
 				bits &= ~RPROCS_QMIN;
 				sz += 6 + (bits ? 1 : 0);
@@ -941,6 +868,14 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			if (RPROCS_DAY & bits) {
 				bits &= ~RPROCS_DAY;
+				sz += 6;
+			}
+			if (RPROCS_WEEK & bits) {
+				bits &= ~RPROCS_WEEK;
+				sz += 6;
+			}
+			if (RPROCS_YEAR & bits) {
+				bits &= ~RPROCS_YEAR;
 				sz += 6;
 			}
 			assert(0 == bits);
@@ -1172,6 +1107,10 @@ draw_header(struct out *out, const struct draw *d,
 			draw_centre(out->mainwin, "procs", sz);
 			break;
 		case DRAWCAT_RPROCS:
+			if (RPROCS_QMIN_BARS & bits) {
+				bits &= ~RPROCS_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
 			if (RPROCS_QMIN & bits) {
 				bits &= ~RPROCS_QMIN;
 				sz += 6 + (bits ? 1 : 0);
