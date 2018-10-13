@@ -44,6 +44,12 @@ static const char *const states[] = {
 	"read" /* STATE_READ */
 };
 
+/*
+ * Define a function for drawing bars and percentages.
+ * This is a bit messy to functionify because of accessing the member
+ * variable in each structure.
+ * It can be passed in, but would need some smarts.
+ */
 #define DEFINE_draw_bars(_NAME, _MEMBER, _DRAW_PCT, \
 	_QMIN_BARS, _QMIN, _MIN, _HOUR, _DAY, _WEEK, _YEAR) \
 static void \
@@ -146,6 +152,14 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 	assert(0 == bits); \
 }
 
+/*
+ * Define a function for getting colunm widths of a field.
+ * TODO: this should be functionified by making the _QMIN_BARS etc. all
+ * be the same across fields using this function.
+ * Right now they're not, as I wasn't sure in building this whether each
+ * field would be different.
+ * But obviously---because this macro exists---they are.
+ */
 #define DEFINE_size_bars(_NAME, _QMIN_BARS, _QMIN, \
 	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
 static size_t \
@@ -804,19 +818,19 @@ compute_width(const struct node *n, size_t nsz,
 		sz += 3;
 		switch (d->box[i].cat) {
 		case DRAWCAT_CPU:
-			sz = size_cpu(bits);
+			sz += size_cpu(bits);
 			break;
 		case DRAWCAT_MEM:
-			sz = size_mem(bits);
+			sz += size_mem(bits);
 			break;
 		case DRAWCAT_PROCS:
-			sz = size_procs(bits);
+			sz += size_procs(bits);
 			break;
 		case DRAWCAT_RPROCS:
-			sz = size_rprocs(bits);
+			sz += size_rprocs(bits);
 			break;
 		case DRAWCAT_FILES:
-			sz = size_files(bits);
+			sz += size_files(bits);
 			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
@@ -939,7 +953,7 @@ draw_header(struct out *out, const struct draw *d,
 			break;
 		case DRAWCAT_FILES:
 			sz = size_files(bits);
-			draw_centre(out->mainwin, "procs", sz);
+			draw_centre(out->mainwin, "files", sz);
 			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
