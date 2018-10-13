@@ -135,6 +135,7 @@ The minimum wait time is 15 seconds.
       "host" |
       "nprocs" ["qmin_bars"|time_interval]+ |
       "rprocs" ["qmin_bars"|time_interval]+ ]
+      "nfiles" ["qmin_bars"|time_interval]+ ]
      ";"]*
    "}" ";"]
   ["errlog" NUM ";"]
@@ -239,14 +240,18 @@ If the amount indicates problems, it will be shown in red.
 The number of running processes over the maximum configured amount.
 Summaries are in percentages.
 Percentages more than 80% are coloured red; more than 50%, yellow.
-Preceded by a bar graph of the instantaneous view coloured in the same
-way.
+The bar graph of the instantaneous view is coloured in the same way.
 .It Cm rprocs
 Of the commands given to the collector for monitoring, the percentage
 that are running.
 Summaries are in percentages.
 If no commands were given, is always 100%.
 If less than 100%, shown in red.
+.It Cm nfiles
+The number of open files over the maximum possible amount.
+Summaries are in percentages.
+Percentages more than 80% are coloured red; more than 50%, yellow.
+The bar graph of the instantaneous view is coloured in the same way.
 .El
 .Pp
 The hostname (domain name) is always shown first.
