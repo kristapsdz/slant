@@ -2,6 +2,18 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.9</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-10-14">2018-10-14</time>
+		</header>
+		<aside>
+			<p>
+				Add view for open files, finish fleshing out view for runnables.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.8</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-10-13">2018-10-13</time>
