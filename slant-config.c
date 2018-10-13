@@ -382,6 +382,29 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					break;
 				else
 					return tok_unknown(p);
+		} else if (tok_eq_adv(p, "nfiles")) {
+			b->cat = DRAWCAT_FILES;
+			while (p->pos < p->toksz)
+				if (tok_eq_adv(p, "qmin"))
+					b->args |= FILES_QMIN;
+				else if (tok_eq_adv(p, "qmin_bars"))
+					b->args |= FILES_QMIN_BARS;
+				else if (tok_eq_adv(p, "min"))
+					b->args |= FILES_MIN;
+				else if (tok_eq_adv(p, "hour"))
+					b->args |= FILES_HOUR;
+				else if (tok_eq_adv(p, "day"))
+					b->args |= FILES_DAY;
+				else if (tok_eq_adv(p, "week"))
+					b->args |= FILES_WEEK;
+				else if (tok_eq_adv(p, "year"))
+					b->args |= FILES_YEAR;
+				else if (tok_eq(p, ";"))
+					break;
+				else if (tok_eq(p, "}"))
+					break;
+				else
+					return tok_unknown(p);
 		} else
 			return tok_unknown(p);
 
