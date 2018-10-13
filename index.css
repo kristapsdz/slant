@@ -7,7 +7,7 @@ body				{ margin: 0 auto;
 				  height: 100%;
 				  position: relative; }
 
-header, 
+body > header, 
 article,
 footer				{ padding-left: 25%;
 				  padding-right: 25%; }
@@ -17,14 +17,14 @@ footer				{ text-align: center;
 				  margin: 3rem 0; }
 a				{ text-decoration: none; }
 
-header				{ display: flex; 
+body > header			{ display: flex; 
 				  background-color: #2c363f;
 				  padding-top: 6rem;
 				  padding-bottom: 1rem;
 				  box-shadow: 0px 1px 3px #8f6500;
 				  color: #fff;
 				  align-items: flex-end; }
-header > :first-child		{ flex: 1; }
+body > header > :first-child	{ flex: 1; }
 h1				{ font-weight: 100;
 				  line-height: 40pt;
 				  font-size: 48pt;
@@ -34,13 +34,14 @@ h2				{ font-weight: inherit;
 				  margin-top: 4rem;
 				  color: #000;
 				  font-variant: small-caps; }
-header .title			{ color: #aaa; }
-header .title a			{ color: #fff; }
-header nav a			{ color: #ffc530; 
+body > header .title		{ color: #aaa; }
+body > header .title a		{ color: #fff; 
+				  font-weight: 500; }
+body > header nav a		{ color: #ffc530; 
 				  display: inline-block;
 				  font-weight: 500; }
-header nav a + a		{ margin-left: 1rem; }
-header a:hover			{ text-decoration: underline; }
+body > header nav a + a		{ margin-left: 0.5rem; }
+body > header a:hover		{ text-decoration: underline; }
 
 .screens div			{ flex: 1.01; }
 .screens div:last-child		{ flex: 2; 
@@ -83,16 +84,21 @@ strong				{ font-weight: 500;
 				  height: 100%; 
 				  left: 0;
 				  top: 0; }
+nav[data-sblg-nav] ul		{ list-style-type: none; 
+				  padding: 0; }
+nav[data-sblg-nav] header	{ opacity: 0.7;
+				  border-bottom: thin solid #aaa; }
+nav[data-sblg-nav] p		{ margin: 0.5em 0; }
 
 @media only screen and (max-width: 1280px), only screen and (max-device-width: 1280px) {
-  header, 
+  body > header, 
   article,
   footer			{ padding-left: 10%;
 				  padding-right: 10%; }
 }
 
 @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
-  header, 
+  body > header, 
   article,
   footer			{ padding-left: 0.5rem;
 				  padding-right: 0.5rem; }

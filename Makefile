@@ -1,4 +1,4 @@
-.SUFFIXES: .xml .html .8 .8.html .1 .1.html .dot .svg .ts .js
+.SUFFIXES: .8 .8.html .1 .1.html .dot .svg .ts .js
 
 PREFIX	   = /usr/local
 WPREFIX	   = /var/www
@@ -18,7 +18,7 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.7
+VERSION	   = 0.0.8
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
@@ -165,8 +165,8 @@ db.c: slant.kwbp
 json.c: slant.kwbp
 	kwebapp-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
 
-.xml.html:
-	cp -f $< $@
+index.html: index.xml versions.xml
+	sblg -o $@ -t index.xml versions.xml
 
 .8.8.html .1.1.html:
 	mandoc -Thtml $< >$@

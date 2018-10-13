@@ -5,6 +5,7 @@
 		<meta charset="utf-8" /> 
 		<title>slant: remote system monitoring</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="index.css" />
 		<script src="index.js"></script>
 	</head>
@@ -15,10 +16,12 @@
 				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project</div>
 			</div>
 			<nav>
-				<a href="https://github.com/kristapsdz/slant">github</a>
+				<a href="https://github.com/kristapsdz/slant"><i class="fa fa-fw fa-github"></i></a>
 				<a href="#overview">overview</a>
 				<a href="#operation">operation</a>
 				<a href="#data">data</a>
+				<a href="#news">news</a>
+				<a href="#about">about</a>
 			</nav>
 		</header>
 		<article>
@@ -40,7 +43,9 @@
 			</figure>
 			<h2 id="overview">overview</h2>
 			<p>
-				<span class="nm">Slant</span> is a minimal remote host monitor.
+				<span class="nm">Slant</span> is an <a
+					href="http://opensource.org/licenses/ISC" rel="license">open
+					source</a>, minimal remote host monitor.
 				It models these hosts via a set of numeric quantifiers, both
 				at the current instant and in the past as averaged behaviour.
 				For instance, CPU usage is quantified as a percent average
@@ -109,6 +114,9 @@
 			<h2 id="data">data</h2>
 			<p>
 				<span class="nm">Slant</span> collects enough data to minimally represent system health.
+				A strong focus is on data being finite and bounded: many other
+				system monitors collect and store vast amounts of information.
+				A design goal of <span class="nm">slant</span> is to be small and light.
 				For the time being, the following are present as both instantaneous and past averages:
 			</p>
 			<ul>
@@ -136,10 +144,43 @@
 					<strong>runnables</strong>:
 					percentage of configured processes (e.g., <q>sshd</q>) currently running
 				</li>
+				<li>
+					<strong>files</strong>:
+					percentage of used over available open files
+				</li>
 			</ul>
 			<p>
 				Beyond numerical (<q>aggregatable</q>) data, <span
 					class="nm">slant</span> also records the system boot time.
+			</p>
+			<p>
+				Data represented by <span class="nm">slant</span> has three types.
+				The first is aggregatable and always numerical.
+				This, like CPU percentage, may be aggregated over time intervals for
+				examining historical average records.
+				The second is start-time data, which is set when the collector daemon starts.
+				This is hardware configuration, system boot information, collector version, etc.
+				The last is non-aggregatable instantaneous information, for example,
+				a list of all processes.
+				At this time, <span class="nm">slant</span> collects no
+				instantaneous and little start-time data.
+				This is intentional: the focus is on aggregatables.
+			</p>
+			<h2 id="news">news</h2>
+			<nav data-sblg-nav="1" data-sblg-navcontent="1">
+				<header>
+					${sblg-date}: ${sblg-titletext}
+				</header>
+				<div>
+					${sblg-aside}
+				</div>
+			</nav>
+			<h2 id="about">about</h2>
+			<p>
+				<span class="nm">Slant</span> was built to provide simple monitoring of a set of systems.
+				The operative term being <i>simple</i>, both to deploy and to actually monitor.
+				Development is generously sponsored by CAPEM Solutions, Inc.
+				Thank you!
 			</p>
 		</article>
 		<footer>

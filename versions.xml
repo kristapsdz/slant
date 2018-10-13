@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<articles>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.0.8</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-10-13">2018-10-13</time>
+		</header>
+		<aside>
+			<p>
+				Add weekly and yearly view to user interface.
+				(Not part of the defaults.)
+				Add metric for number of open over maximum open file descriptors.
+			</p>
+		</aside>
+	</article>
+</articles>
