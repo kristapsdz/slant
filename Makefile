@@ -55,7 +55,7 @@ SLANT_OBJS = slant.o \
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
-www: slant.tar.gz $(WWW)
+www: slant.tar.gz # $(WWW)
 
 installwww: www
 	mkdir -p $(WWWDIR)
