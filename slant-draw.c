@@ -44,6 +44,108 @@ static const char *const states[] = {
 	"read" /* STATE_READ */
 };
 
+#define DEFINE_draw_bars(_NAME, _MEMBER, \
+	_QMIN_BARS, _QMIN, _MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+static void \
+_NAME(unsigned int bits, WINDOW *win, const struct node *n) \
+{ \
+	double	 vv; \
+	const struct recset *r = n->recs; \
+	if (_QMIN_BARS & bits) { \
+		bits &= ~_QMIN_BARS; \
+		if (NULL != r && \
+		    r->byqminsz && r->byqmin[0].entries) { \
+			vv = r->byqmin[0]._MEMBER / \
+			     r->byqmin[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
+	if (_QMIN & bits) { \
+		bits &= ~_QMIN; \
+		if (NULL != r && \
+		    r->byqminsz && r->byqmin[0].entries) { \
+			vv = r->byqmin[0]._MEMBER / \
+			     r->byqmin[0].entries; \
+			wattron(win, A_BOLD); \
+			draw_pct(win, vv); \
+			wattroff(win, A_BOLD); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " "); \
+		} else  \
+			wprintw(win, "------%"); \
+		if (bits) \
+			draw_sub_separator(win); \
+	} \
+	if (_MIN & bits) { \
+		bits &= ~_MIN; \
+		if (NULL != r && \
+		    r->byminsz && r->bymin[0].entries) { \
+			vv = r->bymin[0]._MEMBER / \
+		   	     r->bymin[0].entries; \
+			draw_pct(win, vv); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " ");  \
+		} else \
+			wprintw(win, "------%"); \
+		if (bits) \
+			draw_sub_separator(win); \
+	} \
+	if (_HOUR & bits) { \
+		bits &= ~_HOUR; \
+		if (NULL != r && \
+		    r->byhoursz && r->byhour[0].entries) { \
+			vv = r->byhour[0]._MEMBER / \
+		   	     r->byhour[0].entries; \
+			draw_pct(win, vv); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " ");  \
+		} else \
+			wprintw(win, "------%"); \
+		if (bits) \
+			draw_sub_separator(win); \
+	} \
+	if (_DAY & bits) { \
+		bits &= ~_DAY; \
+		if (NULL != r && \
+		    r->bydaysz && r->byday[0].entries) { \
+			vv = r->byday[0]._MEMBER / \
+			     r->byday[0].entries; \
+			draw_pct(win, vv); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " ");  \
+		} else \
+			wprintw(win, "------%"); \
+	} \
+	if (_WEEK & bits) { \
+		bits &= ~_WEEK; \
+		if (NULL != r && \
+		    r->byweeksz && r->byweek[0].entries) { \
+			vv = r->byweek[0]._MEMBER / \
+		  	     r->byweek[0].entries; \
+			draw_pct(win, vv); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " ");  \
+		} else \
+			wprintw(win, "------%"); \
+	} \
+	if (_YEAR & bits) { \
+		bits &= ~_YEAR; \
+		if (NULL != r && \
+		    r->byyearsz && r->byyear[0].entries) { \
+			vv = r->byyear[0]._MEMBER / \
+			     r->byyear[0].entries; \
+			draw_pct(win, vv); \
+		} else if (NULL != n->recs) { \
+			wprintw(win, "%6s", " ");  \
+		} else \
+			wprintw(win, "------%"); \
+	} \
+	assert(0 == bits); \
+}
+
 /*
  * Return the last time for which we have some data.
  * This can come from any of the intervals.
@@ -663,327 +765,29 @@ draw_rprocs(unsigned int bits, WINDOW *win, const struct node *n)
 	assert(0 == bits);
 }
 
-static void
-draw_procs(unsigned int bits, WINDOW *win, const struct node *n)
-{
-	double	 vv;
-	const struct recset *r = n->recs;
+DEFINE_draw_bars(draw_files, nfiles,
+	FILES_QMIN_BARS, 
+	FILES_QMIN, FILES_MIN, 
+	FILES_HOUR, FILES_DAY,
+	FILES_WEEK, FILES_YEAR)
 
-	if (PROCS_QMIN_BARS & bits) {
-		bits &= ~PROCS_QMIN_BARS;
-		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
-			vv = r->byqmin[0].nprocs / r->byqmin[0].entries;
-			draw_bars(win, vv);
-		} else
-			wprintw(win, "%10s", " ");
-		if (bits)
-			waddch(win, ' ');
-	}
+DEFINE_draw_bars(draw_procs, nprocs,
+	PROCS_QMIN_BARS, 
+	PROCS_QMIN, PROCS_MIN, 
+	PROCS_HOUR, PROCS_DAY,
+	PROCS_WEEK, PROCS_YEAR)
 
-	if (PROCS_QMIN & bits) {
-		bits &= ~PROCS_QMIN;
-		if (NULL != r && r->byqminsz && r->byqmin[0].entries) {
-			vv = r->byqmin[0].nprocs / r->byqmin[0].entries;
-			wattron(win, A_BOLD);
-			draw_pct(win, vv);
-			wattroff(win, A_BOLD);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " ");
-		} else 
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
+DEFINE_draw_bars(draw_mem, mem,
+	MEM_QMIN_BARS, 
+	MEM_QMIN, MEM_MIN, 
+	MEM_HOUR, MEM_DAY,
+	MEM_WEEK, MEM_YEAR)
 
-	if (PROCS_MIN & bits) {
-		bits &= ~PROCS_MIN;
-		if (NULL != r && r->byminsz && r->bymin[0].entries) {
-			vv = r->bymin[0].nprocs / r->bymin[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (PROCS_HOUR & bits) {
-		bits &= ~PROCS_HOUR;
-		if (NULL != r && r->byhoursz && r->byhour[0].entries) {
-			vv = r->byhour[0].nprocs / r->byhour[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (PROCS_DAY & bits) {
-		bits &= ~PROCS_DAY;
-		if (NULL != r && r->bydaysz && r->byday[0].entries) {
-			vv = r->byday[0].nprocs / r->byday[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (PROCS_WEEK & bits) {
-		bits &= ~PROCS_WEEK;
-		if (NULL != r && r->byweeksz && r->byweek[0].entries) {
-			vv = r->byweek[0].nprocs / r->byweek[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (PROCS_YEAR & bits) {
-		bits &= ~PROCS_YEAR;
-		if (NULL != r && r->byyearsz && r->byyear[0].entries) {
-			vv = r->byyear[0].nprocs / r->byyear[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	assert(0 == bits);
-}
-
-static void
-draw_mem(unsigned int bits, WINDOW *win, const struct node *n)
-{
-	double	 vv;
-
-	if (MEM_QMIN_BARS & bits) {
-		bits &= ~MEM_QMIN_BARS;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].mem /
-				n->recs->byqmin[0].entries;
-			draw_bars(win, vv);
-		} else
-			wprintw(win, "%10s", " ");
-		if (bits)
-			waddch(win, ' ');
-	}
-
-	if (MEM_QMIN & bits) {
-		bits &= ~MEM_QMIN;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].mem /
-				n->recs->byqmin[0].entries;
-			wattron(win, A_BOLD);
-			draw_pct(win, vv);
-			wattroff(win, A_BOLD);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " ");
-		} else 
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (MEM_MIN & bits) {
-		bits &= ~MEM_MIN;
-		if (NULL != n->recs &&
-		    n->recs->byminsz &&
-		    n->recs->bymin[0].entries) {
-			vv = n->recs->bymin[0].mem /
-				n->recs->bymin[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (MEM_HOUR & bits) {
-		bits &= ~MEM_HOUR;
-		if (NULL != n->recs &&
-	 	    n->recs->byhoursz &&
-		    n->recs->byhour[0].entries) {
-			vv = n->recs->byhour[0].mem /
-				n->recs->byhour[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (MEM_DAY & bits) {
-		bits &= ~MEM_DAY;
-		if (NULL != n->recs &&
-		    n->recs->bydaysz &&
-		    n->recs->byday[0].entries) {
-			vv = n->recs->byday[0].mem /
-				n->recs->byday[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (MEM_WEEK & bits) {
-		bits &= ~MEM_WEEK;
-		if (NULL != n->recs &&
-		    n->recs->byweeksz &&
-		    n->recs->byweek[0].entries) {
-			vv = n->recs->byweek[0].mem /
-				n->recs->byweek[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (MEM_YEAR & bits) {
-		bits &= ~MEM_YEAR;
-		if (NULL != n->recs &&
-		    n->recs->byyearsz &&
-		    n->recs->byyear[0].entries) {
-			vv = n->recs->byyear[0].mem /
-				n->recs->byyear[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	assert(0 == bits);
-}
-
-static void
-draw_cpu(unsigned int bits, WINDOW *win, const struct node *n)
-{
-	double	 vv;
-
-	if (CPU_QMIN_BARS & bits) {
-		bits &= ~CPU_QMIN_BARS;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].cpu /
-				n->recs->byqmin[0].entries;
-			draw_bars(win, vv);
-		} else
-			wprintw(win, "%10s", " ");
-		if (bits)
-			waddch(win, ' ');
-	}
-
-	if (CPU_QMIN & bits) {
-		bits &= ~CPU_QMIN;
-		if (NULL != n->recs &&
-		    n->recs->byqminsz &&
-		    n->recs->byqmin[0].entries) {
-			vv = n->recs->byqmin[0].cpu /
-				n->recs->byqmin[0].entries;
-			wattron(win, A_BOLD);
-			draw_pct(win, vv);
-			wattroff(win, A_BOLD);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " ");
-		} else 
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (CPU_MIN & bits) {
-		bits &= ~CPU_MIN;
-		if (NULL != n->recs &&
-		    n->recs->byminsz &&
-		    n->recs->bymin[0].entries) {
-			vv = n->recs->bymin[0].cpu /
-				n->recs->bymin[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (CPU_HOUR & bits) {
-		bits &= ~CPU_HOUR;
-		if (NULL != n->recs &&
-	 	    n->recs->byhoursz &&
-		    n->recs->byhour[0].entries) {
-			vv = n->recs->byhour[0].cpu /
-				n->recs->byhour[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-		if (bits)
-			draw_sub_separator(win);
-	}
-
-	if (CPU_DAY & bits) {
-		bits &= ~CPU_DAY;
-		if (NULL != n->recs &&
-		    n->recs->bydaysz &&
-		    n->recs->byday[0].entries) {
-			vv = n->recs->byday[0].cpu /
-				n->recs->byday[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (CPU_WEEK & bits) {
-		bits &= ~CPU_WEEK;
-		if (NULL != n->recs &&
-		    n->recs->byweeksz &&
-		    n->recs->byweek[0].entries) {
-			vv = n->recs->byweek[0].cpu /
-				n->recs->byweek[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	if (CPU_YEAR & bits) {
-		bits &= ~CPU_YEAR;
-		if (NULL != n->recs &&
-		    n->recs->byyearsz &&
-		    n->recs->byyear[0].entries) {
-			vv = n->recs->byyear[0].cpu /
-				n->recs->byyear[0].entries;
-			draw_pct(win, vv);
-		} else if (NULL != n->recs) {
-			wprintw(win, "%6s", " "); 
-		} else
-			wprintw(win, "------%");
-	}
-
-	assert(0 == bits);
-}
+DEFINE_draw_bars(draw_cpu, cpu,
+	CPU_QMIN_BARS, 
+	CPU_QMIN, CPU_MIN, 
+	CPU_HOUR, CPU_DAY,
+	CPU_WEEK, CPU_YEAR)
 
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)
@@ -1137,6 +941,37 @@ compute_width(const struct node *n, size_t nsz,
 			}
 			if (RPROCS_DAY & bits) {
 				bits &= ~RPROCS_DAY;
+				sz += 6;
+			}
+			assert(0 == bits);
+			break;
+		case DRAWCAT_FILES:
+			if (FILES_QMIN_BARS & bits) {
+				bits &= ~FILES_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (FILES_QMIN & bits) {
+				bits &= ~FILES_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_MIN & bits) {
+				bits &= ~FILES_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_HOUR & bits) {
+				bits &= ~FILES_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_DAY & bits) {
+				bits &= ~FILES_DAY;
+				sz += 6;
+			}
+			if (FILES_WEEK & bits) {
+				bits &= ~FILES_WEEK;
+				sz += 6;
+			}
+			if (FILES_YEAR & bits) {
+				bits &= ~FILES_YEAR;
 				sz += 6;
 			}
 			assert(0 == bits);
@@ -1368,6 +1203,38 @@ draw_header(struct out *out, const struct draw *d,
 			}
 			draw_centre(out->mainwin, "running", sz);
 			break;
+		case DRAWCAT_FILES:
+			if (FILES_QMIN_BARS & bits) {
+				bits &= ~FILES_QMIN_BARS;
+				sz += 10 + (bits ? 1 : 0);
+			}
+			if (FILES_QMIN & bits) {
+				bits &= ~FILES_QMIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_MIN & bits) {
+				bits &= ~FILES_MIN;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_HOUR & bits) {
+				bits &= ~FILES_HOUR;
+				sz += 6 + (bits ? 1 : 0);
+			}
+			if (FILES_DAY & bits) {
+				bits &= ~FILES_DAY;
+				sz += 6;
+			}
+			if (FILES_WEEK & bits) {
+				bits &= ~FILES_WEEK;
+				sz += 6;
+			}
+			if (FILES_YEAR & bits) {
+				bits &= ~FILES_YEAR;
+				sz += 6;
+			}
+			assert(0 == bits);
+			draw_centre(out->mainwin, "procs", sz);
+			break;
 		case DRAWCAT_NET:
 			if (NET_QMIN & bits) {
 				bits &= ~NET_QMIN;
@@ -1533,6 +1400,9 @@ draw(struct out *out, struct draw *d, int first,
 				break;
 			case DRAWCAT_RPROCS:
 				draw_rprocs(bits, out->mainwin, &n[i]);
+				break;
+			case DRAWCAT_FILES:
+				draw_files(bits, out->mainwin, &n[i]);
 				break;
 			}
 			waddch(out->mainwin, ' ');

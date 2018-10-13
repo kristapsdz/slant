@@ -47,6 +47,7 @@ enum	drawcat {
 	DRAWCAT_LINK,
 	DRAWCAT_HOST,
 	DRAWCAT_PROCS,
+	DRAWCAT_FILES,
 	DRAWCAT_RPROCS
 };
 
@@ -93,6 +94,13 @@ struct	drawbox {
 #define	PROCS_QMIN_BARS	 0x0010
 #define PROCS_WEEK	 0x0020
 #define PROCS_YEAR	 0x0040
+#define	FILES_QMIN	 0x0001
+#define	FILES_MIN	 0x0002
+#define	FILES_HOUR 	 0x0004
+#define	FILES_DAY	 0x0008
+#define	FILES_QMIN_BARS	 0x0010
+#define FILES_WEEK	 0x0020
+#define FILES_YEAR	 0x0040
 #define	RPROCS_QMIN	 0x0001
 #define	RPROCS_MIN	 0x0002
 #define	RPROCS_HOUR 	 0x0004
