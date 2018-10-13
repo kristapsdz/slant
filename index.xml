@@ -3,7 +3,7 @@
 	<head>
 		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 		<meta charset="utf-8" /> 
-		<title>slant: remote system monitoring</title>
+		<title>slant: remote system monitor</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="index.css" />
@@ -26,7 +26,7 @@
 		</header>
 		<article>
 			<div class="tagline">
-				a minimal open source monitoring system for remote UNIX machines
+				a minimal open source monitor system for remote UNIX machines
 			</div>
 			<div class="version">
 				version: <span>0.2.3</span>, released <span>06-08-2018</span>
@@ -179,8 +179,7 @@
 			<p>
 				<span class="nm">Slant</span> was built to provide simple monitoring of a set of systems.
 				The operative term being <i>simple</i>, both to deploy and to actually monitor.
-				Development is generously sponsored by CAPEM Solutions, Inc.
-				Thank you!
+				Development is generously sponsored by CAPEM Solutions, Inc.&#8212;thank you!
 			</p>
 		</article>
 		<footer>
@@ -190,13 +189,6 @@
 					<span itemprop="name">Kristaps Dzonsons</span>
 				</a>
 			</div>
-			<nav>
-				<a href="snapshots/sblg.tar.gz"><i class="fa fa-fw fa-gears"></i></a>
-				<a href="snapshots/sblg.tar.gz.sha512"><i class="fa fa-fw fa-lock"></i></a>
-				<a href="snapshots"><i class="fa fa-fw fa-file-o"></i></a>
-				<a href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
-				<a href="https://github.com/kristapsdz/sblg"><i class="fa fa-fw fa-github"></i></a>
-			</nav>
 		</footer>
 	</body>
 </html>
