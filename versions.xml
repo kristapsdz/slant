@@ -2,6 +2,20 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.10</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-10-15">2018-10-15</time>
+		</header>
+		<aside>
+			<p>
+				Public release of web site.
+				No code change&#8212;just changes to the www site and presentational
+				material.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.9</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-10-14">2018-10-14</time>

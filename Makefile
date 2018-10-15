@@ -18,7 +18,7 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.9
+VERSION	   = 0.0.10
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
@@ -55,7 +55,7 @@ SLANT_OBJS = slant.o \
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
-www: slant.tar.gz # $(WWW)
+www: slant.tar.gz $(WWW)
 
 installwww: www
 	mkdir -p $(WWWDIR)
