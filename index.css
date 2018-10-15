@@ -7,6 +7,7 @@ body				{ margin: 0 auto;
 				  height: 100%;
 				  position: relative; }
 
+code				{ font-size: 12pt; }
 body > header, 
 article,
 footer				{ padding-left: 25%;
@@ -29,10 +30,16 @@ h1				{ font-weight: 100;
 				  line-height: 40pt;
 				  font-size: 48pt;
 				  margin: 0; }
-h2				{ font-weight: inherit;
+h2				{ font-weight: 500;
 				  text-align: center;
 				  margin-top: 4rem;
 				  color: #000;
+				  font-variant: small-caps; }
+h3				{ font-weight: inherit;
+				  text-align: center;
+				  color: #000;
+				  margin: 1.7em 0;
+				  font-size: 16pt;
 				  font-variant: small-caps; }
 body > header .title		{ color: #aaa; }
 body > header .title a		{ color: #fff; 
@@ -41,7 +48,13 @@ body > header nav a		{ color: #ffc530;
 				  display: inline-block;
 				  font-weight: 500; }
 body > header nav a + a		{ margin-left: 0.5rem; }
+body > header nav .hilite	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0); 
+				  border-radius: 24pt;
+				  padding: 0.1em 0.4em; }
 body > header a:hover		{ text-decoration: underline; }
+body > header a.hilite:hover	{ text-decoration: none; }
+body > header .hilite:hover	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0); 
+				  background-color: rgba(255, 165, 0, 0.1); }
 
 .screens div			{ flex: 1.01; }
 .screens div:last-child		{ flex: 2; 

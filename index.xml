@@ -12,24 +12,25 @@
 	<body itemscope="itemscope" itemtype="http://schema.org/SoftwareApplication">
 		<header>
 			<div>
-				<h1>slant</h1>
+				<h1 itemprop="name">slant</h1>
 				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project</div>
 			</div>
 			<nav>
 				<a href="https://github.com/kristapsdz/slant"><i class="fa fa-fw fa-github"></i></a>
 				<a href="#overview">overview</a>
-				<a href="#operation">operation</a>
-				<a href="#data">data</a>
 				<a href="#news">news</a>
 				<a href="#about">about</a>
+				<a class="hilite" href="#download">download</a>
 			</nav>
 		</header>
 		<article>
-			<div class="tagline">
-				a minimal open source monitor system for remote UNIX machines
+			<div class="tagline" itemprop="description">
+				a minimal open source system monitor for remote <span itemprop="operatingSystem">UNIX</span> machines
 			</div>
 			<div class="version">
-				version: <span>0.2.3</span>, released <span>06-08-2018</span>
+				<nav data-sblg-nav="1" data-sblg-navxml="1" data-sblg-navsz="1">
+					version: <span>${sblg-titletext}</span>, released <span>${sblg-date}</span>
+				</nav>
 			</div>
 			<figure class="screens">
 				<div class="popup" id="screen2">
@@ -45,15 +46,14 @@
 			<p>
 				<span class="nm">Slant</span> is an <a
 					href="http://opensource.org/licenses/ISC" rel="license">open
-					source</a>, minimal remote host monitor.
-				It models these hosts via a set of numeric quantifiers, both
-				at the current instant and in the past as averaged behaviour.
-				For instance, CPU usage is quantified as a percent average
-				over all CPUs, or memory usage over available memory, or number of
-				processors, etc.
-				As for the past, <span class="nm">slant</span> maintains a set of
-				time-interval circular queues (hourly, daily, etc.) averaging the
-				instantaneous view over the given time interval.
+					source</a>, minimal <span itemprop="applicationCategory">remote system monitor</span>.
+				It models host fitness via a set of numeric quantifiers, for
+				instance, CPU usage quantified as a percent average over all CPUs,
+				memory usage over available memory, number of processes over maximum
+				configured, etc.
+				For past behaviour, <span class="nm">slant</span> maintains a set of
+				time-interval-bound circular queues (hourly, daily, etc.) with
+				current data aggregated into each time series.
 			</p>
 			<p>
 				It is <strong>not</strong> designed for detailed analysis: there are
@@ -67,7 +67,7 @@
 				The goal of this tool is to answer, at a single glance, the question
 				of <q>has anything gone to hell with my systems</q>.
 			</p>
-			<h2 id="operation">operation</h2>
+			<h3 id="operation">operation</h3>
 			<p>
 				<span class="nm">Slant</span> currently runs on <a
 					href="https://www.openbsd.org">OpenBSD</a> only.  It's
@@ -111,7 +111,7 @@
 				The utility and its configuration are well-documented in <a
 					href="slant.1.html">slant(1)</a>.
 			</p>
-			<h2 id="data">data</h2>
+			<h3 id="data">data</h3>
 			<p>
 				<span class="nm">Slant</span> collects enough data to minimally represent system health.
 				A strong focus is on data being finite and bounded: many other
@@ -165,6 +165,25 @@
 				At this time, <span class="nm">slant</span> collects no
 				instantaneous and little start-time data.
 				This is intentional: the focus is on aggregatables.
+			</p>
+			<h2 id="download">download</h2>
+			<p>
+				The current version is always available at <a itemprop="downloadURL"
+					href="snapshots/slant.tar.gz">snapshots/slant.tar.gz</a>.
+				Just unpack the source and run <code>make</code>.
+				For default OpenBSD installations, just run <code>make
+					install</code> as root.
+				Then make sure the collector, <a
+					href="slant-collectd.8.html">slant-collectd</a> is running
+				and <a href="https://man.openbsd.org/slowcgi">slowcgi</a> is
+				properly configured.
+			</p>
+			<p>
+				For upgrading the database between versions or installing the
+				initial database, make sure to run <a
+					href="slant-upgrade.8.html">slant-upgrade</a>.
+				Make sure that the CGI script isn't accessable before you do so, or
+				you may have new CGI sources and an old database schema.
 			</p>
 			<h2 id="news">news</h2>
 			<nav data-sblg-nav="1" data-sblg-navcontent="1">
