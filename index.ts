@@ -15,7 +15,7 @@ namespace index
 
 	export function init(): void
 	{
-		let list: NodeListOf<Element>;
+		let list: HTMLCollectionOf<Element>;
 		let i: number;
 		list = document.getElementsByClassName('popup');
 		for (i = 0; i < list.length; i++)
