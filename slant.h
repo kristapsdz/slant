@@ -236,12 +236,12 @@ size_t	 compute_width(const struct node *, size_t,
 void	 dns_parse_url(struct out *, struct node *);
 int	 dns_resolve(struct out *, const char *, struct dns *);
 
-int	 http_init_connect(struct out *, struct node *);
-int	 http_close_done(struct out *, struct node *);
-int	 http_close_err(struct out *, struct node *);
-int	 http_connect(struct out *, struct node *);
-int	 http_write(struct out *, struct node *n);
-int	 http_read(struct out *, struct node *n);
+int	 http_init_connect(struct out *, struct node *, time_t);
+int	 http_close_done(struct out *, struct node *, time_t);
+int	 http_close_err(struct out *, struct node *, time_t);
+int	 http_connect(struct out *, struct node *, time_t);
+int	 http_write(struct out *, struct node *, time_t);
+int	 http_read(struct out *, struct node *, time_t);
 
 void	 draw(struct out *, struct draw *, int,
 		const struct node *, size_t, time_t);

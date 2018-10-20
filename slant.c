@@ -97,10 +97,9 @@ nodes_free(struct node *n, size_t sz)
  * occur to reflect the change.
  */
 static int
-nodes_update(struct out *out, struct node *n, size_t sz)
+nodes_update(struct out *out, struct node *n, size_t sz, time_t t)
 {
 	size_t	 i;
-	time_t	 t = time(NULL);
 	int	 dirty = 0;
 
 	for (i = 0; i < sz; i++) {
@@ -112,27 +111,27 @@ nodes_update(struct out *out, struct node *n, size_t sz)
 			n[i].dirty = 1;
 			break;
 		case STATE_CONNECT_READY:
-			if ( ! http_init_connect(out, &n[i]))
+			if ( ! http_init_connect(out, &n[i], t))
 				return -1;
 			break;
 		case STATE_CONNECT:
-			if ( ! http_connect(out, &n[i]))
+			if ( ! http_connect(out, &n[i], t))
 				return -1;
 			break;
 		case STATE_WRITE:
-			if ( ! http_write(out, &n[i]))
+			if ( ! http_write(out, &n[i], t))
 				return -1;
 			break;
 		case STATE_CLOSE_ERR:
-			if ( ! http_close_err(out, &n[i]))
+			if ( ! http_close_err(out, &n[i], t))
 				return -1;
 			break;
 		case STATE_CLOSE_DONE:
-			if ( ! http_close_done(out, &n[i]))
+			if ( ! http_close_done(out, &n[i], t))
 				return -1;
 			break;
 		case STATE_READ:
-			if ( ! http_read(out, &n[i]))
+			if ( ! http_read(out, &n[i], t))
 				return -1;
 			break;
 		default:
@@ -630,7 +629,8 @@ main(int argc, char *argv[])
 	last = 0;
 
 	while ( ! sigged) {
-		if ((c = nodes_update(&out, n, cfg.urlsz)) < 0)
+		now = time(NULL);
+		if ((c = nodes_update(&out, n, cfg.urlsz, now)) < 0)
 			break;
 
 		/* Re-sort, if applicable. */
@@ -660,7 +660,6 @@ main(int argc, char *argv[])
 		 * passed, then simply update the time displays.
 		 */
 
-		now = time(NULL);
 		if ((c || first) && now > last) {
 			draw(&out, &d, first, n, cfg.urlsz, now);
 			for (i = 0; i < cfg.urlsz; i++) 

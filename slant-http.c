@@ -41,10 +41,9 @@
  * function), non-zero if the connection has closed.
  */
 static int
-http_close_inner(WINDOW *errwin, struct node *n)
+http_close_inner(WINDOW *errwin, struct node *n, time_t t)
 {
 	int	 c;
-	time_t	 t = time(NULL);
 
 	if ( ! n->addrs.https) {
 		close(n->xfer.pfd->fd);
@@ -69,15 +68,15 @@ http_close_inner(WINDOW *errwin, struct node *n)
 }
 
 int
-http_close_err(struct out *out, struct node *n)
+http_close_err(struct out *out, struct node *n, time_t t)
 {
 	int	 c;
 
-	if (0 != (c = http_close_inner(out->errwin, n))) {
+	if (0 != (c = http_close_inner(out->errwin, n, t))) {
 		n->addrs.curaddr = 
 			(n->addrs.curaddr + 1) % n->addrs.addrsz;
 		n->state = STATE_CONNECT_WAITING;
-		n->waitstart = time(NULL);
+		n->waitstart = t;
 		return 1;
 	}
 
@@ -86,12 +85,11 @@ http_close_err(struct out *out, struct node *n)
 }
 
 static int
-http_close_done_ok(struct out *out, struct node *n)
+http_close_done_ok(struct out *out, struct node *n, time_t t)
 {
 	char	*end, *sv, *start = n->xfer.rbuf;
 	size_t	 len, sz = n->xfer.rbufsz;
 	int	 rc, httpok = 0;
-	time_t	 t = time(NULL);
 
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = t;
@@ -120,7 +118,7 @@ http_close_done_ok(struct out *out, struct node *n)
 		rc = 1;
 	} else if ((rc = json_parse(out, n, start, sz)) > 0) {
 		n->dirty = 1;
-		n->lastseen = time(NULL);
+		n->lastseen = t;
 	}
 
 	free(n->xfer.rbuf);
@@ -130,12 +128,12 @@ http_close_done_ok(struct out *out, struct node *n)
 }
 
 int
-http_close_done(struct out *out, struct node *n)
+http_close_done(struct out *out, struct node *n, time_t t)
 {
 	int	 c;
 
-	if ((c = http_close_inner(out->errwin, n)) > 0)
-		return http_close_done_ok(out, n);
+	if ((c = http_close_inner(out->errwin, n, t)) > 0)
+		return http_close_done_ok(out, n, t);
 
 	n->state = STATE_CLOSE_DONE;
 	return 1;
@@ -192,7 +190,7 @@ http_write_ready(struct out *out, struct node *n, time_t t)
  * Returns zero on system failure, non-zero on success.
  */
 int
-http_init_connect(struct out *out, struct node *n)
+http_init_connect(struct out *out, struct node *n, time_t t)
 {
 	int		   family, c, flags;
 	socklen_t	   sslen;
@@ -272,14 +270,14 @@ http_init_connect(struct out *out, struct node *n)
 	}
 
 	n->state = STATE_CONNECT;
-	n->xfer.start = time(NULL);
+	n->xfer.start = t;
 
 	/* This is from connect(2): asynchronous connection. */
 
 	c = connect(n->xfer.pfd->fd, 
 		(struct sockaddr *)&n->xfer.ss, sslen);
 	if (0 == c)
-		return http_write_ready(out, n, n->xfer.start);
+		return http_write_ready(out, n, t);
 
 	/* Asynchronous connect... */
 
@@ -294,7 +292,7 @@ http_init_connect(struct out *out, struct node *n)
 		xwarn(out, "connect (transient): %s: %s", 
 			n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(out, n);
+		return http_close_err(out, n, t);
 	}
 
 	xwarn(out, "connect: %s: %s", n->host, 
@@ -310,11 +308,10 @@ http_init_connect(struct out *out, struct node *n)
  * STATE_WRITE on success.
  */
 int
-http_connect(struct out *out, struct node *n)
+http_connect(struct out *out, struct node *n, time_t t)
 {
 	int	  c;
 	int 	  error = 0;
-	time_t	  t = time(NULL);
 	socklen_t len = sizeof(error);
 
 	assert(-1 != n->xfer.pfd->fd);
@@ -329,7 +326,7 @@ http_connect(struct out *out, struct node *n)
 		xwarnx(out, "poll hup (connect): %lld seconds, %s: %s",
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(out, n);
+		return http_close_err(out, n, t);
 	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
@@ -350,7 +347,7 @@ http_connect(struct out *out, struct node *n)
 	    ENETUNREACH == errno) {
 		xwarn(out, "getsockopt (transient): %s: %s",
 			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(out, n);
+		return http_close_err(out, n, t);
 	}
 
 	xwarn(out, "getsockopt: %s: %s",
@@ -367,10 +364,9 @@ http_connect(struct out *out, struct node *n)
  * changing of state.
  */
 int
-http_write(struct out *out, struct node *n)
+http_write(struct out *out, struct node *n, time_t t)
 {
 	ssize_t	 ssz;
-	time_t	 t = time(NULL);
 
 	assert(-1 != n->xfer.pfd->fd);
 	assert(NULL != n->xfer.wbuf);
@@ -385,7 +381,7 @@ http_write(struct out *out, struct node *n)
 		xwarnx(out, "poll hup (write): %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(out, n);
+		return http_close_err(out, n, t);
 	}
 	
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
@@ -446,12 +442,11 @@ http_write(struct out *out, struct node *n)
  * STATE_CONNECT_WAITING.
  */
 int
-http_read(struct out *out, struct node *n)
+http_read(struct out *out, struct node *n, time_t t)
 {
 	ssize_t	 ssz;
 	char	 buf[1024 * 5];
 	void	*pp;
-	time_t	 t = time(NULL);
 
 	assert(STATE_READ == n->state);
 	assert(-1 != n->xfer.pfd->fd);
@@ -467,7 +462,7 @@ http_read(struct out *out, struct node *n)
 		xwarnx(out, "poll hup (read): %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
-		return http_close_err(out, n);
+		return http_close_err(out, n, t);
 	}
 
 	if ( ! (POLLOUT & n->xfer.pfd->revents) &&
@@ -503,7 +498,7 @@ http_read(struct out *out, struct node *n)
 	n->xfer.lastio = t;
 
 	if (0 == ssz)
-		return http_close_done(out, n);
+		return http_close_done(out, n, t);
 
 	/* Copy static into dynamic buffer. */
 
