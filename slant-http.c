@@ -44,6 +44,7 @@ static int
 http_close_inner(WINDOW *errwin, struct node *n)
 {
 	int	 c;
+	time_t	 t = time(NULL);
 
 	if ( ! n->addrs.https) {
 		close(n->xfer.pfd->fd);
@@ -53,9 +54,11 @@ http_close_inner(WINDOW *errwin, struct node *n)
 
 	c = tls_close(n->xfer.tls);
 	if (TLS_WANT_POLLIN == c) {
+		n->xfer.lastio = t;
 		n->xfer.pfd->events = POLLIN;
 		return 0;
 	} else if (TLS_WANT_POLLOUT == c) {
+		n->xfer.lastio = t;
 		n->xfer.pfd->events = POLLOUT;
 		return 0;
 	} 
@@ -143,7 +146,7 @@ http_close_done(struct out *out, struct node *n)
  * Return zero on failure, non-zero on success.
  */
 static int
-http_write_ready(struct out *out, struct node *n)
+http_write_ready(struct out *out, struct node *n, time_t t)
 {
 	int	 c;
 
@@ -172,7 +175,9 @@ http_write_ready(struct out *out, struct node *n)
 	}
 
 	n->xfer.wbufsz = c;
+	n->xfer.lastio = t;
 	n->state = STATE_WRITE;
+
 	if (n->addrs.https)
 		n->xfer.pfd->events = POLLOUT|POLLIN;
 	else
@@ -274,7 +279,7 @@ http_init_connect(struct out *out, struct node *n)
 	c = connect(n->xfer.pfd->fd, 
 		(struct sockaddr *)&n->xfer.ss, sslen);
 	if (0 == c)
-		return http_write_ready(out, n);
+		return http_write_ready(out, n, n->xfer.start);
 
 	/* Asynchronous connect... */
 
@@ -336,7 +341,7 @@ http_connect(struct out *out, struct node *n)
 			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (0 == error)
-		return http_write_ready(out, n);
+		return http_write_ready(out, n, t);
 
 	errno = error;
 	if (ETIMEDOUT == errno ||
@@ -413,6 +418,8 @@ http_write(struct out *out, struct node *n)
 			return 0;
 		}
 	}
+
+	n->xfer.lastio = t;
 	n->xfer.wbufsz -= ssz;
 	n->xfer.wbufpos += ssz;
 
@@ -492,6 +499,8 @@ http_read(struct out *out, struct node *n)
 			return 0;
 		}
 	}
+
+	n->xfer.lastio = t;
 
 	if (0 == ssz)
 		return http_close_done(out, n);

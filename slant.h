@@ -173,6 +173,7 @@ struct	xfer {
 	struct pollfd	*pfd; /* pollfd descriptor */
 	struct tls	*tls; /* tls context, if needed */
 	time_t		 start; /* connection start time */
+	time_t		 lastio; /* last read/write/connect */
 };
 
 /*
@@ -187,7 +188,7 @@ struct	node {
 	struct xfer	 xfer; /* transfer information */
 	struct dns	 addrs; /* all possible IP addresses */
 	time_t		 waitstart; /* wait period start */
-	time_t		 lastseen; /* last data received */
+	time_t		 lastseen; /* last sample data received */
 	struct recset	*recs; /* results */
 	int		 dirty; /* new results */
 };
