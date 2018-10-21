@@ -51,6 +51,8 @@ http_close_inner(WINDOW *errwin, struct node *n, time_t t)
 		return 1;
 	}
 
+	/* TODO: close timeout handler? */
+
 	c = tls_close(n->xfer.tls);
 	if (TLS_WANT_POLLIN == c) {
 		n->xfer.lastio = t;
@@ -270,7 +272,7 @@ http_init_connect(struct out *out, struct node *n, time_t t)
 	}
 
 	n->state = STATE_CONNECT;
-	n->xfer.start = t;
+	n->xfer.start = n->xfer.lastio = t;
 
 	/* This is from connect(2): asynchronous connection. */
 
@@ -327,7 +329,17 @@ http_connect(struct out *out, struct node *n, time_t t)
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
-	} else if ( ! (POLLOUT & n->xfer.pfd->revents))
+	} 
+
+	assert(t >= n->xfer.lastio);
+	if (t - n->xfer.lastio > 60) {
+		xwarnx(out, "connect timeout: %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
+		return http_close_err(out, n, t);
+	}
+	
+	if ( ! (POLLOUT & n->xfer.pfd->revents))
 		return 1;
 
 	c = getsockopt(n->xfer.pfd->fd, 
@@ -379,6 +391,14 @@ http_write(struct out *out, struct node *n, time_t t)
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
 		xwarnx(out, "poll hup (write): %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
+		return http_close_err(out, n, t);
+	}
+
+	assert(t >= n->xfer.lastio);
+	if (t - n->xfer.lastio > 60) {
+		xwarnx(out, "write timeout: %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
@@ -460,6 +480,14 @@ http_read(struct out *out, struct node *n, time_t t)
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
 		xwarnx(out, "poll hup (read): %lld seconds, %s: %s", 
+			t - n->xfer.start, n->host, 
+			n->addrs.addrs[n->addrs.curaddr].ip);
+		return http_close_err(out, n, t);
+	}
+
+	assert(t >= n->xfer.lastio);
+	if (t - n->xfer.lastio > 60) {
+		xwarnx(out, "read timeout: %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
