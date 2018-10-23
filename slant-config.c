@@ -137,6 +137,28 @@ tok_adv(struct parse *p)
 }
 
 /*
+ * "timeout" num ";"
+ */
+static int
+parse_timeout(struct parse *p, struct config *cfg)
+{
+	const char	*er;
+
+	assert(p->pos < p->toksz);
+	cfg->timeout = strtonum
+		(p->toks[p->pos], 10, INT_MAX, &er);
+	if (NULL != er) {
+		warnx("%s: bad global timeout: %s", p->fn, er);
+		return 0;
+	} else if ( ! tok_adv(p)) {
+		return 0;
+	} else if ( ! tok_expect_adv(p, ";"))
+		return 0;
+
+	return 1;
+}
+
+/*
  * "waittime" num ";"
  */
 static int
@@ -159,14 +181,14 @@ parse_waittime(struct parse *p, struct config *cfg)
 }
 
 /*
- * ["waittime" num] "}"
+ * ["waittime" num | "timeout" num]  "}"
  */
 static int
 parse_server_args(struct parse *p, struct config *cfg, size_t count)
 {
 	const char	*er;
-	time_t		 waittime = 0;
-	size_t		 i;
+	time_t		 waittime = 0, timeout = 0;
+	size_t		 i, j;
 
 	while (p->pos < p->toksz && ! tok_eq(p, "}")) {
 		if (tok_eq_adv(p, "waittime")) {
@@ -176,25 +198,36 @@ parse_server_args(struct parse *p, struct config *cfg, size_t count)
 				warnx("%s: bad server waittime: "
 					"%s", p->fn, er);
 				return 0;
-			}
-			if ( ! tok_adv(p))
+			} else if ( ! tok_adv(p))
 				return 0;
-			(void)tok_eq_adv(p, ";");
+		} else if (tok_eq_adv(p, "timeout")) {
+			timeout = strtonum
+				(p->toks[p->pos], 10, INT_MAX, &er);
+			if (NULL != er) {
+				warnx("%s: bad server timeout: "
+					"%s", p->fn, er);
+				return 0;
+			} else if ( ! tok_adv(p))
+				return 0;
 		} else
 			return tok_unknown(p);
+
+		(void)tok_eq_adv(p, ";");
 	}
 
 	if ( ! tok_expect_adv(p, "}"))
 		return 0;
 
 	assert(cfg->urlsz >= count);
-	if (0 == waittime)
-		return 1;
 
-	/* Apply waittime to all previous hosts. */
+	/* Apply to all previous hosts. */
 
-	for (i = 0; i < count; i++)
-		cfg->urls[cfg->urlsz - 1 - i].waittime = waittime;
+	if (waittime)
+		for (j = cfg->urlsz - 1, i = 0; i < count; i++, j--)
+			cfg->urls[j].waittime = waittime;
+	if (timeout)
+		for (j = cfg->urlsz - 1, i = 0; i < count; i++, j--)
+			cfg->urls[j].timeout = timeout;
 
 	return 1;
 }
@@ -576,6 +609,7 @@ config_parse(const char *fn, struct config *cfg,
 	/* Set some defaults. */
 
 	cfg->waittime = 60;
+	cfg->timeout = 60;
 
 	/* Open file, map it, create a NUL-terminated string. */
 
@@ -645,6 +679,9 @@ config_parse(const char *fn, struct config *cfg,
 				break;
 		} else if (tok_eq_adv(&p, "waittime")) {
 			if ( ! parse_waittime(&p, cfg))
+				break;
+		} else if (tok_eq_adv(&p, "timeout")) {
+			if ( ! parse_timeout(&p, cfg))
 				break;
 		} else {
 			tok_unknown(&p);

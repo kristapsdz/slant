@@ -560,10 +560,12 @@ main(int argc, char *argv[])
 		n[i].xfer.pfd = &pfds[i];
 		n[i].state = STATE_STARTUP;
 		n[i].url = cfg.urls[i].url;
-		if (cfg.urls[i].waittime)
-			n[i].waittime = cfg.urls[i].waittime;
-		else
-			n[i].waittime = cfg.waittime;
+		n[i].waittime = 
+			cfg.urls[i].waittime ?
+			cfg.urls[i].waittime : cfg.waittime;
+		n[i].timeout = 
+			cfg.urls[i].timeout ?
+			cfg.urls[i].timeout : cfg.timeout;
 		dns_parse_url(&out, &n[i]);
 	}
 

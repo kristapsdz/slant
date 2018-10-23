@@ -182,7 +182,8 @@ struct	xfer {
 struct	node {
 	enum state	 state; /* state of node */
 	const char	*url; /* full URL for connect */
-	time_t		 waittime; /* inter-connect waittime */
+	time_t		 waittime; /* idle time */
+	size_t		 timeout; /* timeout */
 	char		*host; /* just hostname of connect */
 	char		*path; /* path of connect */
 	struct xfer	 xfer; /* transfer information */
@@ -198,7 +199,8 @@ struct	node {
  */
 struct	nconfig {
 	char		*url; /* URL */
-	time_t		 waittime; /* waittime (or zero) */
+	time_t		 waittime; /* idle time (or zero) */
+	size_t		 timeout; /* timeout (or zero) */
 };
 
 /*
@@ -208,7 +210,8 @@ struct	config {
 	struct draw	 *draw; /* draw config or NULL */
 	struct nconfig	 *urls; /* nodes (URLs) */
 	size_t		  urlsz; /* number of urls */
-	size_t		  waittime; /* global timeout */
+	size_t		  waittime; /* global idle time */
+	size_t		  timeout; /* global timeout */
 };
 
 /*
