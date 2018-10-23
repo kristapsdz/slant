@@ -110,19 +110,29 @@ species a server named
 Literals are case sensitive.
 .Bd -literal -offset indent
 "waittime" NUM ";"
+"timeout" NUM ";"
 .Ed
 .Pp
-The global waiting time before each host is processed.
+The global
+.Li waittime
+before each host is processed.
 The countdown for each host begins after its last disconnect.
 The minimum is 15 secons.
+Also the global
+.Li timeout
+after which data transfers are terminated (following the last byte
+transferred).
+The minimum is 10 seconds.
 .Bd -literal -offset indent
-"servers" url [url...] ["{" ["waittime" NUM] "}"] ";"
+"servers" url [url...] ["{" 
+  ["waittime" NUM ";" ] 
+  ["timeout" NUM ";" ] 
+"}"] ";"
 .Ed
 .Pp
 There may be several
 .Cm servers
-sections, each with different server arguments.
-The minimum wait time is 15 seconds.
+sections, each with different server arguments overriding the globals.
 .Bd -literal -offset indent
 "layout" {"
   ["header" ";"]
