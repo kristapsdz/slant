@@ -562,10 +562,10 @@ main(int argc, char *argv[])
 		n[i].url = cfg.urls[i].url;
 		n[i].waittime = 
 			cfg.urls[i].waittime ?
-			cfg.urls[i].waittime : cfg.waittime;
+			cfg.urls[i].waittime : (time_t)cfg.waittime;
 		n[i].timeout = 
 			cfg.urls[i].timeout ?
-			cfg.urls[i].timeout : cfg.timeout;
+			cfg.urls[i].timeout : (time_t)cfg.timeout;
 		dns_parse_url(&out, &n[i]);
 	}
 

@@ -332,7 +332,7 @@ http_connect(struct out *out, struct node *n, time_t t)
 	} 
 
 	assert(t >= n->xfer.lastio);
-	if (t - n->xfer.lastio > (ssize_t)n->timeout) {
+	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "connect timeout: %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
@@ -397,7 +397,7 @@ http_write(struct out *out, struct node *n, time_t t)
 	}
 
 	assert(t >= n->xfer.lastio);
-	if (t - n->xfer.lastio > (ssize_t)n->timeout) {
+	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "write timeout: %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
@@ -486,7 +486,7 @@ http_read(struct out *out, struct node *n, time_t t)
 	}
 
 	assert(t >= n->xfer.lastio);
-	if (t - n->xfer.lastio > (ssize_t)n->timeout) {
+	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "read timeout: %lld seconds, %s: %s", 
 			t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);

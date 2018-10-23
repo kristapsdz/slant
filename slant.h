@@ -183,7 +183,7 @@ struct	node {
 	enum state	 state; /* state of node */
 	const char	*url; /* full URL for connect */
 	time_t		 waittime; /* idle time */
-	size_t		 timeout; /* timeout */
+	time_t		 timeout; /* timeout */
 	char		*host; /* just hostname of connect */
 	char		*path; /* path of connect */
 	struct xfer	 xfer; /* transfer information */
@@ -200,7 +200,7 @@ struct	node {
 struct	nconfig {
 	char		*url; /* URL */
 	time_t		 waittime; /* idle time (or zero) */
-	size_t		 timeout; /* timeout (or zero) */
+	time_t		 timeout; /* timeout (or zero) */
 };
 
 /*
