@@ -18,7 +18,7 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.11
+VERSION	   = 0.0.12
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \

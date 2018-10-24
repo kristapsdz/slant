@@ -2,6 +2,19 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.12</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-10-24">2018-10-24</time>
+		</header>
+		<aside>
+			<p>
+				Quick fix to allow the client to handle HTTP/1.1 such as served by
+				<a href="https://www.nginx.com/">nginx</a>.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.11</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-10-22">2018-10-22</time>
