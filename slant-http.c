@@ -105,7 +105,8 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 			break;
 		else if (len < 13)
 			continue;
-		if (0 == memcmp(sv, "HTTP/1.0 200 ", 13)) 
+		if (0 == memcmp(sv, "HTTP/1.0 200 ", 13) ||
+		    0 == memcmp(sv, "HTTP/1.1 200 ", 13)) 
 			httpok = 1;
 	}
 
