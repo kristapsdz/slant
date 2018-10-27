@@ -424,7 +424,7 @@ http_write(struct out *out, struct node *n, time_t t)
 				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
-			return 0;
+			return http_close_err(out, n, t);
 		}
 	} else {
 		ssz = write(n->xfer.pfd->fd, n->xfer.wbuf + 
@@ -432,7 +432,7 @@ http_write(struct out *out, struct node *n, time_t t)
 		if (ssz < 0) {
 			xwarn(out, "write: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
-			return 0;
+			return http_close_err(out, n, t);
 		}
 	}
 
@@ -513,14 +513,14 @@ http_read(struct out *out, struct node *n, time_t t)
 				n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip,
 				tls_error(n->xfer.tls));
-			return 0;
+			return http_close_err(out, n, t);
 		}
 	} else {
 		ssz = read(n->xfer.pfd->fd, buf, sizeof(buf));
 		if (ssz < 0) {
 			xwarn(out, "read: %s: %s", n->host, 
 				n->addrs.addrs[n->addrs.curaddr].ip);
-			return 0;
+			return http_close_err(out, n, t);
 		}
 	}
 
