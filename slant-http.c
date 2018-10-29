@@ -164,11 +164,18 @@ http_write_ready(struct out *out, struct node *n, time_t t)
 	free(n->xfer.wbuf);
 	n->xfer.wbuf = NULL;
 
-	c = asprintf(&n->xfer.wbuf,
-		"GET %s HTTP/1.0\r\n"
-		"Host: %s\r\n"
-		"\r\n",
-		n->path, n->host);
+	c = NULL != n->httpauth ?
+		asprintf(&n->xfer.wbuf,
+			"GET %s HTTP/1.0\r\n"
+			"Host: %s\r\n"
+			"Authorization: Basic %s\r\n"
+			"\r\n",
+			n->path, n->host, n->httpauth) :
+		asprintf(&n->xfer.wbuf,
+			"GET %s HTTP/1.0\r\n"
+			"Host: %s\r\n"
+			"\r\n",
+			n->path, n->host);
 
 	if (c < 0) {
 		xwarn(out, NULL);
