@@ -83,6 +83,7 @@ nodes_free(struct node *n, size_t sz)
 		free(n[i].xfer.rbuf);
 		recset_free(n[i].recs);
 		free(n[i].recs);
+		free(n[i].httpauth);
 	}
 
 	free(n);
@@ -239,8 +240,8 @@ xwarn(struct out *out, const char *fmt, ...)
 			vwprintw(out->errwin, fmt, ap);
 			va_end(ap);
 		}
-		wprintw(out->errwin, "%s%s\n", 
-			NULL == fmt ? "" : ": ", strerror(er));
+		wprintw(out->errwin, "%s%s (%d)\n", 
+			NULL == fmt ? "" : ": ", strerror(er), er);
 		wrefresh(out->errwin);
 	}
 
@@ -249,8 +250,8 @@ xwarn(struct out *out, const char *fmt, ...)
 		vfprintf(out->errs, fmt, ap);
 		va_end(ap);
 	}
-	fprintf(out->errs, "%s%s\n", 
-		NULL == fmt ? "" : ": ", strerror(er));
+	fprintf(out->errs, "%s%s (%d)\n", 
+		NULL == fmt ? "" : ": ", strerror(er), er);
 	fflush(out->errs);
 }
 
