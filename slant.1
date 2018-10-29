@@ -49,6 +49,9 @@ for immediate CPU, or
 for immediate memory.
 .It Ar url
 Override the configuration's hosts with those provided.
+See
+.Sx URLs
+for details.
 .El
 .Pp
 By default, hosts are ordered as given in the configuration and are
@@ -133,6 +136,11 @@ The minimum is 10 seconds.
 There may be several
 .Cm servers
 sections, each with different server arguments overriding the globals.
+See
+.Sx URLs
+for details on the
+.Li url
+field.
 .Bd -literal -offset indent
 "layout" {"
   ["header" ";"]
@@ -265,6 +273,17 @@ The bar graph of the instantaneous view is coloured in the same way.
 .El
 .Pp
 The hostname (domain name) is always shown first.
+.Ss URLs
+The URLs passed on the command line or in the configuration file are in
+the following format:
+.Bd -literal
+[https://|http://][username:password@]host[:port][/path][?query]
+.Ed
+.Pp
+If the schema is not provided, HTTP is used regardless of the port (if
+given).
+The username and password should only be used with HTTPS, but this is
+not mandated.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
