@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <netdb.h>
 #include <ncurses.h>
+#include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,9 +40,10 @@
 void
 dns_parse_url(struct out *out, struct node *n)
 {
-	char		*cp, *at;
+	char		*cp, *httpauth = NULL;
 	const char 	*s = n->url, *er;
-	size_t		 pos;
+	size_t		 pos, targsz, srcsz;
+	int		 c;
 
  	n->addrs.https = 0;
 	n->addrs.port = 80;
@@ -71,34 +73,46 @@ dns_parse_url(struct out *out, struct node *n)
 	}
 
 	/* 
-	 * The ':' might be a port and/or username/password.
-	 * If it's a username/password, recomposite the host and run
-	 * this algorithm again.
-	 * If the port is bad, just error out.
+	 * Do we have HTTP basic authentication enabled?
+	 * If so, we need to reallocate the host to point after the
+	 * authentication bits.
 	 */
-again:
+
+	if (NULL != (cp = strchr(n->host, '@'))) {
+		httpauth = n->host;
+		if (NULL == (n->host = strdup(cp + 1)))
+			err(EXIT_FAILURE, NULL);
+		*cp = '\0';
+	}
+
+	/* If we have a port, it would come after authentication. */
+
 	if (NULL != (cp = strchr(n->host, ':'))) {
-		if (NULL != (at = strchr(cp + 1, '@'))) {
-			n->username = n->host;
-			n->password = cp + 1;
-			if (NULL == (n->host = strdup(at + 1)))
-				err(EXIT_FAILURE, NULL);
-			*at = '\0';
-			*cp = '\0';
-			goto again;
-		} else {
-			n->addrs.port = strtonum
-				(cp + 1, 1, SHRT_MAX, &er);
-			if (NULL != er)
-				errx(EXIT_FAILURE, "%s: %s: %s", 
-					n->url, cp + 1, er);
-			*cp = '\0';
-		}
+		n->addrs.port = strtonum
+			(cp + 1, 1, SHRT_MAX, &er);
+		if (NULL != er)
+			errx(EXIT_FAILURE, "%s: %s: %s", 
+				n->url, cp + 1, er);
+		*cp = '\0';
 	}
 
 	if (NULL == n->path &&
 	    NULL == (n->path = strdup("/")))
 		err(EXIT_FAILURE, NULL);
+
+	/* If we have HTTP authentication, then base64 encode now. */
+
+	if (NULL != httpauth) {
+		srcsz = strlen(httpauth);
+		targsz = ((srcsz + 2) / 3 * 4) + 1;
+		if (NULL == (n->httpauth = malloc(targsz)))
+			err(EXIT_FAILURE, NULL);
+        	c = b64_ntop((const unsigned char *)httpauth, 
+			srcsz, n->httpauth, targsz);
+		if (c < 0) 
+			errx(EXIT_FAILURE, "b64_ntop");
+		free(httpauth);
+	}
 }
 
 /*

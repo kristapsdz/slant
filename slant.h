@@ -184,8 +184,7 @@ struct	node {
 	const char	*url; /* full URL for connect */
 	time_t		 waittime; /* idle time */
 	time_t		 timeout; /* timeout */
-	char		*username; /* HTTP basic username or NULL */
-	char		*password; /* HTTP basic password or NULL */
+	char		*httpauth; /* HTTP basic authenticator or NULL */
 	char		*host; /* just hostname of connect */
 	char		*path; /* path of connect */
 	struct xfer	 xfer; /* transfer information */
