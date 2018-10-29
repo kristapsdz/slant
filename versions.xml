@@ -2,6 +2,20 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.13</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-10-29">2018-10-29</time>
+		</header>
+		<aside>
+			<p>
+				Parse ports and HTTP basic authentication from URLs, allowing us to
+				combine HTTPS and basic authentication for private host data.
+				This is documented in <a href="slant.1.html">slant(1)</a>.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.12</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-10-24">2018-10-24</time>
