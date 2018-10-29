@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 
 #include <err.h>
+#include <limits.h>
 #include <netdb.h>
 #include <ncurses.h>
 #include <stdio.h>
@@ -31,16 +32,21 @@
 
 /*
  * Parse the url in n->url into its component parts.
- * Returns zero on error, non-zero on success.
+ * This is a non-canonical parse that favours simplicity: we only want
+ * to know about the scheme, domain, username/password, port, and path
+ * (plus optional query string).
  */
 void
 dns_parse_url(struct out *out, struct node *n)
 {
-	char		*cp;
-	const char 	*s = n->url;
+	char		*cp, *at;
+	const char 	*s = n->url, *er;
+	size_t		 pos;
 
  	n->addrs.https = 0;
 	n->addrs.port = 80;
+
+	/* Start with our scheme. */
 
 	if (0 == strncasecmp(s, "https://", 8)) {
 	 	n->addrs.https = 1;
@@ -52,21 +58,43 @@ dns_parse_url(struct out *out, struct node *n)
 	if (NULL == (n->host = strdup(s)))
 		err(EXIT_FAILURE, NULL);
 
-	for (cp = n->host; '\0' != *cp; cp++)
-		if ('/' == *cp) {
-			if (NULL == (n->path = strdup(cp)))
+	/* 
+	 * The path part starts with either a query string or path
+	 * component.
+	 */
+
+	pos = strcspn(n->host, "?/");
+	if ('\0' != n->host[pos]) {
+		if (NULL == (n->path = strdup(&n->host[pos])))
+			err(EXIT_FAILURE, NULL);
+		n->host[pos] = '\0';
+	}
+
+	/* 
+	 * The ':' might be a port and/or username/password.
+	 * If it's a username/password, recomposite the host and run
+	 * this algorithm again.
+	 * If the port is bad, just error out.
+	 */
+again:
+	if (NULL != (cp = strchr(n->host, ':'))) {
+		if (NULL != (at = strchr(cp + 1, '@'))) {
+			n->username = n->host;
+			n->password = cp + 1;
+			if (NULL == (n->host = strdup(at + 1)))
 				err(EXIT_FAILURE, NULL);
+			*at = '\0';
 			*cp = '\0';
-			for (cp = n->path; '\0' != *cp; cp++)
-				if ('?' == *cp || '#' == *cp) {
-					*cp = '\0';
-					break;
-				}
-			break;
-		} else if ('?' == *cp || '#' == *cp) {
+			goto again;
+		} else {
+			n->addrs.port = strtonum
+				(cp + 1, 1, SHRT_MAX, &er);
+			if (NULL != er)
+				errx(EXIT_FAILURE, "%s: %s: %s", 
+					n->url, cp + 1, er);
 			*cp = '\0';
-			break;
 		}
+	}
 
 	if (NULL == n->path &&
 	    NULL == (n->path = strdup("/")))
