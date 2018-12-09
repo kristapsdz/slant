@@ -298,6 +298,7 @@ http_init_connect(struct out *out, struct node *n, time_t t)
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
+	    ENETDOWN == errno ||
 	    ENETUNREACH == errno) {
 		xwarn(out, "connect (transient): %s: %s", 
 			n->host, 
@@ -364,6 +365,7 @@ http_connect(struct out *out, struct node *n, time_t t)
 	if (ETIMEDOUT == errno ||
 	    ECONNREFUSED == errno ||
 	    EHOSTUNREACH == errno ||
+	    ENETDOWN == errno ||
 	    ENETUNREACH == errno) {
 		xwarn(out, "getsockopt (transient): %s: %s",
 			n->host, n->addrs.addrs[n->addrs.curaddr].ip);
