@@ -18,10 +18,12 @@
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <paths.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,6 +288,11 @@ main(int argc, char *argv[])
 	const char	*dbfile = "/var/www/data/slant.db";
 	char		*d, *discs = NULL, *procs = NULL;
 	struct syscfg	 cfg;
+	sigset_t	 sset;
+	struct timespec	 timeo;
+
+	timeo.tv_nsec = 0;
+	timeo.tv_sec = 15;
 
 	/*
 	 * FIXME: relax this restriction.
@@ -392,6 +399,39 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
+	/* First, block SIGINT and SIGTERM. */
+
+	if (-1 == sigemptyset(&sset)) {
+		warn("sigemptyset");
+		goto out;
+	} else if (-1 == sigaddset(&sset, SIGINT)) {
+		warn("sigaddset");
+		goto out;
+	} else if (-1 == sigaddset(&sset, SIGTERM)) {
+		warn("sigaddset");
+		goto out;
+	} else if (-1 == sigprocmask(SIG_BLOCK, &sset, NULL)) {
+		warn("sigprocmask");
+		goto out;
+	}
+
+	/* 
+	 * Now invert the signal mask.
+	 * We'll use this in ppoll(2) so that receiving the signal will
+	 * cut short the system call and we can exit.
+	 */
+
+	if (-1 == sigfillset(&sset)) {
+		warn("sigfillset");
+		goto out;
+	} else if (-1 == sigdelset(&sset, SIGINT)) {
+		warn("sigdelset");
+		goto out;
+	} else if (-1 == sigdelset(&sset, SIGTERM)) {
+		warn("sigdelset");
+		goto out;
+	}
+
 	if (NULL != db)
 		init(db, info);
 	if (verb)
@@ -416,8 +456,14 @@ main(int argc, char *argv[])
 		} 
 		if (verb)
 			print(info);
-		if (sleep(15))
-			break;
+		
+		/* Wait 15 seconds or until we signal. */
+
+		if (-1 == ppoll(NULL, 0, &timeo, &sset) &&
+		    EINTR != errno) {
+			warn("ppoll");
+			goto out;
+		}
 	}
 
 	rc = 1;
