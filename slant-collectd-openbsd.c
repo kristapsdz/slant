@@ -118,6 +118,35 @@ struct	sysinfo {
 	time_t		 boottime; /* time booted */
 };
 
+/*
+ * Get the number of online (working) CPUs---that is, those that will
+ * return non-zero working time.
+ * Return zero on failure, non-zero on success.
+ * Fills in "p" on success.
+ */
+static int
+getonlinecpu(size_t *p)
+{
+	int 	 mib[] = { CTL_HW, HW_NCPUONLINE };
+	int 	 numcpu;
+	size_t 	 size = sizeof(numcpu);
+
+	if (sysctl(mib, sizeof(mib) / sizeof(mib[0]),
+	    &numcpu, &size, NULL, 0) == -1) {
+		warn("sysctl: CTL_HW, HW_NCPUONLINE");
+		return 0;
+	}
+
+	*p = numcpu;
+	return 1;
+}
+
+/*
+ * Get the number of configured CPUs.
+ * This might be less than the number of working CPUs.
+ * Return zero on failure, non-zero on success.
+ * Fills in "p" on success.
+ */
 static int
 getncpu(size_t *p)
 {
@@ -410,18 +439,28 @@ retry:
 static int
 sysinfo_update_cpu(struct sysinfo *p)
 {
-	size_t	 i, pos, size;
+	size_t	 i, pos, size, online = 0;
 	long 	 cp_time_tmp[CPUSTATES];
 	int64_t	 val;
 	double	 sum = 0.0;
 	int64_t	*tmpstate;
 
+	if ( ! getonlinecpu(&online))
+		return 0;
+	assert(online > 0);
+
+	/*
+	 * If the CPU is offline (like with disabled hyperthreads), the
+	 * CPU will return zero percent usage.
+	 * We use getonlinecpu() to make sure that when we divide our
+	 * accumulated percentage, it works out.
+	 * We can also use KERN_CPUSTATS.
+	 */
+
 	if (p->ncpu > 1) {
 		int cp_time_mib[] = 
 			{ CTL_KERN, KERN_CPTIME2, /*fillme*/0 };
 		size = CPUSTATES * sizeof(int64_t);
-
-		/* FIXME: ENODEV */
 
 		for (i = 0; i < p->ncpu; i++) {
 			cp_time_mib[2] = i;
@@ -465,7 +504,7 @@ sysinfo_update_cpu(struct sysinfo *p)
 		sum += val / 10.;
 	}
 
-	p->cpu_avg = sum / p->ncpu;
+	p->cpu_avg = sum / online;
 	return 1;
 }
 
