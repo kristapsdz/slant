@@ -2,6 +2,27 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.14</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-12-10">2018-12-10</time>
+		</header>
+		<aside>
+			<p>
+				Handle how OpenBSD 6.4 and above handle offline processors (that is, 
+				those disabled due to hyperthreading): do as before, but instead of
+				dividing for averages by the number of processors, divide by the
+				number of online processors.
+				The check for online processors is done with every data collection,
+				so it's robust to changing <code>hw.smt</code> mid-stride.
+                        </p>
+                        <p>
+				Fix how signals are handled so that using <code>rcctl</code>
+				reliably stops the process.
+                        </p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.13</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-10-29">2018-10-29</time>
