@@ -822,74 +822,91 @@ compute_width(const struct node *n,
 			d->box[i].line2, maxipsz);
 		if (line > maxline)
 			maxline = line;
-		line = compute_box(&d->box[i], 
-			d->box[i].line3, maxipsz);
-		if (line > maxline)
-			maxline = line;
 		sz += maxline;
 	}
 
 	return sz;
 }
 
+/*
+ * Draw the header for any given box (column).
+ * This requires knowledge of the (maximum possible) column width, so we
+ * need to iterate through all lines in the box to find the maximum.
+ */
 static void
-draw_header_box(struct out *out, const struct drawbox *box, 
-	unsigned int bits, size_t maxipsz)
+draw_header_box(struct out *out, 
+	const struct drawbox *box, size_t maxipsz)
 {
-	size_t	 sz = 0;
+	size_t	 sz, maxsz;
 
 	draw_main_separator(out->mainwin);
 	waddch(out->mainwin, ' ');
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		sz = size_cpu(bits);
-		draw_centre(out->mainwin, "cpu", sz);
+		maxsz = size_cpu(box->line1);
+		if ((sz = size_cpu(box->line2)) > maxsz)
+			maxsz = sz;
+		draw_centre(out->mainwin, "cpu", maxsz);
 		break;
 	case DRAWCAT_MEM:
-		sz = size_mem(bits);
-		draw_centre(out->mainwin, "mem", sz);
+		maxsz = size_mem(box->line1);
+		if ((sz = size_mem(box->line2)) > maxsz)
+			maxsz = sz;
+		draw_centre(out->mainwin, "mem", maxsz);
 		break;
 	case DRAWCAT_PROCS:
-		sz = size_procs(bits);
-		draw_centre(out->mainwin, "procs", sz);
+		maxsz = size_procs(box->line1);
+		if ((sz = size_procs(box->line2)) > maxsz)
+			maxsz = sz;
+		draw_centre(out->mainwin, "procs", maxsz);
 		break;
 	case DRAWCAT_RPROCS:
-		sz = size_rprocs(bits);
-		if (sz < 9) {
-			draw_centre(out->mainwin, "run", sz);
-			break;
-		}
-		draw_centre(out->mainwin, "running", sz);
+		maxsz = size_rprocs(box->line1);
+		if ((sz = size_rprocs(box->line2)) > maxsz)
+			maxsz = sz;
+		if (maxsz < 9)
+			draw_centre(out->mainwin, "run", maxsz);
+		else
+			draw_centre(out->mainwin, "running", maxsz);
 		break;
 	case DRAWCAT_FILES:
-		sz = size_files(bits);
-		draw_centre(out->mainwin, "files", sz);
+		maxsz = size_files(box->line1);
+		if ((sz = size_files(box->line2)) > maxsz)
+			maxsz = sz;
+		draw_centre(out->mainwin, "files", maxsz);
 		break;
 	case DRAWCAT_NET:
-		sz = size_net(bits);
-		if (sz < 12)
-			draw_centre(out->mainwin, "inet", sz);
+		maxsz = size_net(box->line1);
+		if ((sz = size_net(box->line2)) > maxsz)
+			maxsz = sz;
+		if (maxsz < 12)
+			draw_centre(out->mainwin, "inet", maxsz);
 		else
-			draw_centre(out->mainwin, "inet rx:tx", sz);
+			draw_centre(out->mainwin, "inet rx:tx", maxsz);
 		break;
 	case DRAWCAT_DISC:
-		sz = size_disc(bits);
-		if (sz < 17)
-			draw_centre(out->mainwin, "disc r:w", sz);
+		maxsz = size_disc(box->line1);
+		if ((sz = size_disc(box->line2)) > maxsz)
+			maxsz = sz;
+		if (maxsz < 12)
+			draw_centre(out->mainwin, "disc r:w", maxsz);
 		else
-			draw_centre(out->mainwin, "disc read:write", sz);
+			draw_centre(out->mainwin, "disc rd:wr", maxsz);
 		break;
 	case DRAWCAT_LINK:
-		sz = size_link(maxipsz, bits);
-		if (sz < 12)
-			draw_centre(out->mainwin, "link", sz);
+		maxsz = size_link(maxipsz, box->line1);
+		if ((sz = size_link(maxipsz, box->line2)) > maxsz)
+			maxsz = sz;
+		if (maxsz < 12)
+			draw_centre(out->mainwin, "link", maxsz);
 		else
-			draw_centre(out->mainwin, "link state", sz);
+			draw_centre(out->mainwin, "link state", maxsz);
 		break;
 	case DRAWCAT_HOST:
 		wprintw(out->mainwin, "%9s", "last");
 		break;
 	}
+
 	waddch(out->mainwin, ' ');
 }
 
@@ -903,16 +920,18 @@ draw_header(struct out *out, const struct draw *d,
 	size_t maxhostsz, size_t maxipsz)
 {
 	size_t	 i;
-	int	 bits;
 
 	wmove(out->mainwin, 0, 1);
 	wclrtoeol(out->mainwin);
 	wprintw(out->mainwin, "%*s", (int)maxhostsz, "hostname");
 	waddch(out->mainwin, ' ');
 
+	/* Only draw if we have data. */
+
 	for (i = 0; i < d->boxsz; i++)
-		if (0 != (bits = d->box[i].line1))
-			draw_header_box(out, &d->box[i], bits, maxipsz);
+		if (d->box[i].line1 ||
+		    d->box[i].line2)
+			draw_header_box(out, &d->box[i], maxipsz);
 }
 
 /*

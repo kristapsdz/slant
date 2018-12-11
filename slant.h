@@ -58,7 +58,6 @@ struct	drawbox {
 	enum drawcat	 cat; /* the box category */
 	unsigned int	 line1; /* what we show in the box */
 	unsigned int	 line2; /* what we show in the box */
-	unsigned int	 line3; /* what we show in the box */
 #define	CPU_QMIN	 0x0001
 #define	CPU_MIN	 	 0x0002
 #define	CPU_HOUR 	 0x0004
