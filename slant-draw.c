@@ -865,58 +865,10 @@ compute_box(const struct drawbox *box, unsigned int bits,
 		sz += size_files(bits);
 		break;
 	case DRAWCAT_NET:
-		if (NET_QMIN & bits) {
-			bits &= ~NET_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_MIN & bits) {
-			bits &= ~NET_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_HOUR & bits) {
-			bits &= ~NET_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (NET_DAY & bits) {
-			bits &= ~NET_DAY;
-			sz += 13;
-		}
-		if (NET_WEEK & bits) {
-			bits &= ~NET_WEEK;
-			sz += 13;
-		}
-		if (NET_YEAR & bits) {
-			bits &= ~NET_YEAR;
-			sz += 13;
-		}
-		assert(0 == bits);
+		sz += size_net(bits);
 		break;
 	case DRAWCAT_DISC:
-		if (DISC_QMIN & bits) {
-			bits &= ~DISC_QMIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_MIN & bits) {
-			bits &= ~DISC_MIN;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_HOUR & bits) {
-			bits &= ~DISC_HOUR;
-			sz += 13 + (bits ? 1 : 0);
-		}
-		if (DISC_DAY & bits) {
-			bits &= ~DISC_DAY;
-			sz += 13;
-		}
-		if (DISC_WEEK & bits) {
-			bits &= ~DISC_WEEK;
-			sz += 13;
-		}
-		if (DISC_YEAR & bits) {
-			bits &= ~DISC_YEAR;
-			sz += 13;
-		}
-		assert(0 == bits);
+		sz += size_disc(bits);
 		break;
 	case DRAWCAT_LINK:
 		if (LINK_IP & bits) {
@@ -1027,19 +979,17 @@ draw_header_box(struct out *out, const struct drawbox *box,
 		break;
 	case DRAWCAT_NET:
 		sz = size_net(bits);
-		if (sz < 12) {
+		if (sz < 12)
 			draw_centre(out->mainwin, "inet", sz);
-			break;
-		}
-		draw_centre(out->mainwin, "inet rx:tx", sz);
+		else
+			draw_centre(out->mainwin, "inet rx:tx", sz);
 		break;
 	case DRAWCAT_DISC:
 		sz = size_disc(bits);
-		if (sz < 17) {
+		if (sz < 17)
 			draw_centre(out->mainwin, "disc r:w", sz);
-			break;
-		}
-		draw_centre(out->mainwin, "disc read:write", sz);
+		else
+			draw_centre(out->mainwin, "disc read:write", sz);
 		break;
 	case DRAWCAT_LINK:
 		if (LINK_IP & bits) {
@@ -1055,11 +1005,10 @@ draw_header_box(struct out *out, const struct drawbox *box,
 			sz += 9;
 		}
 		assert(0 == bits);
-		if (sz < 12) {
+		if (sz < 12)
 			draw_centre(out->mainwin, "link", sz);
-			break;
-		}
-		draw_centre(out->mainwin, "link state", sz);
+		else
+			draw_centre(out->mainwin, "link state", sz);
 		break;
 	case DRAWCAT_HOST:
 		wprintw(out->mainwin, "%9s", "last");
