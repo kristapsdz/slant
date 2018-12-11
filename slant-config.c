@@ -260,19 +260,19 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_CPU;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin_bars"))
-					b->args |= CPU_QMIN_BARS;
+					b->line1 |= CPU_QMIN_BARS;
 				else if (tok_eq_adv(p, "qmin"))
-					b->args |= CPU_QMIN;
+					b->line1 |= CPU_QMIN;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= CPU_MIN;
+					b->line1 |= CPU_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= CPU_HOUR;
+					b->line1 |= CPU_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= CPU_DAY;
+					b->line1 |= CPU_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= CPU_WEEK;
+					b->line1 |= CPU_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= CPU_YEAR;
+					b->line1 |= CPU_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -283,19 +283,19 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_MEM;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin_bars"))
-					b->args |= MEM_QMIN_BARS;
+					b->line1 |= MEM_QMIN_BARS;
 				else if (tok_eq_adv(p, "qmin"))
-					b->args |= MEM_QMIN;
+					b->line1 |= MEM_QMIN;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= MEM_MIN;
+					b->line1 |= MEM_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= MEM_HOUR;
+					b->line1 |= MEM_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= MEM_DAY;
+					b->line1 |= MEM_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= MEM_WEEK;
+					b->line1 |= MEM_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= MEM_YEAR;
+					b->line1 |= MEM_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -306,17 +306,17 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_NET;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin"))
-					b->args |= NET_QMIN;
+					b->line1 |= NET_QMIN;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= NET_MIN;
+					b->line1 |= NET_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= NET_HOUR;
+					b->line1 |= NET_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= NET_DAY;
+					b->line1 |= NET_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= NET_WEEK;
+					b->line1 |= NET_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= NET_YEAR;
+					b->line1 |= NET_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -327,17 +327,17 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_DISC;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin"))
-					b->args |= DISC_QMIN;
+					b->line1 |= DISC_QMIN;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= DISC_MIN;
+					b->line1 |= DISC_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= DISC_HOUR;
+					b->line1 |= DISC_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= DISC_DAY;
+					b->line1 |= DISC_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= DISC_WEEK;
+					b->line1 |= DISC_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= DISC_YEAR;
+					b->line1 |= DISC_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -348,11 +348,11 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_LINK;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "ip"))
-					b->args |= LINK_IP;
+					b->line1 |= LINK_IP;
 				else if (tok_eq_adv(p, "state"))
-					b->args |= LINK_STATE;
+					b->line1 |= LINK_STATE;
 				else if (tok_eq_adv(p, "access"))
-					b->args |= LINK_ACCESS;
+					b->line1 |= LINK_ACCESS;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -361,7 +361,7 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					return tok_unknown(p);
 		} else if (tok_eq_adv(p, "host")) {
 			b->cat = DRAWCAT_HOST;
-			b->args = HOST_ACCESS;
+			b->line1 = HOST_ACCESS;
 			while (p->pos < p->toksz)
 				if (tok_eq(p, ";"))
 					break;
@@ -373,19 +373,19 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_PROCS;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin_bars"))
-					b->args |= PROCS_QMIN_BARS;
+					b->line1 |= PROCS_QMIN_BARS;
 				else if (tok_eq_adv(p, "qmin"))
-					b->args |= PROCS_QMIN;
+					b->line1 |= PROCS_QMIN;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= PROCS_MIN;
+					b->line1 |= PROCS_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= PROCS_HOUR;
+					b->line1 |= PROCS_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= PROCS_DAY;
+					b->line1 |= PROCS_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= PROCS_WEEK;
+					b->line1 |= PROCS_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= PROCS_YEAR;
+					b->line1 |= PROCS_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -396,19 +396,19 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_RPROCS;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin"))
-					b->args |= RPROCS_QMIN;
+					b->line1 |= RPROCS_QMIN;
 				else if (tok_eq_adv(p, "qmin_bars"))
-					b->args |= RPROCS_QMIN_BARS;
+					b->line1 |= RPROCS_QMIN_BARS;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= RPROCS_MIN;
+					b->line1 |= RPROCS_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= RPROCS_HOUR;
+					b->line1 |= RPROCS_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= RPROCS_DAY;
+					b->line1 |= RPROCS_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= RPROCS_WEEK;
+					b->line1 |= RPROCS_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= RPROCS_YEAR;
+					b->line1 |= RPROCS_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
@@ -419,19 +419,19 @@ parse_layout_host(struct parse *p, struct config *cfg)
 			b->cat = DRAWCAT_FILES;
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "qmin"))
-					b->args |= FILES_QMIN;
+					b->line1 |= FILES_QMIN;
 				else if (tok_eq_adv(p, "qmin_bars"))
-					b->args |= FILES_QMIN_BARS;
+					b->line1 |= FILES_QMIN_BARS;
 				else if (tok_eq_adv(p, "min"))
-					b->args |= FILES_MIN;
+					b->line1 |= FILES_MIN;
 				else if (tok_eq_adv(p, "hour"))
-					b->args |= FILES_HOUR;
+					b->line1 |= FILES_HOUR;
 				else if (tok_eq_adv(p, "day"))
-					b->args |= FILES_DAY;
+					b->line1 |= FILES_DAY;
 				else if (tok_eq_adv(p, "week"))
-					b->args |= FILES_WEEK;
+					b->line1 |= FILES_WEEK;
 				else if (tok_eq_adv(p, "year"))
-					b->args |= FILES_YEAR;
+					b->line1 |= FILES_YEAR;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))

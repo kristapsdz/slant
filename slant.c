@@ -374,39 +374,39 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 		d->box[ORD_RPROCS].cat = DRAWCAT_RPROCS;
 		d->box[ORD_HOST].cat = DRAWCAT_HOST;
 
-		d->box[ORD_CPU].args = CPU_QMIN_BARS | 
+		d->box[ORD_CPU].line1 = CPU_QMIN_BARS | 
 			CPU_QMIN | CPU_HOUR;
-		d->box[ORD_MEM].args = MEM_QMIN_BARS | 
+		d->box[ORD_MEM].line1 = MEM_QMIN_BARS | 
 			MEM_QMIN | MEM_HOUR;
-		d->box[ORD_NET].args = NET_QMIN | NET_HOUR;
-		d->box[ORD_DISC].args = DISC_QMIN | DISC_HOUR;
-		d->box[ORD_PROCS].args = PROCS_QMIN_BARS | 
+		d->box[ORD_NET].line1 = NET_QMIN | NET_HOUR;
+		d->box[ORD_DISC].line1 = DISC_QMIN | DISC_HOUR;
+		d->box[ORD_PROCS].line1 = PROCS_QMIN_BARS | 
 			PROCS_QMIN | PROCS_HOUR;
-		d->box[ORD_LINK].args = LINK_IP | 
+		d->box[ORD_LINK].line1 = LINK_IP | 
 			LINK_STATE | LINK_ACCESS;
-		d->box[ORD_RPROCS].args = RPROCS_QMIN;
-		d->box[ORD_HOST].args = HOST_ACCESS;
+		d->box[ORD_RPROCS].line1 = RPROCS_QMIN;
+		d->box[ORD_HOST].line1 = HOST_ACCESS;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_CPU].args &= ~CPU_QMIN_BARS;
-		d->box[ORD_MEM].args &= ~MEM_QMIN_BARS;
-		d->box[ORD_PROCS].args &= ~PROCS_QMIN_BARS;
+		d->box[ORD_CPU].line1 &= ~CPU_QMIN_BARS;
+		d->box[ORD_MEM].line1 &= ~MEM_QMIN_BARS;
+		d->box[ORD_PROCS].line1 &= ~PROCS_QMIN_BARS;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_CPU].args &= ~CPU_HOUR;
-		d->box[ORD_MEM].args &= ~MEM_HOUR;
-		d->box[ORD_NET].args &= ~NET_HOUR;
-		d->box[ORD_DISC].args &= ~DISC_HOUR;
-		d->box[ORD_PROCS].args &= ~PROCS_HOUR;
+		d->box[ORD_CPU].line1 &= ~CPU_HOUR;
+		d->box[ORD_MEM].line1 &= ~MEM_HOUR;
+		d->box[ORD_NET].line1 &= ~NET_HOUR;
+		d->box[ORD_DISC].line1 &= ~DISC_HOUR;
+		d->box[ORD_PROCS].line1 &= ~PROCS_HOUR;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_LINK].args &= ~(LINK_IP | LINK_STATE);
+		d->box[ORD_LINK].line1 &= ~(LINK_IP | LINK_STATE);
 	}
 
 	return maxx > compute_width(n, nsz, d);

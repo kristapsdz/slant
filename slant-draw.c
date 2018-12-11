@@ -160,7 +160,49 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
  * field would be different.
  * But obviously---because this macro exists---they are.
  */
-#define DEFINE_size_bars(_NAME, _QMIN_BARS, _QMIN, \
+#define DEFINE_size_rates(_NAME, _QMIN, \
+	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+static size_t \
+_NAME(unsigned int bits) \
+{ \
+	size_t sz = 0; \
+	if (_QMIN & bits) { \
+		bits &= ~_QMIN; \
+		sz += 13 + (bits ? 1 : 0); \
+	} \
+	if (_MIN & bits) { \
+		bits &= ~_MIN; \
+		sz += 13 + (bits ? 1 : 0); \
+	} \
+	if (_HOUR & bits) { \
+		bits &= ~_HOUR; \
+		sz += 13 + (bits ? 1 : 0); \
+	} \
+	if (_DAY & bits) { \
+		bits &= ~_DAY; \
+		sz += 13; \
+	} \
+	if (_WEEK & bits) { \
+		bits &= ~_WEEK; \
+		sz += 13; \
+	} \
+	if (_YEAR & bits) { \
+		bits &= ~_YEAR; \
+		sz += 13; \
+	} \
+	assert(0 == bits); \
+	return sz; \
+}
+
+/*
+ * Define a function for getting colunm widths of a percentage box.
+ * TODO: this should be functionified by making the _QMIN_BARS etc. all
+ * be the same across fields using this function.
+ * Right now they're not, as I wasn't sure in building this whether each
+ * field would be different.
+ * But obviously---because this macro exists---they are.
+ */
+#define DEFINE_size_pct(_NAME, _QMIN_BARS, _QMIN, \
 	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
 static size_t \
 _NAME(unsigned int bits) \
@@ -738,7 +780,7 @@ DEFINE_draw_bars(draw_files, nfiles, draw_pct,
 	FILES_QMIN, FILES_MIN, 
 	FILES_HOUR, FILES_DAY,
 	FILES_WEEK, FILES_YEAR)
-DEFINE_size_bars(size_files, FILES_QMIN_BARS, FILES_QMIN, FILES_MIN, 
+DEFINE_size_pct(size_files, FILES_QMIN_BARS, FILES_QMIN, FILES_MIN, 
 	FILES_HOUR, FILES_DAY, FILES_WEEK, FILES_YEAR)
 
 DEFINE_draw_bars(draw_procs, nprocs, draw_pct,
@@ -746,7 +788,7 @@ DEFINE_draw_bars(draw_procs, nprocs, draw_pct,
 	PROCS_QMIN, PROCS_MIN, 
 	PROCS_HOUR, PROCS_DAY,
 	PROCS_WEEK, PROCS_YEAR)
-DEFINE_size_bars(size_procs, PROCS_QMIN_BARS, PROCS_QMIN, PROCS_MIN, 
+DEFINE_size_pct(size_procs, PROCS_QMIN_BARS, PROCS_QMIN, PROCS_MIN, 
 	PROCS_HOUR, PROCS_DAY, PROCS_WEEK, PROCS_YEAR)
 
 DEFINE_draw_bars(draw_rprocs, rprocs, draw_rpct,
@@ -754,7 +796,7 @@ DEFINE_draw_bars(draw_rprocs, rprocs, draw_rpct,
 	RPROCS_QMIN, RPROCS_MIN, 
 	RPROCS_HOUR, RPROCS_DAY,
 	RPROCS_WEEK, RPROCS_YEAR)
-DEFINE_size_bars(size_rprocs, RPROCS_QMIN_BARS, RPROCS_QMIN, 
+DEFINE_size_pct(size_rprocs, RPROCS_QMIN_BARS, RPROCS_QMIN, 
 	RPROCS_MIN, RPROCS_HOUR, RPROCS_DAY, RPROCS_WEEK, RPROCS_YEAR)
 
 DEFINE_draw_bars(draw_mem, mem, draw_pct,
@@ -762,7 +804,7 @@ DEFINE_draw_bars(draw_mem, mem, draw_pct,
 	MEM_QMIN, MEM_MIN, 
 	MEM_HOUR, MEM_DAY,
 	MEM_WEEK, MEM_YEAR)
-DEFINE_size_bars(size_mem, MEM_QMIN_BARS, MEM_QMIN, 
+DEFINE_size_pct(size_mem, MEM_QMIN_BARS, MEM_QMIN, 
 	MEM_MIN, MEM_HOUR, MEM_DAY, MEM_WEEK, MEM_YEAR)
 
 DEFINE_draw_bars(draw_cpu, cpu, draw_pct,
@@ -770,8 +812,14 @@ DEFINE_draw_bars(draw_cpu, cpu, draw_pct,
 	CPU_QMIN, CPU_MIN, 
 	CPU_HOUR, CPU_DAY,
 	CPU_WEEK, CPU_YEAR)
-DEFINE_size_bars(size_cpu, CPU_QMIN_BARS, CPU_QMIN, 
+DEFINE_size_pct(size_cpu, CPU_QMIN_BARS, CPU_QMIN, 
 	CPU_MIN, CPU_HOUR, CPU_DAY, CPU_WEEK, CPU_YEAR)
+
+DEFINE_size_rates(size_net, NET_QMIN, NET_MIN, 
+	NET_HOUR, NET_DAY, NET_WEEK, NET_YEAR)
+
+DEFINE_size_rates(size_disc, DISC_QMIN, DISC_MIN, 
+	DISC_HOUR, DISC_DAY, DISC_WEEK, DISC_YEAR)
 
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)
@@ -790,133 +838,246 @@ draw_centre(WINDOW *win, const char *v, size_t sz)
 		waddch(win, ' ');
 }
 
-size_t
-compute_width(const struct node *n, size_t nsz, 
-	const struct draw *d)
+static size_t
+compute_box(const struct drawbox *box, unsigned int bits,
+	size_t maxipsz)
 {
-	size_t	 sz, maxhostsz, maxipsz, i;
-	int	 bits;
+	size_t	 sz = 0;
+
+	if (0 == bits)
+		return 0;
+
+	sz += 3;
+	switch (box->cat) {
+	case DRAWCAT_CPU:
+		sz += size_cpu(bits);
+		break;
+	case DRAWCAT_MEM:
+		sz += size_mem(bits);
+		break;
+	case DRAWCAT_PROCS:
+		sz += size_procs(bits);
+		break;
+	case DRAWCAT_RPROCS:
+		sz += size_rprocs(bits);
+		break;
+	case DRAWCAT_FILES:
+		sz += size_files(bits);
+		break;
+	case DRAWCAT_NET:
+		if (NET_QMIN & bits) {
+			bits &= ~NET_QMIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_MIN & bits) {
+			bits &= ~NET_MIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_HOUR & bits) {
+			bits &= ~NET_HOUR;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (NET_DAY & bits) {
+			bits &= ~NET_DAY;
+			sz += 13;
+		}
+		if (NET_WEEK & bits) {
+			bits &= ~NET_WEEK;
+			sz += 13;
+		}
+		if (NET_YEAR & bits) {
+			bits &= ~NET_YEAR;
+			sz += 13;
+		}
+		assert(0 == bits);
+		break;
+	case DRAWCAT_DISC:
+		if (DISC_QMIN & bits) {
+			bits &= ~DISC_QMIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_MIN & bits) {
+			bits &= ~DISC_MIN;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_HOUR & bits) {
+			bits &= ~DISC_HOUR;
+			sz += 13 + (bits ? 1 : 0);
+		}
+		if (DISC_DAY & bits) {
+			bits &= ~DISC_DAY;
+			sz += 13;
+		}
+		if (DISC_WEEK & bits) {
+			bits &= ~DISC_WEEK;
+			sz += 13;
+		}
+		if (DISC_YEAR & bits) {
+			bits &= ~DISC_YEAR;
+			sz += 13;
+		}
+		assert(0 == bits);
+		break;
+	case DRAWCAT_LINK:
+		if (LINK_IP & bits) {
+			bits &= ~LINK_IP;
+			sz += maxipsz + 
+				((bits & LINK_STATE) ? 1 : 0);
+		}
+		if (LINK_STATE & bits) {
+			bits &= ~LINK_STATE;
+			sz += 4 + (bits ? 1 : 0);
+		}
+		if (LINK_ACCESS & bits) {
+			bits &= ~LINK_ACCESS;
+			sz += 9;
+		}
+		assert(0 == bits);
+		break;
+	case DRAWCAT_HOST:
+		/* "Last" time. */
+		sz += 9;
+		break;
+	}
+
+	return sz;
+}
+
+/*
+ * Compute the width of all drawn boxes.
+ * This is the *maximum* width, so if we're showing IP addresses, this
+ * will also include IPV6 addresses.
+ * Always returns >0, even in the degenerate case where we're showing no
+ * boxes and our hostnames are empty (they shouldn't be).
+ */
+size_t
+compute_width(const struct node *n, 
+	size_t nsz, const struct draw *d)
+{
+	size_t	 sz, maxhostsz, maxipsz, i, j, line, maxline;
+
+	/* We always show our hostname. */
 
 	maxhostsz = strlen("hostname");
-	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].host);
-		if (sz > maxhostsz)
+	for (i = 0; i < nsz; i++)
+		if ((sz = strlen(n[i].host)) > maxhostsz)
 			maxhostsz = sz;
-	}
+
+	/* We conditionally show our IPV4/IPV6 address. */
 
 	maxipsz = strlen("address");
-	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].addrs.addrs[n[i].addrs.curaddr].ip);
-		if (sz > maxipsz)
-			maxipsz = sz;
-	}
+	for (i = 0; i < nsz; i++)
+		for (j = 0; j < n[i].addrs.addrsz; j++) {
+			sz = strlen(n[i].addrs.addrs[j].ip);
+			if (sz > maxipsz)
+				maxipsz = sz;
+		}
+
+	/* Look for the maximum length of all lines. */
 
 	for (sz = maxhostsz + 1, i = 0; i < d->boxsz; i++) {
-		if (0 == d->box[i].args)
-			continue;
-		bits = d->box[i].args;
-		sz += 3;
-		switch (d->box[i].cat) {
-		case DRAWCAT_CPU:
-			sz += size_cpu(bits);
-			break;
-		case DRAWCAT_MEM:
-			sz += size_mem(bits);
-			break;
-		case DRAWCAT_PROCS:
-			sz += size_procs(bits);
-			break;
-		case DRAWCAT_RPROCS:
-			sz += size_rprocs(bits);
-			break;
-		case DRAWCAT_FILES:
-			sz += size_files(bits);
-			break;
-		case DRAWCAT_NET:
-			if (NET_QMIN & bits) {
-				bits &= ~NET_QMIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_MIN & bits) {
-				bits &= ~NET_MIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_HOUR & bits) {
-				bits &= ~NET_HOUR;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_DAY & bits) {
-				bits &= ~NET_DAY;
-				sz += 13;
-			}
-			if (NET_WEEK & bits) {
-				bits &= ~NET_WEEK;
-				sz += 13;
-			}
-			if (NET_YEAR & bits) {
-				bits &= ~NET_YEAR;
-				sz += 13;
-			}
-			assert(0 == bits);
-			break;
-		case DRAWCAT_DISC:
-			if (DISC_QMIN & bits) {
-				bits &= ~DISC_QMIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_MIN & bits) {
-				bits &= ~DISC_MIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_HOUR & bits) {
-				bits &= ~DISC_HOUR;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_DAY & bits) {
-				bits &= ~DISC_DAY;
-				sz += 13;
-			}
-			if (DISC_WEEK & bits) {
-				bits &= ~DISC_WEEK;
-				sz += 13;
-			}
-			if (DISC_YEAR & bits) {
-				bits &= ~DISC_YEAR;
-				sz += 13;
-			}
-			assert(0 == bits);
-			break;
-		case DRAWCAT_LINK:
-			if (LINK_IP & bits) {
-				bits &= ~LINK_IP;
-				sz += maxipsz + 
-					((bits & LINK_STATE) ? 1 : 0);
-			}
-			if (LINK_STATE & bits) {
-				bits &= ~LINK_STATE;
-				sz += 4 + (bits ? 1 : 0);
-			}
-			if (LINK_ACCESS & bits) {
-				bits &= ~LINK_ACCESS;
-				sz += 9;
-			}
-			assert(0 == bits);
-			break;
-		case DRAWCAT_HOST:
-			/* "Last" time. */
-			sz += 9;
-			break;
-		}
+		maxline = compute_box(&d->box[i], 
+			d->box[i].line1, maxipsz);
+		line = compute_box(&d->box[i], 
+			d->box[i].line2, maxipsz);
+		if (line > maxline)
+			maxline = line;
+		line = compute_box(&d->box[i], 
+			d->box[i].line3, maxipsz);
+		if (line > maxline)
+			maxline = line;
+		sz += maxline;
 	}
 
 	return sz;
 }
 
 static void
+draw_header_box(struct out *out, const struct drawbox *box, 
+	unsigned int bits, size_t maxipsz)
+{
+	size_t	 sz = 0;
+
+	draw_main_separator(out->mainwin);
+	waddch(out->mainwin, ' ');
+	switch (box->cat) {
+	case DRAWCAT_CPU:
+		sz = size_cpu(bits);
+		draw_centre(out->mainwin, "cpu", sz);
+		break;
+	case DRAWCAT_MEM:
+		sz = size_mem(bits);
+		draw_centre(out->mainwin, "mem", sz);
+		break;
+	case DRAWCAT_PROCS:
+		sz = size_procs(bits);
+		draw_centre(out->mainwin, "procs", sz);
+		break;
+	case DRAWCAT_RPROCS:
+		sz = size_rprocs(bits);
+		if (sz < 9) {
+			draw_centre(out->mainwin, "run", sz);
+			break;
+		}
+		draw_centre(out->mainwin, "running", sz);
+		break;
+	case DRAWCAT_FILES:
+		sz = size_files(bits);
+		draw_centre(out->mainwin, "files", sz);
+		break;
+	case DRAWCAT_NET:
+		sz = size_net(bits);
+		if (sz < 12) {
+			draw_centre(out->mainwin, "inet", sz);
+			break;
+		}
+		draw_centre(out->mainwin, "inet rx:tx", sz);
+		break;
+	case DRAWCAT_DISC:
+		sz = size_disc(bits);
+		if (sz < 17) {
+			draw_centre(out->mainwin, "disc r:w", sz);
+			break;
+		}
+		draw_centre(out->mainwin, "disc read:write", sz);
+		break;
+	case DRAWCAT_LINK:
+		if (LINK_IP & bits) {
+			bits &= ~LINK_IP;
+			sz += maxipsz + ((bits & LINK_STATE) ? 1 : 0);
+		}
+		if (LINK_STATE & bits) {
+			bits &= ~LINK_STATE;
+			sz += 4 + (bits ? 1 : 0);
+		}
+		if (LINK_ACCESS & bits) {
+			bits &= ~LINK_ACCESS;
+			sz += 9;
+		}
+		assert(0 == bits);
+		if (sz < 12) {
+			draw_centre(out->mainwin, "link", sz);
+			break;
+		}
+		draw_centre(out->mainwin, "link state", sz);
+		break;
+	case DRAWCAT_HOST:
+		wprintw(out->mainwin, "%9s", "last");
+		break;
+	}
+	waddch(out->mainwin, ' ');
+}
+
+/*
+ * Draw the output header.
+ * This is a single line of text above all other lines that identifies
+ * the contents of all boxes (columns).
+ */
+static void
 draw_header(struct out *out, const struct draw *d, 
 	size_t maxhostsz, size_t maxipsz)
 {
-	size_t	 i, sz;
+	size_t	 i;
 	int	 bits;
 
 	wmove(out->mainwin, 0, 1);
@@ -924,128 +1085,59 @@ draw_header(struct out *out, const struct draw *d,
 	wprintw(out->mainwin, "%*s", (int)maxhostsz, "hostname");
 	waddch(out->mainwin, ' ');
 
-	for (i = 0; i < d->boxsz; i++) {
-		if (0 == (bits = d->box[i].args))
-			continue;
-		sz = 0;
-		draw_main_separator(out->mainwin);
-		waddch(out->mainwin, ' ');
-		switch (d->box[i].cat) {
-		case DRAWCAT_CPU:
-			sz = size_cpu(bits);
-			draw_centre(out->mainwin, "cpu", sz);
-			break;
-		case DRAWCAT_MEM:
-			sz = size_mem(bits);
-			draw_centre(out->mainwin, "mem", sz);
-			break;
-		case DRAWCAT_PROCS:
-			sz = size_procs(bits);
-			draw_centre(out->mainwin, "procs", sz);
-			break;
-		case DRAWCAT_RPROCS:
-			sz = size_rprocs(bits);
-			if (sz < 9) {
-				draw_centre(out->mainwin, "run", sz);
-				break;
-			}
-			draw_centre(out->mainwin, "running", sz);
-			break;
-		case DRAWCAT_FILES:
-			sz = size_files(bits);
-			draw_centre(out->mainwin, "files", sz);
-			break;
-		case DRAWCAT_NET:
-			if (NET_QMIN & bits) {
-				bits &= ~NET_QMIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_MIN & bits) {
-				bits &= ~NET_MIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_HOUR & bits) {
-				bits &= ~NET_HOUR;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (NET_DAY & bits) {
-				bits &= ~NET_DAY;
-				sz += 13;
-			}
-			if (NET_WEEK & bits) {
-				bits &= ~NET_WEEK;
-				sz += 13;
-			}
-			if (NET_YEAR & bits) {
-				bits &= ~NET_YEAR;
-				sz += 13;
-			}
-			assert(0 == bits);
-			if (sz < 12) {
-				draw_centre(out->mainwin, "inet", sz);
-				break;
-			}
-			draw_centre(out->mainwin, "inet rx:tx", sz);
-			break;
-		case DRAWCAT_DISC:
-			if (DISC_QMIN & bits) {
-				bits &= ~DISC_QMIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_MIN & bits) {
-				bits &= ~DISC_MIN;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_HOUR & bits) {
-				bits &= ~DISC_HOUR;
-				sz += 13 + (bits ? 1 : 0);
-			}
-			if (DISC_DAY & bits) {
-				bits &= ~DISC_DAY;
-				sz += 13;
-			}
-			if (DISC_WEEK & bits) {
-				bits &= ~DISC_WEEK;
-				sz += 13;
-			}
-			if (DISC_YEAR & bits) {
-				bits &= ~DISC_YEAR;
-				sz += 13;
-			}
-			assert(0 == bits);
-			if (sz < 17) {
-				draw_centre(out->mainwin, "disc r:w", sz);
-				break;
-			}
-			draw_centre(out->mainwin, "disc read:write", sz);
-			break;
-		case DRAWCAT_LINK:
-			if (LINK_IP & bits) {
-				bits &= ~LINK_IP;
-				sz += maxipsz + 
-					((bits & LINK_STATE) ? 1 : 0);
-			}
-			if (LINK_STATE & bits) {
-				bits &= ~LINK_STATE;
-				sz += 4 + (bits ? 1 : 0);
-			}
-			if (LINK_ACCESS & bits) {
-				bits &= ~LINK_ACCESS;
-				sz += 9;
-			}
-			assert(0 == bits);
-			if (sz < 12) {
-				draw_centre(out->mainwin, "link", sz);
-				break;
-			}
-			draw_centre(out->mainwin, "link state", sz);
-			break;
-		case DRAWCAT_HOST:
-			wprintw(out->mainwin, "%9s", "last");
-			break;
-		}
-		waddch(out->mainwin, ' ');
+	for (i = 0; i < d->boxsz; i++)
+		if (0 != (bits = d->box[i].line1))
+			draw_header_box(out, &d->box[i], bits, maxipsz);
+}
+
+/*
+ * Draw a single content box for node "n".
+ */
+static void
+draw_box(struct out *out, const struct node *n, 
+	const struct drawbox *box, unsigned int bits, size_t maxipsz, 
+	time_t t, size_t *lastseenpos, size_t *intervalpos)
+{
+	int	 x, y;
+
+	draw_main_separator(out->mainwin);
+	waddch(out->mainwin, ' ');
+
+	switch (box->cat) {
+	case DRAWCAT_CPU:
+		draw_cpu(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_MEM:
+		draw_mem(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_NET:
+		draw_inet(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_DISC:
+		draw_disc(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_LINK:
+		draw_link(bits, maxipsz, n->waittime, t, 
+			out->mainwin, n, lastseenpos);
+		break;
+	case DRAWCAT_HOST:
+		getyx(out->mainwin, y, x);
+		*intervalpos = x;
+		draw_interval(out->mainwin, 15, 
+			n->waittime, get_last(n), t);
+		break;
+	case DRAWCAT_PROCS:
+		draw_procs(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_RPROCS:
+		draw_rprocs(bits, out->mainwin, n);
+		break;
+	case DRAWCAT_FILES:
+		draw_files(bits, out->mainwin, n);
+		break;
 	}
+
+	waddch(out->mainwin, ' ');
 }
 
 void
@@ -1054,7 +1146,7 @@ draw(struct out *out, struct draw *d, int first,
 {
 	size_t		 i, j, sz, maxhostsz, maxipsz,
 			 lastseenpos = 0, intervalpos = 0, chhead;
-	int		 x, y, maxy, maxx;
+	int		 maxy, maxx;
 	unsigned int	 bits;
 
 	/* Don't let us run off the window. */
@@ -1085,48 +1177,11 @@ draw(struct out *out, struct draw *d, int first,
 		wattroff(out->mainwin, A_BOLD);
 		waddch(out->mainwin, ' ');
 
-		for (j = 0; j < d->boxsz; j++) {
-			if (0 == (bits = d->box[j].args))
-				continue;
-			draw_main_separator(out->mainwin);
-			waddch(out->mainwin, ' ');
-			switch (d->box[j].cat) {
-			case DRAWCAT_CPU:
-				draw_cpu(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_MEM:
-				draw_mem(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_NET:
-				draw_inet(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_DISC:
-				draw_disc(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_LINK:
-				draw_link(bits, maxipsz, 
-					n[i].waittime, t, 
-					out->mainwin, &n[i], 
-					&lastseenpos);
-				break;
-			case DRAWCAT_HOST:
-				getyx(out->mainwin, y, x);
-				intervalpos = x;
-				draw_interval(out->mainwin, 15, 
-					n[i].waittime, get_last(&n[i]), t);
-				break;
-			case DRAWCAT_PROCS:
-				draw_procs(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_RPROCS:
-				draw_rprocs(bits, out->mainwin, &n[i]);
-				break;
-			case DRAWCAT_FILES:
-				draw_files(bits, out->mainwin, &n[i]);
-				break;
-			}
-			waddch(out->mainwin, ' ');
-		}
+		for (j = 0; j < d->boxsz; j++)
+			if (0 != (bits = d->box[j].line1))
+				draw_box(out, &n[i], &d->box[j], 
+					bits, maxipsz, t, 
+					&lastseenpos, &intervalpos);
 	}
 
 	/* Remember for updating times. */
