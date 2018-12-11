@@ -821,6 +821,27 @@ DEFINE_size_rates(size_net, NET_QMIN, NET_MIN,
 DEFINE_size_rates(size_disc, DISC_QMIN, DISC_MIN, 
 	DISC_HOUR, DISC_DAY, DISC_WEEK, DISC_YEAR)
 
+static size_t
+size_link(size_t maxipsz, unsigned int bits)
+{
+	size_t	 sz = 0;
+
+	if (LINK_IP & bits) {
+		bits &= ~LINK_IP;
+		sz += maxipsz + ((bits & LINK_STATE) ? 1 : 0);
+	}
+	if (LINK_STATE & bits) {
+		bits &= ~LINK_STATE;
+		sz += 4 + (bits ? 1 : 0);
+	}
+	if (LINK_ACCESS & bits) {
+		bits &= ~LINK_ACCESS;
+		sz += 9;
+	}
+	assert(0 == bits);
+	return sz;
+}
+
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)
 {
@@ -871,20 +892,7 @@ compute_box(const struct drawbox *box, unsigned int bits,
 		sz += size_disc(bits);
 		break;
 	case DRAWCAT_LINK:
-		if (LINK_IP & bits) {
-			bits &= ~LINK_IP;
-			sz += maxipsz + 
-				((bits & LINK_STATE) ? 1 : 0);
-		}
-		if (LINK_STATE & bits) {
-			bits &= ~LINK_STATE;
-			sz += 4 + (bits ? 1 : 0);
-		}
-		if (LINK_ACCESS & bits) {
-			bits &= ~LINK_ACCESS;
-			sz += 9;
-		}
-		assert(0 == bits);
+		sz += size_link(maxipsz, bits);
 		break;
 	case DRAWCAT_HOST:
 		/* "Last" time. */
@@ -992,19 +1000,7 @@ draw_header_box(struct out *out, const struct drawbox *box,
 			draw_centre(out->mainwin, "disc read:write", sz);
 		break;
 	case DRAWCAT_LINK:
-		if (LINK_IP & bits) {
-			bits &= ~LINK_IP;
-			sz += maxipsz + ((bits & LINK_STATE) ? 1 : 0);
-		}
-		if (LINK_STATE & bits) {
-			bits &= ~LINK_STATE;
-			sz += 4 + (bits ? 1 : 0);
-		}
-		if (LINK_ACCESS & bits) {
-			bits &= ~LINK_ACCESS;
-			sz += 9;
-		}
-		assert(0 == bits);
+		sz = size_link(maxipsz, bits);
 		if (sz < 12)
 			draw_centre(out->mainwin, "link", sz);
 		else
