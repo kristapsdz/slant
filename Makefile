@@ -36,6 +36,7 @@ DOTAR	   = Makefile \
 	     slant-cgi.c \
 	     slant-cgi.8 \
 	     slant-collectd-openbsd.c \
+	     slant-collectd-linux.c \
 	     slant-collectd.8 \
 	     slant-collectd.c \
 	     slant-collectd.h \
@@ -59,7 +60,7 @@ SLANT_OBJS = slant.o \
 	     json.o \
 		 compats.o
 COLLECTD_OBJS = slant-collectd.o \
-		 slant-collectd-openbsd.o \
+		 slant-collectd-$(OSNAME).o \
 		 db.o \
 		 compats.o
 
@@ -142,7 +143,7 @@ slant.db: slant.sql
 slant.sql: slant.kwbp
 	kwebapp-sql slant.kwbp > $@
 
-slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
+slant-collectd-$(OSNAME).o slant-collectd.o: slant-collectd.h
 
 db.o slant-collectd.o slant-cgi.o: db.h
 

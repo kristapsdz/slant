@@ -345,11 +345,17 @@ main(int argc, char *argv[])
 		errx(EXIT_FAILURE, "%s", dbfile);
 
 	/* FIXME: once we have unveil, this is moot. */
+	/*
+	 * FIXME: chroot or mount namespace for linux
+	 * with access to many /proc and /sys directories.
+	 */
 
+#ifndef __linux__
 	if (-1 == chroot(_PATH_VAREMPTY))
 		err(EXIT_FAILURE, "%s", _PATH_VAREMPTY);
 	else if (-1 == chdir("/"))
 		err(EXIT_FAILURE, "/");
+#endif
 
 	if (NULL != db)
 		db_role(db, ROLE_produce);
