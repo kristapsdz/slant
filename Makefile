@@ -125,7 +125,7 @@ slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread -ldl
 
 slant: $(SLANT_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz -lresolv
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
