@@ -122,7 +122,7 @@ slant-collectd: $(COLLECTD_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(COLLECTD_OBJS) -lksql -lsqlite3
 
 slant-cgi: slant-cgi.o db.o json.o
-	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
+	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread -ldl
 
 slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
