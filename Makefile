@@ -1,5 +1,7 @@
 .SUFFIXES: .8 .8.html .1 .1.html .dot .svg .ts .js
 
+include Makefile.configure
+
 PREFIX	   = /usr/local
 WPREFIX	   = /var/www
 
@@ -19,7 +21,7 @@ WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 sinclude Makefile.local
 
 VERSION	   = 0.0.14
-CPPFLAGS   += -DVERSION=\"$(VERSION)\"
+CPPFLAGS   += -DVERSION=\"$(VERSION)\" -DDBFILE=\"$(DBFILE)\"
 
 WWW	   = index.html \
 	     index.js \
@@ -28,6 +30,9 @@ WWW	   = index.html \
 	     slant-cgi.8.html \
 	     slant-collectd.8.html 
 DOTAR	   = Makefile \
+		 configure \
+		 tests.c \
+		 compats.c \
 	     slant-cgi.c \
 	     slant-cgi.8 \
 	     slant-collectd-openbsd.c \
@@ -51,7 +56,12 @@ SLANT_OBJS = slant.o \
 	     slant-draw.o \
 	     slant-http.o \
 	     slant-json.o \
-	     json.o
+	     json.o \
+		 compats.o
+COLLECTD_OBJS = slant-collectd.o \
+		 slant-collectd-openbsd.o \
+		 db.o \
+		 compats.o
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
@@ -108,24 +118,19 @@ installdb: slant.db
 	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
 	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
-slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
-	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
-
-config.h:
-	echo "#define DBFILE \"$(DBFILE)\"" > config.h
+slant-collectd: $(COLLECTD_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(COLLECTD_OBJS) -lksql -lsqlite3
 
 slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
-
-slant-cgi.o: config.h
 
 slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
-	rm -f db.o db.c db.h json.c json.o json.h extern.h config.h
-	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
+	rm -f db.o db.c db.h json.c json.o json.h extern.h
+	rm -f slant-collectd $(COLLECTD_OBJS)
 	rm -f slant-cgi slant-cgi.o
 	rm -f slant $(SLANT_OBJS)
 	rm -f $(WWW)
