@@ -57,8 +57,7 @@ SLANT_OBJS = slant.o \
 	     slant-draw.o \
 	     slant-http.o \
 	     slant-json.o \
-	     json.o \
-		 compats.o
+	     json.o
 COLLECTD_OBJS = slant-collectd.o \
 		 slant-collectd-$(OSNAME).o \
 		 db.o \
