@@ -315,47 +315,45 @@ sysinfo_update_nprocs(const struct syscfg *cfg, struct sysinfo *p)
 static int
 sysinfo_update_cpu(struct sysinfo *p)
 {
-	int64_t	 val;
+	int64_t	val;
+	ssize_t	rd;
 
-	FILE *fp;
-
-	if ((fp = fopen("/proc/stat", "r")) == NULL) {
-		warn("open: /proc/stat");
+	if (-1 == (rd = proc_read_buf("/proc/stat")))
 		return 0;
-	}
 
-	int r = 0;
-	r = fscanf(fp, "cpu %" SCNu64
+	if (10 != sscanf(buf, "cpu"
 	    " %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		" %" SCNu64
-		"\n",
-		&p->cp_time[0],
-		&p->cp_time[1],
-		&p->cp_time[2],
-		&p->cp_time[3],
-		&p->cp_time[4],
-		&p->cp_time[5],
-		&p->cp_time[6],
-		&p->cp_time[7],
-		&p->cp_time[8],
-		&p->cp_time[9]);
-
-	fclose(fp);
-
-	if (r != 10) {
-		warnx("failed to parse /proc/stat");
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64
+	    " %" SCNu64,
+	    &p->cp_time[0],
+	    &p->cp_time[1],
+	    &p->cp_time[2],
+	    &p->cp_time[3],
+	    &p->cp_time[4],
+	    &p->cp_time[5],
+	    &p->cp_time[6],
+	    &p->cp_time[7],
+	    &p->cp_time[8],
+	    &p->cp_time[9])) {
+		warnx("error while parsing /proc/stat");
 		return 0;
 	}
 
 	percentages(CPUSTATES, p->cpu_states, &p->cp_time[0],
 		&p->cp_old[0], &p->cp_diff[0]);
+
+#ifdef DEBUG
+	for (int i = 0; i < CPUSTATES; i++)
+		warnx("%d: cp_time=%ld cp_old=%ld cp_diff=%ld",
+		    i, p->cp_time[i], p->cp_old[i], p->cp_diff[i]);
+#endif
 
 	/* Update our averages. */
 
