@@ -266,80 +266,82 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 }
 
 /*
- * Define a function for getting colunm widths of a field.
+ * Get colunm widths of a field.
  * Used with DEFINE_draw_rates.
  */
-#define DEFINE_size_rates(_NAME) \
-static size_t \
-_NAME(unsigned int bits) \
-{ \
-	size_t sz = 0; \
-	if (LINE_QMIN & bits) { \
-		bits &= ~LINE_QMIN; \
-		sz += 13 + (bits ? 1 : 0); \
-	} \
-	if (LINE_MIN & bits) { \
-		bits &= ~LINE_MIN; \
-		sz += 13 + (bits ? 1 : 0); \
-	} \
-	if (LINE_HOUR & bits) { \
-		bits &= ~LINE_HOUR; \
-		sz += 13 + (bits ? 1 : 0); \
-	} \
-	if (LINE_DAY & bits) { \
-		bits &= ~LINE_DAY; \
-		sz += 13; \
-	} \
-	if (LINE_WEEK & bits) { \
-		bits &= ~LINE_WEEK; \
-		sz += 13; \
-	} \
-	if (LINE_YEAR & bits) { \
-		bits &= ~LINE_YEAR; \
-		sz += 13; \
-	} \
-	assert(0 == bits); \
-	return sz; \
+static size_t
+size_rate(unsigned int bits)
+{
+	size_t	sz = 0;
+
+	if (LINE_QMIN & bits) {
+		bits &= ~LINE_QMIN;
+		sz += 13 + (bits ? 1 : 0);
+	}
+	if (LINE_MIN & bits) {
+		bits &= ~LINE_MIN;
+		sz += 13 + (bits ? 1 : 0);
+	}
+	if (LINE_HOUR & bits) {
+		bits &= ~LINE_HOUR;
+		sz += 13 + (bits ? 1 : 0);
+	}
+	if (LINE_DAY & bits) {
+		bits &= ~LINE_DAY;
+		sz += 13;
+	}
+	if (LINE_WEEK & bits) {
+		bits &= ~LINE_WEEK;
+		sz += 13;
+	}
+	if (LINE_YEAR & bits) {
+		bits &= ~LINE_YEAR;
+		sz += 13;
+	}
+
+	assert(0 == bits);
+	return sz;
 }
 
 /*
- * Define a function for getting colunm widths of a percentage box.
+ * Get colunm widths of a percentage box.
  * Used with DEFINE_draw_pcts.
  */
-#define DEFINE_size_pct(_NAME) \
-static size_t \
-_NAME(unsigned int bits) \
-{ \
-	size_t sz = 0; \
-	if (LINE_QMIN_BARS & bits) { \
-		bits &= ~LINE_QMIN_BARS; \
-		sz += 10 + (bits ? 1 : 0); \
-	} \
-	if (LINE_QMIN & bits) { \
-		bits &= ~LINE_QMIN; \
-		sz += 6 + (bits ? 1 : 0); \
-	} \
-	if (LINE_MIN & bits) { \
-		bits &= ~LINE_MIN; \
-		sz += 6 + (bits ? 1 : 0); \
-	} \
-	if (LINE_HOUR & bits) { \
-		bits &= ~LINE_HOUR; \
-		sz += 6 + (bits ? 1 : 0); \
-	} \
-	if (LINE_DAY & bits) { \
-		bits &= ~LINE_DAY; \
-		sz += 6; \
-	} \
-	if (LINE_WEEK & bits) { \
-		bits &= ~LINE_WEEK; \
-		sz += 6; \
-	} \
-	if (LINE_YEAR & bits) { \
-		bits &= ~LINE_YEAR; \
-		sz += 6; \
-	} \
-	return sz; \
+static size_t
+size_pct(unsigned int bits)
+{
+	size_t sz = 0;
+
+	if (LINE_QMIN_BARS & bits) {
+		bits &= ~LINE_QMIN_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_QMIN & bits) {
+		bits &= ~LINE_QMIN;
+		sz += 6 + (bits ? 1 : 0);
+	}
+	if (LINE_MIN & bits) {
+		bits &= ~LINE_MIN;
+		sz += 6 + (bits ? 1 : 0);
+	}
+	if (LINE_HOUR & bits) {
+		bits &= ~LINE_HOUR;
+		sz += 6 + (bits ? 1 : 0);
+	}
+	if (LINE_DAY & bits) {
+		bits &= ~LINE_DAY;
+		sz += 6;
+	}
+	if (LINE_WEEK & bits) {
+		bits &= ~LINE_WEEK;
+		sz += 6;
+	}
+	if (LINE_YEAR & bits) {
+		bits &= ~LINE_YEAR;
+		sz += 6;
+	}
+
+	return sz;
 }
 
 /*
@@ -677,25 +679,18 @@ draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 }
 
 DEFINE_draw_pcts(draw_files, nfiles, draw_pct)
-DEFINE_size_pct(size_files)
 
 DEFINE_draw_pcts(draw_procs, nprocs, draw_pct)
-DEFINE_size_pct(size_procs)
 
 DEFINE_draw_pcts(draw_rprocs, rprocs, draw_rpct)
-DEFINE_size_pct(size_rprocs)
 
 DEFINE_draw_pcts(draw_mem, mem, draw_pct)
-DEFINE_size_pct(size_mem)
 
 DEFINE_draw_pcts(draw_cpu, cpu, draw_pct)
-DEFINE_size_pct(size_cpu)
 
 DEFINE_draw_rates(draw_net, netrx, nettx, draw_xfer)
-DEFINE_size_rates(size_net)
 
 DEFINE_draw_rates(draw_disc, discread, discwrite, draw_xfer)
-DEFINE_size_rates(size_disc)
 
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)
@@ -733,25 +728,25 @@ compute_box(const struct drawbox *box, unsigned int bits,
 
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		sz += size_cpu(bits);
+		sz += size_pct(bits);
 		break;
 	case DRAWCAT_MEM:
-		sz += size_mem(bits);
+		sz += size_pct(bits);
 		break;
 	case DRAWCAT_PROCS:
-		sz += size_procs(bits);
+		sz += size_pct(bits);
 		break;
 	case DRAWCAT_RPROCS:
-		sz += size_rprocs(bits);
+		sz += size_pct(bits);
 		break;
 	case DRAWCAT_FILES:
-		sz += size_files(bits);
+		sz += size_pct(bits);
 		break;
 	case DRAWCAT_NET:
-		sz += size_net(bits);
+		sz += size_rate(bits);
 		break;
 	case DRAWCAT_DISC:
-		sz += size_disc(bits);
+		sz += size_rate(bits);
 		break;
 	case DRAWCAT_LINK:
 		sz += size_link(maxipsz, bits);
@@ -827,26 +822,26 @@ draw_header_box(struct out *out,
 	waddch(out->mainwin, ' ');
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		box->len = box->len1 = size_cpu(box->line1);
-		if ((box->len2 = size_cpu(box->line2)) > box->len)
+		box->len = box->len1 = size_pct(box->line1);
+		if ((box->len2 = size_pct(box->line2)) > box->len)
 			box->len = box->len2;
 		draw_centre(out->mainwin, "cpu", box->len);
 		break;
 	case DRAWCAT_MEM:
-		box->len = box->len1 = size_mem(box->line1);
-		if ((box->len2 = size_mem(box->line2)) > box->len)
+		box->len = box->len1 = size_pct(box->line1);
+		if ((box->len2 = size_pct(box->line2)) > box->len)
 			box->len = box->len2;
 		draw_centre(out->mainwin, "mem", box->len);
 		break;
 	case DRAWCAT_PROCS:
-		box->len = box->len1 = size_procs(box->line1);
-		if ((box->len2 = size_procs(box->line2)) > box->len)
+		box->len = box->len1 = size_pct(box->line1);
+		if ((box->len2 = size_pct(box->line2)) > box->len)
 			box->len = box->len2;
 		draw_centre(out->mainwin, "procs", box->len);
 		break;
 	case DRAWCAT_RPROCS:
-		box->len = box->len1 = size_rprocs(box->line1);
-		if ((box->len2 = size_rprocs(box->line2)) > box->len)
+		box->len = box->len1 = size_pct(box->line1);
+		if ((box->len2 = size_pct(box->line2)) > box->len)
 			box->len = box->len2;
 		if (box->len < 9)
 			draw_centre(out->mainwin, "run", box->len);
@@ -854,14 +849,14 @@ draw_header_box(struct out *out,
 			draw_centre(out->mainwin, "running", box->len);
 		break;
 	case DRAWCAT_FILES:
-		box->len = box->len1 = size_files(box->line1);
-		if ((box->len2 = size_files(box->line2)) > box->len)
+		box->len = box->len1 = size_pct(box->line1);
+		if ((box->len2 = size_pct(box->line2)) > box->len)
 			box->len = box->len2;
 		draw_centre(out->mainwin, "files", box->len);
 		break;
 	case DRAWCAT_NET:
-		box->len = box->len1 = size_net(box->line1);
-		if ((box->len2 = size_net(box->line2)) > box->len)
+		box->len = box->len1 = size_rate(box->line1);
+		if ((box->len2 = size_rate(box->line2)) > box->len)
 			box->len = box->len2;
 		if (box->len < 12)
 			draw_centre(out->mainwin, 
@@ -871,8 +866,8 @@ draw_header_box(struct out *out,
 				"inet rx:tx", box->len);
 		break;
 	case DRAWCAT_DISC:
-		box->len = box->len1 = size_disc(box->line1);
-		if ((box->len2 = size_disc(box->line2)) > box->len)
+		box->len = box->len1 = size_rate(box->line1);
+		if ((box->len2 = size_rate(box->line2)) > box->len)
 			box->len = box->len2;
 		if (box->len < 12)
 			draw_centre(out->mainwin, 
