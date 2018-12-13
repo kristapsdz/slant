@@ -302,20 +302,22 @@ sysinfo_update_mem(struct sysinfo *p)
 static int
 sysinfo_update_nfiles(const struct syscfg *cfg, struct sysinfo *p)
 {
-	FILE *fp;
 	uint64_t allocfiles, unusedfiles, maxfiles;
+	ssize_t rd;
 
-	if (NULL == (fp = fopen("/proc/sys/fs/file-nr", "r"))) {
-		warn("fopen: /proc/sys/fs/file-nr");
+	if (-1 == (rd = proc_read_buf("/proc/sys/fs/file-nr")))
 		return 0;
-	}
-	if (3 != fscanf(fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 "\n",
+
+	if (3 != sscanf(buf, "%" SCNu64 " %" SCNu64 " %" SCNu64,
 	    &allocfiles, &unusedfiles, &maxfiles)) {
 		warnx("failed to parse /proc/sys/fs/file-nr");
-		fclose(fp);
 		return 0;
 	}
-	fclose(fp);
+
+#ifdef DEBUG
+	warnx("allocfiles=%ld maxfiles=%ld", allocfiles, maxfiles);
+#endif
+
 	p->nfile_pct = 100.0 * allocfiles / (double)maxfiles;
 	return 1;
 }
