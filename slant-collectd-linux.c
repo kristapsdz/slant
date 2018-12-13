@@ -93,6 +93,12 @@
 #define CP_GUEST_NICE 9
 #define CPUSTATES 10
 
+/*
+ * Sector size is always 512
+ * https://lkml.org/lkml/2015/8/17/269
+ */
+#define SECTOR_SHIFT 9
+
 struct 	ifcount {
 	uint64_t	ifc_ib;			/* input bytes */
 	uint64_t	ifc_ip;			/* input packets */
@@ -535,9 +541,84 @@ err:
 }
 
 static int
+is_device(char *name)
+{
+	char path[PATH_MAX];
+	char *p;
+
+	/*
+	 * iostat replaces slashes in device names with `!`
+	 */
+	p = name;
+	while (NULL != (p = strchr(p, '/')))
+		*p = '!';
+
+	/*
+	 * real devices have the `device` symlink in their
+	 * `/sys/block/<disk>` directory.
+	 */
+	snprintf(path, sizeof path, "/sys/block/%s/device", name);
+	return 0 == access(path, F_OK);
+}
+
+static int
 sysinfo_update_disc(const struct syscfg *cfg, struct sysinfo *p)
 {
+	ssize_t		 rd;
+	char		 name[128];
+	unsigned long	 secrd, secwr;
+	char		*ptr;
+	uint64_t	 rs = 0, ws = 0;
+	uint64_t	 rb = 0, wb = 0;
+
+	if (-1 == (rd = proc_read_buf("/proc/diskstats")))
+		return 0;
+
+	for (ptr = buf; ptr < buf+rd; ptr++) {
+		/*
+		 * field 3  = device name
+		 * field 6  = sectors read
+		 * field 10 = sectors written
+		 */
+		if (3 != sscanf(ptr, "%*u %*u %127s "
+		    "%*u %*u %lu %*u %*u %*u %lu %*u %*u %*u %*u",
+		    name, &secrd, &secwr))
+			goto errparse;
+		if (NULL == (ptr = strchr(ptr, '\n')))
+			goto errparse;
+		if ( ! is_device(name))
+			continue;
+		rs += secrd;
+		ws += secwr;
+	}
+
+	rb = rs << SECTOR_SHIFT;
+	wb = ws << SECTOR_SHIFT;
+
+	if (rb > p->disc_rbytes) {
+		p->disc_ravg = (rb - p->disc_rbytes) / 15;
+		p->disc_rbytes = rb;
+	} else {
+		p->disc_ravg = 0;
+		p->disc_rbytes = rb;
+	}
+
+	if (wb > p->disc_wbytes) {
+		p->disc_wavg = (wb - p->disc_wbytes) / 15;
+		p->disc_wbytes = wb;
+	} else {
+		p->disc_wavg = 0;
+		p->disc_wbytes = wb;
+	}
+
+#ifdef DEBUG
+	warnx("disc: rbytes=%lu wbytes=%lu", p->disc_rbytes, p->disc_rbytes);
+#endif
+
 	return 1;
+errparse:
+	warnx("error while parsing /proc/diskstats");
+	return 0;
 }
 
 int
