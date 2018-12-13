@@ -371,7 +371,6 @@ size_link(size_t maxipsz, unsigned int bits)
 	return sz;
 }
 
-
 /*
  * Return the last time for which we have some data.
  * This can come from any of the intervals.
@@ -740,6 +739,10 @@ draw_centre(WINDOW *win, const char *v, size_t sz)
 		waddch(win, ' ');
 }
 
+/*
+ * Copute the width of a give box with its bits.
+ * FIXME: this can somehow be merged with the header code.
+ */
 static size_t
 compute_box(const struct drawbox *box, unsigned int bits,
 	size_t maxipsz)
@@ -749,7 +752,10 @@ compute_box(const struct drawbox *box, unsigned int bits,
 	if (0 == bits)
 		return 0;
 
+	/* Leading bar plus padding. */
+
 	sz += 3;
+
 	switch (box->cat) {
 	case DRAWCAT_CPU:
 		sz += size_cpu(bits);
@@ -790,6 +796,7 @@ compute_box(const struct drawbox *box, unsigned int bits,
  * will also include IPV6 addresses.
  * Always returns >0, even in the degenerate case where we're showing no
  * boxes and our hostnames are empty (they shouldn't be).
+ * FIXME: this can somehow be merged with the header code.
  */
 size_t
 compute_width(const struct node *n, 
@@ -831,7 +838,8 @@ compute_width(const struct node *n,
 
 /*
  * Draw the header for any given box (column) and sets the maximum size
- * that the box will allow in its rows.
+ * that the box will allow in its rows along with the size for each
+ * line.
  * This requires knowledge of the (maximum possible) column width, so we
  * need to iterate through all lines in the box to find the maximum.
  */
@@ -839,57 +847,58 @@ static void
 draw_header_box(struct out *out, 
 	struct drawbox *box, const struct draw *d)
 {
-	size_t	 sz;
 
 	draw_main_separator(out->mainwin);
 	waddch(out->mainwin, ' ');
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		box->len = size_cpu(box->line1);
-		if ((sz = size_cpu(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_cpu(box->line1);
+		if ((box->len2 = size_cpu(box->line2)) > box->len)
+			box->len = box->len2;
 		draw_centre(out->mainwin, "cpu", box->len);
 		break;
 	case DRAWCAT_MEM:
-		box->len = size_mem(box->line1);
-		if ((sz = size_mem(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_mem(box->line1);
+		if ((box->len2 = size_mem(box->line2)) > box->len)
+			box->len = box->len2;
 		draw_centre(out->mainwin, "mem", box->len);
 		break;
 	case DRAWCAT_PROCS:
-		box->len = size_procs(box->line1);
-		if ((sz = size_procs(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_procs(box->line1);
+		if ((box->len2 = size_procs(box->line2)) > box->len)
+			box->len = box->len2;
 		draw_centre(out->mainwin, "procs", box->len);
 		break;
 	case DRAWCAT_RPROCS:
-		box->len = size_rprocs(box->line1);
-		if ((sz = size_rprocs(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_rprocs(box->line1);
+		if ((box->len2 = size_rprocs(box->line2)) > box->len)
+			box->len = box->len2;
 		if (box->len < 9)
 			draw_centre(out->mainwin, "run", box->len);
 		else
 			draw_centre(out->mainwin, "running", box->len);
 		break;
 	case DRAWCAT_FILES:
-		box->len = size_files(box->line1);
-		if ((sz = size_files(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_files(box->line1);
+		if ((box->len2 = size_files(box->line2)) > box->len)
+			box->len = box->len2;
 		draw_centre(out->mainwin, "files", box->len);
 		break;
 	case DRAWCAT_NET:
-		box->len = size_net(box->line1);
-		if ((sz = size_net(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_net(box->line1);
+		if ((box->len2 = size_net(box->line2)) > box->len)
+			box->len = box->len2;
 		if (box->len < 12)
-			draw_centre(out->mainwin, "inet", box->len);
+			draw_centre(out->mainwin, 
+				"inet", box->len);
 		else
-			draw_centre(out->mainwin, "inet rx:tx", box->len);
+			draw_centre(out->mainwin, 
+				"inet rx:tx", box->len);
 		break;
 	case DRAWCAT_DISC:
-		box->len = size_disc(box->line1);
-		if ((sz = size_disc(box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = size_disc(box->line1);
+		if ((box->len2 = size_disc(box->line2)) > box->len)
+			box->len = box->len2;
 		if (box->len < 12)
 			draw_centre(out->mainwin, 
 				"disc r:w", box->len);
@@ -898,9 +907,11 @@ draw_header_box(struct out *out,
 				"disc rd:wr", box->len);
 		break;
 	case DRAWCAT_LINK:
-		box->len = size_link(d->maxipsz, box->line1);
-		if ((sz = size_link(d->maxipsz, box->line2)) > box->len)
-			box->len = sz;
+		box->len = box->len1 = 
+			size_link(d->maxipsz, box->line1);
+		box->len2 = size_link(d->maxipsz, box->line2);
+		if (box->len2 > box->len)
+			box->len = box->len2;
 		if (box->len < 12)
 			draw_centre(out->mainwin, 
 				"link", box->len);
@@ -909,7 +920,7 @@ draw_header_box(struct out *out,
 				"link state", box->len);
 		break;
 	case DRAWCAT_HOST:
-		box->len = 9;
+		box->len = box->len1 = box->len2 = 9;
 		wprintw(out->mainwin, "%9s", "last");
 		break;
 	}
@@ -946,13 +957,18 @@ draw_header(struct out *out, struct draw *d)
 static void
 draw_box(struct out *out, const struct node *n, struct drawbox *box, 
 	unsigned int bits, size_t *lastseen, size_t *lastrecord,
-	const struct draw *d, time_t t)
+	size_t len, const struct draw *d, time_t t)
 {
 	int	 x, y;
-	size_t	 i;
+	size_t	 i, resid;
 
 	draw_main_separator(out->mainwin);
 	waddch(out->mainwin, ' ');
+
+	/* 
+	 * Nothing here: just print all spaces and exit.
+	 * TODO: don't print any spaces, just move.
+	 */
 
 	if (0 == bits) {
 		for (i = 0; i < box->len; i++)
@@ -960,6 +976,13 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 		waddch(out->mainwin, ' ');
 		return;
 	}
+
+	/* Right-justify our content. */
+
+	assert(len <= box->len);
+	resid = box->len - len;
+	for (i = 0; i < resid; i++)
+		waddch(out->mainwin, ' ');
 
 	switch (box->cat) {
 	case DRAWCAT_CPU:
@@ -1074,6 +1097,7 @@ draw(struct out *out, struct draw *d, int redraw_header,
 				d->box[k].line1, 
 				&d->box[k].lastseen1, 
 				&d->box[k].lastrecord1, 
+				d->box[k].len1,
 				d, t);
 
 		if (lines > 1) {
@@ -1085,6 +1109,7 @@ draw(struct out *out, struct draw *d, int redraw_header,
 					d->box[k].line2, 
 					&d->box[k].lastseen2, 
 					&d->box[k].lastrecord2, 
+					d->box[k].len2,
 					d, t);
 		}
 	}

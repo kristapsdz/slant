@@ -53,12 +53,19 @@ enum	drawcat {
 
 /*
  * A box (column) to draw in the output.
+ * This (currently) can have two lines of content.
  */
 struct	drawbox {
 	enum drawcat	 cat; /* the box category */
 	size_t		 len; /* maximum length for contents */
-	unsigned int	 line1; /* what we show in the box */
-	unsigned int	 line2; /* what we show in the box */
+	size_t		 len1; /* length of line 1 */
+	size_t		 len2; /* length of line 2 */
+	size_t		 lastseen1; /* if >0, lastseen col in 1 */
+	size_t		 lastseen2; /* if >0, lastseen col in 2 */
+	size_t		 lastrecord1; /* if >0, lastrecord col in 1 */
+	size_t		 lastrecord2; /* if >0, lastrecord col in 2 */
+	unsigned int	 line1; /* what to show in 1 */
+	unsigned int	 line2; /* what to show in 2 */
 #define	CPU_QMIN	 0x0001
 #define	CPU_MIN	 	 0x0002
 #define	CPU_HOUR 	 0x0004
@@ -110,10 +117,6 @@ struct	drawbox {
 #define	RPROCS_WEEK	 0x0010
 #define	RPROCS_YEAR	 0x0020
 #define	RPROCS_QMIN_BARS 0x0040
-	size_t		 lastseen1;
-	size_t		 lastseen2;
-	size_t		 lastrecord1;
-	size_t		 lastrecord2;
 };
 
 /*
@@ -122,13 +125,13 @@ struct	drawbox {
  * our last-seen intervals.
  */
 struct	draw {
-	struct drawbox	*box;
-	size_t		 boxsz;
+	struct drawbox	*box; /* all configured boxes */
+	size_t		 boxsz; /* number of boxes */
 	int		 header; /* boolean for header */
 	size_t		 errlog; /* lines in errlog */
-	enum draword	 order;
-	size_t		 maxipsz;
-	size_t		 maxhostsz;
+	enum draword	 order; /* order of drawn hosts */
+	size_t		 maxipsz; /* of all IPs possible, length */
+	size_t		 maxhostsz; /* of all hosts possible, length */
 };
 
 /*
