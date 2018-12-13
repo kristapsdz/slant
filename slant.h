@@ -56,6 +56,7 @@ enum	drawcat {
  */
 struct	drawbox {
 	enum drawcat	 cat; /* the box category */
+	size_t		 len; /* maximum length for contents */
 	unsigned int	 line1; /* what we show in the box */
 	unsigned int	 line2; /* what we show in the box */
 #define	CPU_QMIN	 0x0001
@@ -109,6 +110,10 @@ struct	drawbox {
 #define	RPROCS_WEEK	 0x0010
 #define	RPROCS_YEAR	 0x0020
 #define	RPROCS_QMIN_BARS 0x0040
+	size_t		 lastseen1;
+	size_t		 lastseen2;
+	size_t		 lastrecord1;
+	size_t		 lastrecord2;
 };
 
 /*
@@ -119,11 +124,11 @@ struct	drawbox {
 struct	draw {
 	struct drawbox	*box;
 	size_t		 boxsz;
-	size_t		 lastseenpos; /* location of last seen stamp */
-	size_t		 intervalpos; /* location of interval stamp */
 	int		 header; /* boolean for header */
 	size_t		 errlog; /* lines in errlog */
 	enum draword	 order;
+	size_t		 maxipsz;
+	size_t		 maxhostsz;
 };
 
 /*

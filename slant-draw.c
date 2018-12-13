@@ -649,7 +649,8 @@ draw_xfer(WINDOW *win, double vv, int left)
 
 static void
 draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
-	time_t t, WINDOW *win, const struct node *n, size_t *lastseen)
+	time_t t, WINDOW *win, const struct node *n, 
+	size_t *lastseen, struct drawbox *box)
 {
 	int	 x, y;
 
@@ -673,7 +674,7 @@ draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 	if (LINK_ACCESS & bits) {
 		bits &= ~LINK_ACCESS;
 		getyx(win, y, x);
-		*lastseen= x;
+		*lastseen = x;
 		draw_interval(win, timeo, timeo, n->lastseen, t);
 	}
 
@@ -829,80 +830,86 @@ compute_width(const struct node *n,
 }
 
 /*
- * Draw the header for any given box (column).
+ * Draw the header for any given box (column) and sets the maximum size
+ * that the box will allow in its rows.
  * This requires knowledge of the (maximum possible) column width, so we
  * need to iterate through all lines in the box to find the maximum.
  */
 static void
 draw_header_box(struct out *out, 
-	const struct drawbox *box, size_t maxipsz)
+	struct drawbox *box, const struct draw *d)
 {
-	size_t	 sz, maxsz;
+	size_t	 sz;
 
 	draw_main_separator(out->mainwin);
 	waddch(out->mainwin, ' ');
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		maxsz = size_cpu(box->line1);
-		if ((sz = size_cpu(box->line2)) > maxsz)
-			maxsz = sz;
-		draw_centre(out->mainwin, "cpu", maxsz);
+		box->len = size_cpu(box->line1);
+		if ((sz = size_cpu(box->line2)) > box->len)
+			box->len = sz;
+		draw_centre(out->mainwin, "cpu", box->len);
 		break;
 	case DRAWCAT_MEM:
-		maxsz = size_mem(box->line1);
-		if ((sz = size_mem(box->line2)) > maxsz)
-			maxsz = sz;
-		draw_centre(out->mainwin, "mem", maxsz);
+		box->len = size_mem(box->line1);
+		if ((sz = size_mem(box->line2)) > box->len)
+			box->len = sz;
+		draw_centre(out->mainwin, "mem", box->len);
 		break;
 	case DRAWCAT_PROCS:
-		maxsz = size_procs(box->line1);
-		if ((sz = size_procs(box->line2)) > maxsz)
-			maxsz = sz;
-		draw_centre(out->mainwin, "procs", maxsz);
+		box->len = size_procs(box->line1);
+		if ((sz = size_procs(box->line2)) > box->len)
+			box->len = sz;
+		draw_centre(out->mainwin, "procs", box->len);
 		break;
 	case DRAWCAT_RPROCS:
-		maxsz = size_rprocs(box->line1);
-		if ((sz = size_rprocs(box->line2)) > maxsz)
-			maxsz = sz;
-		if (maxsz < 9)
-			draw_centre(out->mainwin, "run", maxsz);
+		box->len = size_rprocs(box->line1);
+		if ((sz = size_rprocs(box->line2)) > box->len)
+			box->len = sz;
+		if (box->len < 9)
+			draw_centre(out->mainwin, "run", box->len);
 		else
-			draw_centre(out->mainwin, "running", maxsz);
+			draw_centre(out->mainwin, "running", box->len);
 		break;
 	case DRAWCAT_FILES:
-		maxsz = size_files(box->line1);
-		if ((sz = size_files(box->line2)) > maxsz)
-			maxsz = sz;
-		draw_centre(out->mainwin, "files", maxsz);
+		box->len = size_files(box->line1);
+		if ((sz = size_files(box->line2)) > box->len)
+			box->len = sz;
+		draw_centre(out->mainwin, "files", box->len);
 		break;
 	case DRAWCAT_NET:
-		maxsz = size_net(box->line1);
-		if ((sz = size_net(box->line2)) > maxsz)
-			maxsz = sz;
-		if (maxsz < 12)
-			draw_centre(out->mainwin, "inet", maxsz);
+		box->len = size_net(box->line1);
+		if ((sz = size_net(box->line2)) > box->len)
+			box->len = sz;
+		if (box->len < 12)
+			draw_centre(out->mainwin, "inet", box->len);
 		else
-			draw_centre(out->mainwin, "inet rx:tx", maxsz);
+			draw_centre(out->mainwin, "inet rx:tx", box->len);
 		break;
 	case DRAWCAT_DISC:
-		maxsz = size_disc(box->line1);
-		if ((sz = size_disc(box->line2)) > maxsz)
-			maxsz = sz;
-		if (maxsz < 12)
-			draw_centre(out->mainwin, "disc r:w", maxsz);
+		box->len = size_disc(box->line1);
+		if ((sz = size_disc(box->line2)) > box->len)
+			box->len = sz;
+		if (box->len < 12)
+			draw_centre(out->mainwin, 
+				"disc r:w", box->len);
 		else
-			draw_centre(out->mainwin, "disc rd:wr", maxsz);
+			draw_centre(out->mainwin, 
+				"disc rd:wr", box->len);
 		break;
 	case DRAWCAT_LINK:
-		maxsz = size_link(maxipsz, box->line1);
-		if ((sz = size_link(maxipsz, box->line2)) > maxsz)
-			maxsz = sz;
-		if (maxsz < 12)
-			draw_centre(out->mainwin, "link", maxsz);
+		box->len = size_link(d->maxipsz, box->line1);
+		if ((sz = size_link(d->maxipsz, box->line2)) > box->len)
+			box->len = sz;
+		if (box->len < 12)
+			draw_centre(out->mainwin, 
+				"link", box->len);
 		else
-			draw_centre(out->mainwin, "link state", maxsz);
+			draw_centre(out->mainwin, 
+				"link state", box->len);
 		break;
 	case DRAWCAT_HOST:
+		box->len = 9;
 		wprintw(out->mainwin, "%9s", "last");
 		break;
 	}
@@ -911,41 +918,48 @@ draw_header_box(struct out *out,
 }
 
 /*
- * Draw the output header.
+ * Draw the output header and computes the maximum space for each box
+ * (set in d->box->len).
  * This is a single line of text above all other lines that identifies
  * the contents of all boxes (columns).
  */
 static void
-draw_header(struct out *out, const struct draw *d, 
-	size_t maxhostsz, size_t maxipsz)
+draw_header(struct out *out, struct draw *d)
 {
 	size_t	 i;
 
 	wmove(out->mainwin, 0, 1);
 	wclrtoeol(out->mainwin);
-	wprintw(out->mainwin, "%*s", (int)maxhostsz, "hostname");
+	wprintw(out->mainwin, "%*s", 
+		(int)d->maxhostsz, "hostname");
 	waddch(out->mainwin, ' ');
 
 	/* Only draw if we have data. */
 
 	for (i = 0; i < d->boxsz; i++)
-		if (d->box[i].line1 ||
-		    d->box[i].line2)
-			draw_header_box(out, &d->box[i], maxipsz);
+		draw_header_box(out, &d->box[i], d);
 }
 
 /*
  * Draw a single content box for node "n".
  */
 static void
-draw_box(struct out *out, const struct node *n, 
-	const struct drawbox *box, unsigned int bits, size_t maxipsz, 
-	time_t t, size_t *lastseenpos, size_t *intervalpos)
+draw_box(struct out *out, const struct node *n, struct drawbox *box, 
+	unsigned int bits, size_t *lastseen, size_t *lastrecord,
+	const struct draw *d, time_t t)
 {
 	int	 x, y;
+	size_t	 i;
 
 	draw_main_separator(out->mainwin);
 	waddch(out->mainwin, ' ');
+
+	if (0 == bits) {
+		for (i = 0; i < box->len; i++)
+			waddch(out->mainwin, ' ');
+		waddch(out->mainwin, ' ');
+		return;
+	}
 
 	switch (box->cat) {
 	case DRAWCAT_CPU:
@@ -961,12 +975,12 @@ draw_box(struct out *out, const struct node *n,
 		draw_disc(bits, out->mainwin, n);
 		break;
 	case DRAWCAT_LINK:
-		draw_link(bits, maxipsz, n->waittime, t, 
-			out->mainwin, n, lastseenpos);
+		draw_link(bits, d->maxipsz, n->waittime, t, 
+			out->mainwin, n, lastseen, box);
 		break;
 	case DRAWCAT_HOST:
 		getyx(out->mainwin, y, x);
-		*intervalpos = x;
+		*lastrecord = x;
 		draw_interval(out->mainwin, 15, 
 			n->waittime, get_last(n), t);
 		break;
@@ -985,25 +999,43 @@ draw_box(struct out *out, const struct node *n,
 }
 
 void
-draw(struct out *out, struct draw *d, int first,
+draw(struct out *out, struct draw *d, int redraw_header,
 	const struct node *n, size_t nsz, time_t t)
 {
-	size_t		 i, j, sz, maxhostsz, maxipsz,
-			 lastseenpos = 0, intervalpos = 0, chhead;
+	size_t		 i, j, k, sz, maxhostsz, maxipsz, lines = 1;
 	int		 maxy, maxx;
-	unsigned int	 bits;
+
+	/* Test how many lines we have per row (FIXME: cache). */
+
+	for (i = 0; i < d->boxsz; i++)
+		if (d->box[i].line2) {
+			lines = 2;
+			break;
+		}
 
 	/* Don't let us run off the window. */
 
 	getmaxyx(out->mainwin, maxy, maxx);
-	if (nsz > (size_t)maxy - 1)
-		nsz = maxy - 1;
+	if (nsz * lines > (size_t)maxy - 1)
+		nsz = (maxy - 1) / lines;
+
+	/* 
+	 * Compute our maximum hostname and IP address size.
+	 * We only use the current IP address and the hosts that are
+	 * shown (remember, there may be more hosts than rows).
+	 * If these are different from the existing sizes, then we'll
+	 * need to redraw our header and recompute the column widths.
+	 */
 
 	maxhostsz = strlen("hostname");
 	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].host);
+		sz = strlen(n[i].host); /* FIXME: cache. */
 		if (sz > maxhostsz)
 			maxhostsz = sz;
+	}
+	if (maxhostsz != d->maxhostsz) {
+		redraw_header = 1;
+		d->maxhostsz = maxhostsz;
 	}
 
 	maxipsz = strlen("address");
@@ -1012,33 +1044,50 @@ draw(struct out *out, struct draw *d, int first,
 		if (sz > maxipsz)
 			maxipsz = sz;
 	}
+	if (maxipsz != d->maxipsz) {
+		redraw_header = 1;
+		d->maxipsz = maxipsz;
+	}
 
-	for (i = 0; i < nsz; i++) {
-		wmove(out->mainwin, i + d->header, 1);
+	/* Conditionally draw (or redraw) the header. */
+
+	if (d->header && redraw_header)
+		draw_header(out, d);
+
+	for (i = j = 0; i < nsz; i++, j += lines) {
+		wmove(out->mainwin, j + d->header, 1);
 		wclrtoeol(out->mainwin);
+		if (lines > 1) {
+			wmove(out->mainwin, j + 1 + d->header, 1);
+			wclrtoeol(out->mainwin);
+		}
+
+		wmove(out->mainwin, j + d->header, 1);
 		wattron(out->mainwin, A_BOLD);
-		wprintw(out->mainwin, "%*s", (int)maxhostsz, n[i].host);
+		wprintw(out->mainwin, "%*s", 
+			(int)d->maxhostsz, n[i].host);
 		wattroff(out->mainwin, A_BOLD);
 		waddch(out->mainwin, ' ');
 
-		for (j = 0; j < d->boxsz; j++)
-			if (0 != (bits = d->box[j].line1))
-				draw_box(out, &n[i], &d->box[j], 
-					bits, maxipsz, t, 
-					&lastseenpos, &intervalpos);
+		for (k = 0; k < d->boxsz; k++)
+			draw_box(out, &n[i], &d->box[k], 
+				d->box[k].line1, 
+				&d->box[k].lastseen1, 
+				&d->box[k].lastrecord1, 
+				d, t);
+
+		if (lines > 1) {
+			wmove(out->mainwin, 
+				j + 1 + d->header, 
+				d->maxhostsz + 2);
+			for (k = 0; k < d->boxsz; k++)
+				draw_box(out, &n[i], &d->box[k], 
+					d->box[k].line2, 
+					&d->box[k].lastseen2, 
+					&d->box[k].lastrecord2, 
+					d, t);
+		}
 	}
-
-	/* Remember for updating times. */
-	/* FIXME: muliple lastseen/intervals? */
-
-	chhead = intervalpos != d->intervalpos ||
-		lastseenpos != d->lastseenpos;
-
-	d->intervalpos = intervalpos;
-	d->lastseenpos = lastseenpos;
-
-	if (d->header && (chhead || first))
-		draw_header(out, d, maxhostsz, maxipsz);
 }
 
 /*
@@ -1051,30 +1100,55 @@ void
 drawtimes(struct out *out, const struct draw *d, 
 	const struct node *n, size_t nsz, time_t t)
 {
-	size_t	 i;
+	size_t	 i, j, k, lines = 1;
 	int	 maxy, maxx;
 
-	/* Hasn't collected data yet... */
+	/* Test how many lines we have per row (FIXME: cache). */
 
-	if (0 == d->intervalpos && 0 == d->lastseenpos)
-		return;
+	for (i = 0; i < d->boxsz; i++)
+		if (d->box[i].line2) {
+			lines = 2;
+			break;
+		}
 
 	/* Don't let us run off the window. */
 
 	getmaxyx(out->mainwin, maxy, maxx);
-	if (nsz > (size_t)maxy - 1)
-		nsz = maxy - 1;
+	if (nsz * lines > (size_t)maxy - 1)
+		nsz = (maxy - 1) / lines;
 
-	for (i = 0; i < nsz; i++) {
-		if (d->intervalpos) {
-			wmove(out->mainwin, i + 1, d->intervalpos);
-			draw_interval(out->mainwin, 15, 
-				n[i].waittime, get_last(&n[i]), t);
-		}
-		if (d->lastseenpos) {
-			wmove(out->mainwin, i + 1, d->lastseenpos);
-			draw_interval(out->mainwin, n[i].waittime, 
-				n[i].waittime, n[i].lastseen, t);
-		}
+	for (i = 0; i < d->boxsz; i++) { 
+		if (d->box[i].lastseen1)
+			for (k = j = 0; j < nsz; j++, k += lines) {
+				wmove(out->mainwin, k + 1, 
+					d->box[i].lastseen1);
+				draw_interval(out->mainwin, 
+					n[j].waittime, n[j].waittime, 
+					n[j].lastseen, t);
+			}
+		if (d->box[i].lastseen2)
+			for (k = j = 0; j < nsz; j++, k += lines) {
+				wmove(out->mainwin, k + 1 + 1, 
+					d->box[i].lastseen2);
+				draw_interval(out->mainwin, 
+					n[j].waittime, n[j].waittime, 
+					n[j].lastseen, t);
+			}
+		if (d->box[i].lastrecord1)
+			for (k = j = 0; j < nsz; j++, k += lines) {
+				wmove(out->mainwin, k + 1, 
+					d->box[i].lastrecord1);
+				draw_interval(out->mainwin, 15, 
+					n[j].waittime, 
+					get_last(&n[j]), t);
+			}
+		if (d->box[i].lastrecord2)
+			for (k = j = 0; j < nsz; j++, k += lines) {
+				wmove(out->mainwin, k + 1 + 1, 
+					d->box[i].lastrecord2);
+				draw_interval(out->mainwin, 15, 
+					n[j].waittime, 
+					get_last(&n[j]), t);
+			}
 	}
 }
