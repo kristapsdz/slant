@@ -301,7 +301,8 @@ parse_layout_host(struct parse *p, struct config *cfg)
 {
 	void		*pp;
 	struct drawbox	*b;
-	int		 rc;
+	int		 rc, in_line;
+	unsigned int	*line;
 
 	if ( ! tok_expect_adv(p, "{"))
 		return 0;
@@ -321,60 +322,100 @@ parse_layout_host(struct parse *p, struct config *cfg)
 		b = &cfg->draw->box[cfg->draw->boxsz++];
 		memset(b, 0, sizeof(struct drawbox));
 
-		if (tok_eq_adv(p, "cpu")) {
+		/* 
+		 * What kind of category are we? 
+		 * That is to say: what will we be showing in this box?
+		 */
+
+		if (tok_eq_adv(p, "cpu"))
 			b->cat = DRAWCAT_CPU;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_pcts(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else if (tok_eq_adv(p, "mem")) {
+		else if (tok_eq_adv(p, "mem"))
 			b->cat = DRAWCAT_MEM;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_pcts(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else if (tok_eq_adv(p, "net")) {
+		else if (tok_eq_adv(p, "net"))
 			b->cat = DRAWCAT_NET;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_rates(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else if (tok_eq_adv(p, "disc")) {
+		else if (tok_eq_adv(p, "disc"))
 			b->cat = DRAWCAT_DISC;
+		else if (tok_eq_adv(p, "link"))
+			b->cat = DRAWCAT_LINK;
+		else if (tok_eq_adv(p, "host"))
+			b->cat = DRAWCAT_HOST;
+		else if (tok_eq_adv(p, "nprocs"))
+			b->cat = DRAWCAT_PROCS;
+		else if (tok_eq_adv(p, "rprocs"))
+			b->cat = DRAWCAT_RPROCS;
+		else if (tok_eq_adv(p, "nfiles"))
+			b->cat = DRAWCAT_FILES;
+		else
+			return tok_unknown(p);
+
+		/*
+		 * We can handle multiple lines, of course.
+		 * If prefixed with "line1" or "line2", that refers to
+		 * the given line.
+		 * No prefix is short-hand for the first line.
+		 */
+againline:
+		if (tok_eq_adv(p, "line1")) {
+			in_line = 1;
+			line = &b->line1;
+		} else if (tok_eq_adv(p, "line2")) {
+			in_line = 1;
+			line = &b->line2;
+		} else {
+			in_line = 0;
+			line = &b->line1;
+		}
+
+		/* If multiple times, clear. */
+
+		*line = 0;
+
+		if (in_line && ! tok_expect_adv(p, "{"))
+			return 0;
+
+		/* Now the information within each box. */
+
+		switch (b->cat) {
+		case DRAWCAT_CPU:
+		case DRAWCAT_FILES:
+		case DRAWCAT_MEM:
+		case DRAWCAT_PROCS:
+		case DRAWCAT_RPROCS:
 			while (p->pos < p->toksz) {
-				rc = parse_layout_rates(p, &b->line1);
+				rc = parse_layout_pcts(p, line);
 				if (rc < 0)
 					break;
 				else if (0 == rc)
 					return rc;
 			}
-		} else if (tok_eq_adv(p, "link")) {
-			b->cat = DRAWCAT_LINK;
+			break;
+		case DRAWCAT_DISC:
+		case DRAWCAT_NET:
+			while (p->pos < p->toksz) {
+				rc = parse_layout_rates(p, line);
+				if (rc < 0)
+					break;
+				else if (0 == rc)
+					return rc;
+			}
+			break;
+		case DRAWCAT_LINK:
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "ip"))
-					b->line1 |= LINK_IP;
+					*line |= LINK_IP;
 				else if (tok_eq_adv(p, "state"))
-					b->line1 |= LINK_STATE;
+					*line |= LINK_STATE;
 				else if (tok_eq_adv(p, "access"))
-					b->line1 |= LINK_ACCESS;
+					*line |= LINK_ACCESS;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
 					break;
 				else
 					return tok_unknown(p);
-		} else if (tok_eq_adv(p, "host")) {
-			b->cat = DRAWCAT_HOST;
-			b->line1 = HOST_ACCESS;
+			break;
+		case DRAWCAT_HOST:
+			*line = HOST_ACCESS;
 			while (p->pos < p->toksz)
 				if (tok_eq(p, ";"))
 					break;
@@ -382,35 +423,28 @@ parse_layout_host(struct parse *p, struct config *cfg)
 					break;
 				else
 					return tok_unknown(p);
-		} else if (tok_eq_adv(p, "nprocs")) {
-			b->cat = DRAWCAT_PROCS;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_pcts(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else if (tok_eq_adv(p, "rprocs")) {
-			b->cat = DRAWCAT_RPROCS;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_pcts(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else if (tok_eq_adv(p, "nfiles")) {
-			b->cat = DRAWCAT_FILES;
-			while (p->pos < p->toksz) {
-				rc = parse_layout_pcts(p, &b->line1);
-				if (rc < 0)
-					break;
-				else if (0 == rc)
-					return rc;
-			}
-		} else
-			return tok_unknown(p);
+			break;
+		}
+
+		if (in_line && ! tok_expect_adv(p, "}"))
+			return 0;
+
+		/* 
+		 * If we were in-line (e.g., "line1 { ... }"), then we
+		 * might be followed by further lines.
+		 * Check to see if we're at the end of the box.
+		 */ 
+
+		if (in_line)
+			if ( ! tok_eq(p, ";") && ! tok_eq(p, "}"))
+				goto againline;
+
+		/* 
+		 * If we're at a close-brace, then we're finished with
+		 * all information for this host.
+		 * Otherwise, if we're at a semicolon, then we're going
+		 * to add another box.
+		 */
 
 		if (tok_eq(p, "}"))
 			break;
