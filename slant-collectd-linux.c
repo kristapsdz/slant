@@ -60,16 +60,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <stdarg.h>
 #include <assert.h>
+#include <dirent.h>
 #include <err.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
-#include <dirent.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 #include <ksql.h>
@@ -261,7 +262,7 @@ static int
 sysinfo_update_mem(struct sysinfo *p)
 {
 	ssize_t rd;
-	size_t memtotal, memfree;
+	uint64_t memtotal, memfree;
 	char *ptr;
 
 	if (-1 == (rd = proc_read_buf("/proc/meminfo")))
