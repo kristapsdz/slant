@@ -254,52 +254,33 @@ proc_read_buf(const char *file)
 static int
 sysinfo_update_mem(struct sysinfo *p)
 {
-	FILE *fp;
-	char *line;
-	size_t n;
-	size_t total, memfree, values;
+	ssize_t rd;
+	size_t memtotal, memfree;
+	char *ptr;
 
-	if ((fp = fopen("/proc/meminfo", "r")) == NULL) {
-		warn("open: /proc/meminfo");
+	if (-1 == (rd = proc_read_buf("/proc/meminfo")))
 		return 0;
-	}
 
-	line = NULL;
-	n = 0;
-	total = memfree = values = 0;
+	if (NULL == (ptr = memmem(buf, rd, "MemTotal:", 9)))
+		goto errparse;
+	if (1 != sscanf(ptr+9, "%" SCNu64, &memtotal))
+		goto errparse;
 
-	while (-1 != getline(&line, &n, fp)) {
-		if (0 == strncmp(line, "MemTotal:", 9)) {
-			if (1 != sscanf(line+9, "%" SCNu64, &total)) {
-				warnx("failed to read MemTotal from /proc/meminfo");
-				fclose(fp);
-				free(line);
-				return 0;
-			}
-			values++;
-		} else if (0 == strncmp(line, "MemFree:", 8)) {
-			if (1 != sscanf(line+8, "%" SCNu64, &memfree)) {
-				warnx("failed to read MemFree from /proc/meminfo");
-				fclose(fp);
-				free(line);
-				return 0;
-			}
-			values++;
-		}
-		if (values == 2)
-			break;
-	}
-	fclose(fp);
-	free(line);
+	if (NULL == (ptr = memmem(buf, rd, "MemFree:", 8)))
+		goto errparse;
+	if (1 != sscanf(ptr+8, "%" SCNu64, &memfree))
+		goto errparse;
 
-	if (values != 2) {
-		warnx("missing value /proc/meminfo");
-		return 0;
-	}
+	p->mem_avg = 100.0 * (memtotal - memfree) / memtotal;
 
-	p->mem_avg = 100.0 * memfree / total;
+#ifdef DEBUG
+	warnx("memtotal=%ld memfree=%ld mem_avg=%lf", memtotal, memfree, p->mem_avg);
+#endif
 
 	return 1;
+errparse:
+	warnx("error while parsing /proc/meminfo");
+	return 0;
 }
 
 static int
