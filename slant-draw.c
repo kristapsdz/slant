@@ -50,14 +50,13 @@ static const char *const states[] = {
  * variable in each structure.
  * It can be passed in, but would need some smarts.
  */
-#define DEFINE_draw_rates(_NAME, _MEMRX, _MEMTX, _DRAW_RATE, \
-	_QMIN, _MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+#define DEFINE_draw_rates(_NAME, _MEMRX, _MEMTX, _DRAW_RATE) \
 static void \
 _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 { \
 	double	 vv; \
-	if (_QMIN & bits) { \
-		bits &= ~_QMIN; \
+	if (LINE_QMIN & bits) { \
+		bits &= ~LINE_QMIN; \
 		if (NULL != n->recs && \
 		    n->recs->byqminsz && \
 		    n->recs->byqmin[0].entries) { \
@@ -77,8 +76,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_MIN & bits) { \
-		bits &= ~_MIN; \
+	if (LINE_MIN & bits) { \
+		bits &= ~LINE_MIN; \
 		if (NULL != n->recs && \
 		    n->recs->byminsz && \
 		    n->recs->bymin[0].entries) { \
@@ -94,8 +93,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_HOUR & bits) { \
-		bits &= ~_HOUR; \
+	if (LINE_HOUR & bits) { \
+		bits &= ~LINE_HOUR; \
 		if (NULL != n->recs && \
 		    n->recs->byhoursz && \
 		    n->recs->byhour[0].entries) { \
@@ -111,8 +110,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_DAY & bits) { \
-		bits &= ~_DAY; \
+	if (LINE_DAY & bits) { \
+		bits &= ~LINE_DAY; \
 		if (NULL != n->recs && \
 		    n->recs->bydaysz && \
 		    n->recs->byday[0].entries) { \
@@ -126,8 +125,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		} else \
 			waddstr(win, "------:------"); \
 	} \
-	if (_WEEK & bits) { \
-		bits &= ~_WEEK; \
+	if (LINE_WEEK & bits) { \
+		bits &= ~LINE_WEEK; \
 		if (NULL != n->recs && \
 		    n->recs->byweeksz && \
 		    n->recs->byweek[0].entries) { \
@@ -141,8 +140,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		} else \
 			waddstr(win, "------:------"); \
 	} \
-	if (_YEAR & bits) { \
-		bits &= ~_YEAR; \
+	if (LINE_YEAR & bits) { \
+		bits &= ~LINE_YEAR; \
 		if (NULL != n->recs && \
 		    n->recs->byyearsz && \
 		    n->recs->byyear[0].entries) { \
@@ -165,15 +164,14 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
  * variable in each structure.
  * It can be passed in, but would need some smarts.
  */
-#define DEFINE_draw_pcts(_NAME, _MEMBER, _DRAW_PCT, \
-	_QMIN_BARS, _QMIN, _MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+#define DEFINE_draw_pcts(_NAME, _MEMBER, _DRAW_PCT) \
 static void \
 _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 { \
 	double	 vv; \
 	const struct recset *r = n->recs; \
-	if (_QMIN_BARS & bits) { \
-		bits &= ~_QMIN_BARS; \
+	if (LINE_QMIN_BARS & bits) { \
+		bits &= ~LINE_QMIN_BARS; \
 		if (NULL != r && \
 		    r->byqminsz && r->byqmin[0].entries) { \
 			vv = r->byqmin[0]._MEMBER / \
@@ -184,8 +182,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			waddch(win, ' '); \
 	} \
-	if (_QMIN & bits) { \
-		bits &= ~_QMIN; \
+	if (LINE_QMIN & bits) { \
+		bits &= ~LINE_QMIN; \
 		if (NULL != r && \
 		    r->byqminsz && r->byqmin[0].entries) { \
 			vv = r->byqmin[0]._MEMBER / \
@@ -200,8 +198,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_MIN & bits) { \
-		bits &= ~_MIN; \
+	if (LINE_MIN & bits) { \
+		bits &= ~LINE_MIN; \
 		if (NULL != r && \
 		    r->byminsz && r->bymin[0].entries) { \
 			vv = r->bymin[0]._MEMBER / \
@@ -214,8 +212,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_HOUR & bits) { \
-		bits &= ~_HOUR; \
+	if (LINE_HOUR & bits) { \
+		bits &= ~LINE_HOUR; \
 		if (NULL != r && \
 		    r->byhoursz && r->byhour[0].entries) { \
 			vv = r->byhour[0]._MEMBER / \
@@ -228,8 +226,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			draw_sub_separator(win); \
 	} \
-	if (_DAY & bits) { \
-		bits &= ~_DAY; \
+	if (LINE_DAY & bits) { \
+		bits &= ~LINE_DAY; \
 		if (NULL != r && \
 		    r->bydaysz && r->byday[0].entries) { \
 			vv = r->byday[0]._MEMBER / \
@@ -240,8 +238,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		} else \
 			wprintw(win, "------%"); \
 	} \
-	if (_WEEK & bits) { \
-		bits &= ~_WEEK; \
+	if (LINE_WEEK & bits) { \
+		bits &= ~LINE_WEEK; \
 		if (NULL != r && \
 		    r->byweeksz && r->byweek[0].entries) { \
 			vv = r->byweek[0]._MEMBER / \
@@ -252,8 +250,8 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		} else \
 			wprintw(win, "------%"); \
 	} \
-	if (_YEAR & bits) { \
-		bits &= ~_YEAR; \
+	if (LINE_YEAR & bits) { \
+		bits &= ~LINE_YEAR; \
 		if (NULL != r && \
 		    r->byyearsz && r->byyear[0].entries) { \
 			vv = r->byyear[0]._MEMBER / \
@@ -271,34 +269,33 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
  * Define a function for getting colunm widths of a field.
  * Used with DEFINE_draw_rates.
  */
-#define DEFINE_size_rates(_NAME, _QMIN, \
-	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+#define DEFINE_size_rates(_NAME) \
 static size_t \
 _NAME(unsigned int bits) \
 { \
 	size_t sz = 0; \
-	if (_QMIN & bits) { \
-		bits &= ~_QMIN; \
+	if (LINE_QMIN & bits) { \
+		bits &= ~LINE_QMIN; \
 		sz += 13 + (bits ? 1 : 0); \
 	} \
-	if (_MIN & bits) { \
-		bits &= ~_MIN; \
+	if (LINE_MIN & bits) { \
+		bits &= ~LINE_MIN; \
 		sz += 13 + (bits ? 1 : 0); \
 	} \
-	if (_HOUR & bits) { \
-		bits &= ~_HOUR; \
+	if (LINE_HOUR & bits) { \
+		bits &= ~LINE_HOUR; \
 		sz += 13 + (bits ? 1 : 0); \
 	} \
-	if (_DAY & bits) { \
-		bits &= ~_DAY; \
+	if (LINE_DAY & bits) { \
+		bits &= ~LINE_DAY; \
 		sz += 13; \
 	} \
-	if (_WEEK & bits) { \
-		bits &= ~_WEEK; \
+	if (LINE_WEEK & bits) { \
+		bits &= ~LINE_WEEK; \
 		sz += 13; \
 	} \
-	if (_YEAR & bits) { \
-		bits &= ~_YEAR; \
+	if (LINE_YEAR & bits) { \
+		bits &= ~LINE_YEAR; \
 		sz += 13; \
 	} \
 	assert(0 == bits); \
@@ -309,38 +306,37 @@ _NAME(unsigned int bits) \
  * Define a function for getting colunm widths of a percentage box.
  * Used with DEFINE_draw_pcts.
  */
-#define DEFINE_size_pct(_NAME, _QMIN_BARS, _QMIN, \
-	_MIN, _HOUR, _DAY, _WEEK, _YEAR) \
+#define DEFINE_size_pct(_NAME) \
 static size_t \
 _NAME(unsigned int bits) \
 { \
 	size_t sz = 0; \
-	if (_QMIN_BARS & bits) { \
-		bits &= ~_QMIN_BARS; \
+	if (LINE_QMIN_BARS & bits) { \
+		bits &= ~LINE_QMIN_BARS; \
 		sz += 10 + (bits ? 1 : 0); \
 	} \
-	if (_QMIN & bits) { \
-		bits &= ~_QMIN; \
+	if (LINE_QMIN & bits) { \
+		bits &= ~LINE_QMIN; \
 		sz += 6 + (bits ? 1 : 0); \
 	} \
-	if (_MIN & bits) { \
-		bits &= ~_MIN; \
+	if (LINE_MIN & bits) { \
+		bits &= ~LINE_MIN; \
 		sz += 6 + (bits ? 1 : 0); \
 	} \
-	if (_HOUR & bits) { \
-		bits &= ~_HOUR; \
+	if (LINE_HOUR & bits) { \
+		bits &= ~LINE_HOUR; \
 		sz += 6 + (bits ? 1 : 0); \
 	} \
-	if (_DAY & bits) { \
-		bits &= ~_DAY; \
+	if (LINE_DAY & bits) { \
+		bits &= ~LINE_DAY; \
 		sz += 6; \
 	} \
-	if (_WEEK & bits) { \
-		bits &= ~_WEEK; \
+	if (LINE_WEEK & bits) { \
+		bits &= ~LINE_WEEK; \
 		sz += 6; \
 	} \
-	if (_YEAR & bits) { \
-		bits &= ~_YEAR; \
+	if (LINE_YEAR & bits) { \
+		bits &= ~LINE_YEAR; \
 		sz += 6; \
 	} \
 	return sz; \
@@ -680,47 +676,26 @@ draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 	assert(0 == bits);
 }
 
-DEFINE_draw_pcts(draw_files, nfiles, draw_pct,
-	FILES_QMIN_BARS, FILES_QMIN, FILES_MIN, 
-	FILES_HOUR, FILES_DAY, FILES_WEEK, FILES_YEAR)
-DEFINE_size_pct(size_files, FILES_QMIN_BARS, FILES_QMIN, FILES_MIN, 
-	FILES_HOUR, FILES_DAY, FILES_WEEK, FILES_YEAR)
+DEFINE_draw_pcts(draw_files, nfiles, draw_pct)
+DEFINE_size_pct(size_files)
 
-DEFINE_draw_pcts(draw_procs, nprocs, draw_pct,
-	PROCS_QMIN_BARS, PROCS_QMIN, PROCS_MIN, 
-	PROCS_HOUR, PROCS_DAY, PROCS_WEEK, PROCS_YEAR)
-DEFINE_size_pct(size_procs, PROCS_QMIN_BARS, PROCS_QMIN, PROCS_MIN, 
-	PROCS_HOUR, PROCS_DAY, PROCS_WEEK, PROCS_YEAR)
+DEFINE_draw_pcts(draw_procs, nprocs, draw_pct)
+DEFINE_size_pct(size_procs)
 
-DEFINE_draw_pcts(draw_rprocs, rprocs, draw_rpct,
-	RPROCS_QMIN_BARS, RPROCS_QMIN, RPROCS_MIN, 
-	RPROCS_HOUR, RPROCS_DAY, RPROCS_WEEK, RPROCS_YEAR)
-DEFINE_size_pct(size_rprocs, RPROCS_QMIN_BARS, RPROCS_QMIN, 
-	RPROCS_MIN, RPROCS_HOUR, RPROCS_DAY, RPROCS_WEEK, RPROCS_YEAR)
+DEFINE_draw_pcts(draw_rprocs, rprocs, draw_rpct)
+DEFINE_size_pct(size_rprocs)
 
-DEFINE_draw_pcts(draw_mem, mem, draw_pct,
-	MEM_QMIN_BARS, MEM_QMIN, MEM_MIN, 
-	MEM_HOUR, MEM_DAY, MEM_WEEK, MEM_YEAR)
-DEFINE_size_pct(size_mem, MEM_QMIN_BARS, MEM_QMIN, 
-	MEM_MIN, MEM_HOUR, MEM_DAY, MEM_WEEK, MEM_YEAR)
+DEFINE_draw_pcts(draw_mem, mem, draw_pct)
+DEFINE_size_pct(size_mem)
 
-DEFINE_draw_pcts(draw_cpu, cpu, draw_pct,
-	CPU_QMIN_BARS, CPU_QMIN, CPU_MIN, 
-	CPU_HOUR, CPU_DAY, CPU_WEEK, CPU_YEAR)
-DEFINE_size_pct(size_cpu, CPU_QMIN_BARS, CPU_QMIN, 
-	CPU_MIN, CPU_HOUR, CPU_DAY, CPU_WEEK, CPU_YEAR)
+DEFINE_draw_pcts(draw_cpu, cpu, draw_pct)
+DEFINE_size_pct(size_cpu)
 
-DEFINE_draw_rates(draw_net, netrx, nettx, draw_xfer,
-	NET_QMIN, NET_MIN, NET_HOUR, 
-	NET_DAY, NET_WEEK, NET_YEAR)
-DEFINE_size_rates(size_net, NET_QMIN, NET_MIN, 
-	NET_HOUR, NET_DAY, NET_WEEK, NET_YEAR)
+DEFINE_draw_rates(draw_net, netrx, nettx, draw_xfer)
+DEFINE_size_rates(size_net)
 
-DEFINE_draw_rates(draw_disc, discread, discwrite, draw_xfer,
-	NET_QMIN, NET_MIN, NET_HOUR, 
-	NET_DAY, NET_WEEK, NET_YEAR)
-DEFINE_size_rates(size_disc, DISC_QMIN, DISC_MIN, 
-	DISC_HOUR, DISC_DAY, DISC_WEEK, DISC_YEAR)
+DEFINE_draw_rates(draw_disc, discread, discwrite, draw_xfer)
+DEFINE_size_rates(size_disc)
 
 static void
 draw_centre(WINDOW *win, const char *v, size_t sz)

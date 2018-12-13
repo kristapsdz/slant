@@ -66,57 +66,17 @@ struct	drawbox {
 	size_t		 lastrecord2; /* if >0, lastrecord col in 2 */
 	unsigned int	 line1; /* what to show in 1 */
 	unsigned int	 line2; /* what to show in 2 */
-#define	CPU_QMIN	 0x0001
-#define	CPU_MIN	 	 0x0002
-#define	CPU_HOUR 	 0x0004
-#define	CPU_DAY	 	 0x0008
-#define	CPU_QMIN_BARS	 0x0010
-#define CPU_WEEK	 0x0020
-#define CPU_YEAR	 0x0040
-#define	MEM_QMIN	 0x0001
-#define	MEM_MIN	 	 0x0002
-#define	MEM_HOUR 	 0x0004
-#define	MEM_DAY	 	 0x0008
-#define	MEM_QMIN_BARS	 0x0010
-#define MEM_WEEK	 0x0020
-#define MEM_YEAR	 0x0040
-#define	NET_QMIN	 0x0001
-#define	NET_MIN	 	 0x0002
-#define	NET_HOUR 	 0x0004
-#define	NET_DAY	 	 0x0008
-#define	NET_WEEK 	 0x0010
-#define	NET_YEAR	 0x0020
-#define	DISC_QMIN	 0x0001
-#define	DISC_MIN	 0x0002
-#define	DISC_HOUR 	 0x0004
-#define	DISC_DAY	 0x0008
-#define	DISC_WEEK	 0x0010
-#define	DISC_YEAR	 0x0020
+#define	LINE_QMIN_BARS	 0x0001
+#define	LINE_QMIN	 0x0002
+#define	LINE_MIN	 0x0004
+#define	LINE_HOUR 	 0x0008
+#define	LINE_DAY	 0x0010
+#define LINE_WEEK	 0x0020
+#define LINE_YEAR	 0x0040
 #define	LINK_IP		 0x0001
 #define LINK_STATE	 0x0002
 #define LINK_ACCESS	 0x0004
 #define	HOST_ACCESS	 0x0001
-#define	PROCS_QMIN	 0x0001
-#define	PROCS_MIN	 0x0002
-#define	PROCS_HOUR 	 0x0004
-#define	PROCS_DAY	 0x0008
-#define	PROCS_QMIN_BARS	 0x0010
-#define PROCS_WEEK	 0x0020
-#define PROCS_YEAR	 0x0040
-#define	FILES_QMIN	 0x0001
-#define	FILES_MIN	 0x0002
-#define	FILES_HOUR 	 0x0004
-#define	FILES_DAY	 0x0008
-#define	FILES_QMIN_BARS	 0x0010
-#define FILES_WEEK	 0x0020
-#define FILES_YEAR	 0x0040
-#define	RPROCS_QMIN	 0x0001
-#define	RPROCS_MIN	 0x0002
-#define	RPROCS_HOUR 	 0x0004
-#define	RPROCS_DAY	 0x0008
-#define	RPROCS_WEEK	 0x0010
-#define	RPROCS_YEAR	 0x0020
-#define	RPROCS_QMIN_BARS 0x0040
 };
 
 /*
