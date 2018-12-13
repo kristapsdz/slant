@@ -53,8 +53,9 @@
  */
 #include "config.h"
 
-#include <linux/if.h>
+#include <net/if.h>
 
+#include <sys/ioctl.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -113,11 +114,11 @@ struct	sysinfo {
 	double		 mem_avg; /* average memory */
 	double		 nproc_pct; /* nprocs percent */
 	double		 nfile_pct; /* nfiles percent */
-	uint64_t      cpu_states[CPUSTATES]; /* used for cpu compute */
+	uint64_t	 cpu_states[CPUSTATES]; /* used for cpu compute */
 	double		 cpu_avg; /* average cpu */
-	uint64_t        cp_time[CPUSTATES]; /* used for cpu compute */
-	uint64_t        cp_old[CPUSTATES]; /* used for cpu compute */
-	uint64_t        cp_diff[CPUSTATES]; /* used for cpu compute */
+	uint64_t	 cp_time[CPUSTATES]; /* used for cpu compute */
+	uint64_t         cp_old[CPUSTATES]; /* used for cpu compute */
+	uint64_t         cp_diff[CPUSTATES]; /* used for cpu compute */
 	double		 rproc_pct; /* pct command (by name) found */
 	struct ifstat	*ifstats; /* used for inet compute */
 	size_t		 ifstatsz; /* used for inet compute */
@@ -224,6 +225,27 @@ sysinfo_alloc(void)
 	}
 
 	return p;
+}
+
+static char buf[8192];
+
+static ssize_t
+proc_read_buf(const char *file)
+{
+	int fd;
+	ssize_t rd;
+	if (-1 == (fd = open(file, O_RDONLY))) {
+		warn("open: %s", file);
+		return -1;
+	}
+	if (-1 == (rd = read(fd, buf, sizeof buf - 1))) {
+		warn("read: %s", file);
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	buf[rd] = '\0';
+	return rd;
 }
 
 static int
@@ -366,128 +388,166 @@ sysinfo_update_cpu(struct sysinfo *p)
 }
 
 static int
-sysfs_scan_at(int dirfd, const char *file, const char *format, ...)
+get_ifflags(const char *ifname, short *ifflags)
 {
-	va_list ap;
-	int fd;
-	FILE *fp;
-	fd = openat(dirfd, file, O_RDONLY);
-	if (-1 == fd) {
-		warn("openat: %s", file);
+	static struct ifreq ifr;
+	static int sockfd = -1;
+
+	if (sockfd == -1) {
+		sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+		if (sockfd == -1) {
+			warn("socket");
+			return 0;
+		}
+	}
+
+	strlcpy(ifr.ifr_name, ifname, sizeof (ifr.ifr_name));
+
+	if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1) {
+		warn("ioctl: SIOCGIFFLAGS");
 		return 0;
 	}
-	fp = fdopen(fd, "r");
-	if (NULL == fp) {
-		warn("fdopen: %s", file);
-		close(fd);
-		return 0;
-	}
-	va_start(ap, format);
-	int ret = vfscanf(fp, format, ap);
-	va_end(ap);
-	fclose(fp);
-	close(fd);
-	return ret;
+	*ifflags = ifr.ifr_flags;
+
+	return 1;
 }
 
-#define SCAN(file, fmt, ...) \
-	do { \
-		if (1 != sysfs_scan_at(ifdirfd, file, fmt, __VA_ARGS__)) { \
-			warnx("scan: %s", file); \
-		} \
-	} while(0)
+static int
+get_ifindex(struct if_nameindex *idx, const char *ifname, int *ifindex)
+{
+    struct if_nameindex *next;
+    for (next = idx; (next->if_index && next->if_name); next++) {
+	    if (strcmp(ifname, next->if_name) == 0) {
+		    *ifindex = next->if_index;
+		    return 1;
+	    }
+    }
+    return 0;
+}
 
-#define UPDATE(x, y) \
+#define UPDATE(x, y, up) \
 	do { \
-		ifs->ifs_now.x = 0; \
-		if (1 == sysfs_scan_at(ifdirfd, y, "%" SCNu64 "\n", &ifs->ifs_now.x)) { \
-			ifs->ifs_cur.x = ifs->ifs_now.x - ifs->ifs_old.x; \
-			ifs->ifs_old.x = ifs->ifs_now.x; \
-			ifs->ifs_cur.x /= 15; \
-			if (up) \
-				p->ifsum.x += ifs->ifs_cur.x; \
-		} else { \
-			warnx("scan: %s", y); \
-		}\
+		ifs->ifs_now.x = y; \
+		ifs->ifs_cur.x = ifs->ifs_now.x - ifs->ifs_old.x; \
+		ifs->ifs_old.x = ifs->ifs_now.x; \
+		ifs->ifs_cur.x /= 15; \
+		if ((up)) \
+			p->ifsum.x += ifs->ifs_cur.x; \
 	} while(0)
 
 static int
 sysinfo_update_if(struct sysinfo *p)
 {
-	DIR *dir;
 	struct ifstat 	*newstats, *ifs;
-	struct dirent	*dirent;
-	uint64_t	ifindex;
-	int		up;
-	size_t		i = 0;
-	uint32_t	flags;
-	int		dirfd, ifdirfd;
+	char *ptr, *ifname;
+	struct ifcount ifctmp;
+	int ifindex;
+	int up;
+	short flags;
+	ssize_t rd;
 
-	if (-1 == (dirfd = open("/sys/class/net", O_DIRECTORY))) {
-		warn("open: /sys/class/net");
-		return 0;
-	}
-	if (NULL == (dir = fdopendir(dirfd))) {
-		warn("opendir: /sys/class/net");
-		return 0;
-	}
+	struct if_nameindex *idx;
 
+	if (NULL == (idx = if_nameindex()))
+		return 0;
+
+	if (-1 == (rd = proc_read_buf("/proc/net/dev")))
+		goto err;
+
+	// skip header lines
+	if (NULL == (ptr = strchr(buf, '\n')) ||
+	    NULL == (ptr = strchr(ptr+1, '\n')))
+		goto errparse;
+	ptr++;
+
+	// reset summary
 	memset(&p->ifsum, 0, sizeof(p->ifsum));
 
-	while (NULL != (dirent = readdir(dir))) {
-		if (dirent->d_name[0] == '.')
-			continue;
-		ifdirfd = openat(dirfd, dirent->d_name, O_DIRECTORY);
-		if (-1 == ifdirfd) {
-			closedir(dir);
-			close(dirfd);
-			return 0;
+	for (;ptr < buf+rd; ptr++) {
+		// get interface name
+		for (;*ptr == ' '; ptr++) ;
+		ifname = ptr;
+		if (NULL == (ptr = strchr(ptr, ':')))
+			goto errparse;
+		*ptr++ = '\0';
+
+		if ( ! get_ifindex(idx, ifname, &ifindex)) {
+			warnx("couldn't find ifindex for '%s'", ifname);
+			goto err;
 		}
 
-		if (i >= p->ifstatsz) {
+		sscanf(ptr,
+		    " %" SCNu64  // rx-bytes
+		    " %" SCNu64  // rx-packets
+		    " %" SCNu64  // rx-errors
+		    " %*u"       // rx-drop
+		    " %*u"       // rx-fifo
+		    " %*u"       // rx-frame
+		    " %*u"       // rx-compressed
+		    " %*u"       // rx-multicast
+		    " %" SCNu64  // tx-bytes
+		    " %" SCNu64  // tx-packates
+		    " %" SCNu64  // tx-errors
+		    " %*u"       // tx-drop
+		    " %*u"       // tx-fifo
+		    " %" SCNu64  // tx-collisions
+		    " %*u"       // tx-carrier
+		    " %*u" ,     // tx-compressed
+		    &ifctmp.ifc_ib,
+		    &ifctmp.ifc_ip,
+		    &ifctmp.ifc_ie,
+		    &ifctmp.ifc_ob,
+		    &ifctmp.ifc_op,
+		    &ifctmp.ifc_oe,
+		    &ifctmp.ifc_co);
+
+		if ( ! get_ifflags(ifname, &flags))
+			goto err;
+
+		if ((unsigned int)ifindex >= p->ifstatsz) {
 			newstats = reallocarray
-				(p->ifstats, i + 4,
+				(p->ifstats, ifindex + 4,
 				 sizeof(struct ifstat));
 			if (NULL == newstats) {
 				warn(NULL);
-				closedir(dir);
-				close(dirfd);
-				close(ifdirfd);
-				return 0;
+				goto err;
 			}
 			p->ifstats = newstats;
-			while (p->ifstatsz < i + 4) {
+			while (p->ifstatsz < (unsigned int)ifindex + 4) {
 				memset(&p->ifstats[p->ifstatsz], 
 					0, sizeof(*p->ifstats));
 				p->ifstatsz++;
 			}
 		}
-
-
-		flags = ifindex = 0;
-
-		SCAN("ifindex", "%" SCNu64 "\n", &ifindex);
-		ifindex--;
-
 		ifs = &p->ifstats[ifindex];
 
-		SCAN("flags", "%" SCNx32 "\n", &flags);
+		/* Only consider non-loopback up addresses. */
+
 		up = (flags & IFF_UP) && ! (flags & IFF_LOOPBACK);
 
-		UPDATE(ifc_ip, "statistics/rx_packets");
-		UPDATE(ifc_ib, "statistics/rx_bytes");
-		UPDATE(ifc_ie, "statistics/rx_errors");
-		UPDATE(ifc_op, "statistics/tx_packets");
-		UPDATE(ifc_ob, "statistics/tx_bytes");
-		UPDATE(ifc_oe, "statistics/tx_errors");
-		UPDATE(ifc_co, "statistics/collisions");
+#ifdef DEBUG
+		warnx("%s: ifindex=%d up=%d", ifname, ifindex, up);
+#endif
 
-		close(ifdirfd);
+		UPDATE(ifc_ip, ifctmp.ifc_ip, up);
+		UPDATE(ifc_ib, ifctmp.ifc_ib, up);
+		UPDATE(ifc_ie, ifctmp.ifc_ie, up);
+		UPDATE(ifc_op, ifctmp.ifc_op, up);
+		UPDATE(ifc_ob, ifctmp.ifc_ob, up);
+		UPDATE(ifc_oe, ifctmp.ifc_oe, up);
+		UPDATE(ifc_co, ifctmp.ifc_co, up);
+
+		if (NULL == (ptr = strchr(ptr, '\n')))
+			goto errparse;
 	}
-	closedir(dir);
-	close(dirfd);
 
+	if_freenameindex(idx);
 	return 1;
+errparse:
+	warnx("error while parsing /proc/net/dev");
+err:
+	if_freenameindex(idx);
+	return 0;
 }
 
 static int
