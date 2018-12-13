@@ -127,9 +127,9 @@ after which data transfers are terminated (following the last byte
 transferred).
 The minimum is 10 seconds.
 .Bd -literal -offset indent
-"servers" url [url...] ["{" 
-  ["waittime" NUM ";" ] 
-  ["timeout" NUM ";" ] 
+"servers" url [url...] ["{"
+  ["waittime" NUM ";" ]
+  ["timeout" NUM ";" ]
 "}"] ";"
 .Ed
 .Pp
@@ -145,15 +145,15 @@ field.
 "layout" {"
   ["header" ";"]
   ["host" "{"
-    [["cpu" ["qmin_bars"|time_interval]+ |
-      "mem" ["qmin_bars"|time_interval]+ |
+    [["cpu" [time_interval_bars|time_interval]+ |
+      "mem" [time_interval_bars|time_interval]+ |
       "net" [time_interval]+ |
       "disc" [time_interval]+ |
       "link" ["ip"|"state"|"access"]+ |
       "host" |
-      "nprocs" ["qmin_bars"|time_interval]+ |
-      "rprocs" ["qmin_bars"|time_interval]+ ]
-      "nfiles" ["qmin_bars"|time_interval]+ ]
+      "nprocs" [time_interval_bars|time_interval]+ |
+      "rprocs" [time_interval_bars|time_interval]+ |
+      "nfiles" [time_interval_bars|time_interval]+ ]
      ";"]*
    "}" ";"]
   ["errlog" NUM ";"]
@@ -174,11 +174,24 @@ The
 .Cm host
 block consists of column (box) specifiers.
 These begin with a category followed by displayed fields within the box.
-The displayed fields generally consist of
+The
+.Cm time_interval_bars
+fields draw coloured bar graph when specifying
 .Cm qmin_bars ,
-for a coloured bar graph of the instantaneous view;
-then
-.Cm time_interval, which may be one of
+for the quarter-minute summary;
+.Cm min_bars ,
+the minute summary;
+.Cm hour_bars ,
+the hourly summary;
+.Cm day_bars ,
+the daily summary;
+.Cm week_bars ,
+the weekly summary; and
+.Cm year_bars ,
+the yearly summary.
+The
+.Cm time_interval
+writes a percentage when specifying
 .Cm qmin ,
 for the quarter-minute summary;
 .Cm min ,
@@ -190,7 +203,7 @@ for the daily summary;
 .Cm week ,
 for the weekly summary; or
 .Cm year ,
-for the yearly summary;
+for the yearly summary.
 These summaries depend upon the category.
 .Bl -tag -width Ds
 .It Cm cpu
