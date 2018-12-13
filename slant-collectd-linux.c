@@ -245,6 +245,9 @@ proc_read_buf(const char *file)
 	}
 	close(fd);
 	buf[rd] = '\0';
+#ifdef DEBUG
+	warnx("%s: read %ld bytes", file, rd);
+#endif
 	return rd;
 }
 
