@@ -182,6 +182,66 @@ _NAME(unsigned int bits, WINDOW *win, const struct node *n) \
 		if (bits) \
 			waddch(win, ' '); \
 	} \
+	if (LINE_MIN_BARS & bits) { \
+		bits &= ~LINE_MIN_BARS; \
+		if (NULL != r && \
+		    r->byminsz && r->bymin[0].entries) { \
+			vv = r->bymin[0]._MEMBER / \
+			     r->bymin[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
+	if (LINE_HOUR_BARS & bits) { \
+		bits &= ~LINE_HOUR_BARS; \
+		if (NULL != r && \
+		    r->byhoursz && r->byhour[0].entries) { \
+			vv = r->byhour[0]._MEMBER / \
+			     r->byhour[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
+	if (LINE_DAY_BARS & bits) { \
+		bits &= ~LINE_DAY_BARS; \
+		if (NULL != r && \
+		    r->bydaysz && r->byday[0].entries) { \
+			vv = r->byday[0]._MEMBER / \
+			     r->byday[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
+	if (LINE_WEEK_BARS & bits) { \
+		bits &= ~LINE_WEEK_BARS; \
+		if (NULL != r && \
+		    r->byweeksz && r->byweek[0].entries) { \
+			vv = r->byweek[0]._MEMBER / \
+			     r->byweek[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
+	if (LINE_YEAR_BARS & bits) { \
+		bits &= ~LINE_YEAR_BARS; \
+		if (NULL != r && \
+		    r->byyearsz && r->byyear[0].entries) { \
+			vv = r->byyear[0]._MEMBER / \
+			     r->byyear[0].entries; \
+			draw_bars(win, vv); \
+		} else \
+			wprintw(win, "%10s", " "); \
+		if (bits) \
+			waddch(win, ' '); \
+	} \
 	if (LINE_QMIN & bits) { \
 		bits &= ~LINE_QMIN; \
 		if (NULL != r && \
@@ -314,6 +374,26 @@ size_pct(unsigned int bits)
 
 	if (LINE_QMIN_BARS & bits) {
 		bits &= ~LINE_QMIN_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_MIN_BARS & bits) {
+		bits &= ~LINE_MIN_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_HOUR_BARS & bits) {
+		bits &= ~LINE_HOUR_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_DAY_BARS & bits) {
+		bits &= ~LINE_DAY_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_WEEK_BARS & bits) {
+		bits &= ~LINE_WEEK_BARS;
+		sz += 10 + (bits ? 1 : 0);
+	}
+	if (LINE_YEAR_BARS & bits) {
+		bits &= ~LINE_YEAR_BARS;
 		sz += 10 + (bits ? 1 : 0);
 	}
 	if (LINE_QMIN & bits) {

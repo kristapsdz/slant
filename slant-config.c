@@ -274,6 +274,16 @@ parse_layout_pcts(struct parse *p, unsigned int *val)
 
 	if (tok_eq_adv(p, "qmin_bars"))
 		*val |= LINE_QMIN_BARS;
+	else if (tok_eq_adv(p, "min_bars"))
+		*val |= LINE_MIN_BARS;
+	else if (tok_eq_adv(p, "hour_bars"))
+		*val |= LINE_HOUR_BARS;
+	else if (tok_eq_adv(p, "day_bars"))
+		*val |= LINE_DAY_BARS;
+	else if (tok_eq_adv(p, "week_bars"))
+		*val |= LINE_WEEK_BARS;
+	else if (tok_eq_adv(p, "year_bars"))
+		*val |= LINE_YEAR_BARS;
 	else if (tok_eq_adv(p, "qmin"))
 		*val |= LINE_QMIN;
 	else if (tok_eq_adv(p, "min"))

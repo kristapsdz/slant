@@ -66,16 +66,23 @@ struct	drawbox {
 	size_t		 lastrecord2; /* if >0, lastrecord col in 2 */
 	unsigned int	 line1; /* what to show in 1 */
 	unsigned int	 line2; /* what to show in 2 */
-#define	LINE_QMIN_BARS	 0x0001
-#define	LINE_QMIN	 0x0002
-#define	LINE_MIN	 0x0004
-#define	LINE_HOUR 	 0x0008
-#define	LINE_DAY	 0x0010
-#define LINE_WEEK	 0x0020
-#define LINE_YEAR	 0x0040
+#define	LINE_QMIN	 0x0001
+#define	LINE_MIN	 0x0002
+#define	LINE_HOUR 	 0x0004
+#define	LINE_DAY	 0x0008
+#define LINE_WEEK	 0x0010
+#define LINE_YEAR	 0x0020
+#define	LINE_QMIN_BARS	 0x0100
+#define	LINE_MIN_BARS	 0x0200
+#define	LINE_HOUR_BARS	 0x0400
+#define	LINE_DAY_BARS	 0x0800
+#define	LINE_WEEK_BARS	 0x1000
+#define	LINE_YEAR_BARS	 0x2000
+
 #define	LINK_IP		 0x0001
 #define LINK_STATE	 0x0002
 #define LINK_ACCESS	 0x0004
+
 #define	HOST_ACCESS	 0x0001
 };
 
