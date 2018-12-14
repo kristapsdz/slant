@@ -286,7 +286,7 @@ main(int argc, char *argv[])
 	struct sysinfo	*info;
 	int		 c, rc = 0, noop = 0, verb = 0;
 	const char	*dbfile = "/var/www/data/slant.db";
-	char		*d, *discs = NULL, *procs = NULL;
+	char		*d, *discs = NULL, *procs = NULL, *tofree;
 	struct syscfg	 cfg;
 	sigset_t	 sset;
 	struct timespec	 timeo;
@@ -358,7 +358,10 @@ main(int argc, char *argv[])
 	 * Let SIGINT and SIGTERM trigger us into exiting safely.
 	 */
 
-	if (NULL != discs)
+	if (NULL != discs) {
+		if (NULL == (tofree = strdup(discs)))
+			err(EXIT_FAILURE, NULL);
+		discs = tofree;
 		while (NULL != (d = strsep(&discs, ","))) {
 			if ('\0' == d[0])
 				continue;
@@ -373,8 +376,13 @@ main(int argc, char *argv[])
 				err(EXIT_FAILURE, NULL);
 			cfg.discsz++;
 		}
+		free(tofree);
+	}
 
-	if (NULL != procs)
+	if (NULL != procs) {
+		if (NULL == (tofree = strdup(procs)))
+			err(EXIT_FAILURE, NULL);
+		procs = tofree;
 		while (NULL != (d = strsep(&procs, ","))) {
 			if ('\0' == d[0])
 				continue;
@@ -389,6 +397,8 @@ main(int argc, char *argv[])
 				err(EXIT_FAILURE, NULL);
 			cfg.cmdsz++;
 		}
+		free(tofree);
+	}
 
 	if (NULL == (info = sysinfo_alloc()))
 		goto out;
