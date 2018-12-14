@@ -161,8 +161,7 @@ is non-zero, it is the rows in the error/debug window.
 The
 .Cm host
 block consists of a series of column types and arguments.
-Each column may have multiple lines of content, currently limited to
-three lines.
+Each column may have up to six lines of content.
 If the column arguments do not have a line specification, they're
 assumed to be on the first line.
 In the event of duplicate lines, only the last is retained.
@@ -173,6 +172,10 @@ layout block.
  [ coltype
    [ "line1" "{" colargs "}" |
      "line2" "{" colargs "}" |
+     "line3" "{" colargs "}" |
+     "line4" "{" colargs "}" |
+     "line5" "{" colargs "}" |
+     "line6" "{" colargs "}" |
      colargs
    ] ";" ]+
 "}" ";"]
