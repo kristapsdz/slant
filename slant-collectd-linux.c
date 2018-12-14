@@ -61,6 +61,7 @@
 #include <sys/types.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <err.h>
 #include <fcntl.h>
@@ -318,6 +319,43 @@ sysinfo_update_nfiles(const struct syscfg *cfg, struct sysinfo *p)
 static int
 sysinfo_update_nprocs(const struct syscfg *cfg, struct sysinfo *p)
 {
+	struct dirent	*dent;
+	DIR 		*dir;
+	uint64_t	 maxproc, nprocs = 0;
+	ssize_t		 rd;
+
+	rd = proc_read_buf("/proc/sys/kernel/pid_max");
+	if (-1 == rd)
+		return 0;
+
+	if (1 != sscanf(buf, "%" SCNu64, &maxproc)) {
+		warnx("error while parsing /proc/sys/kernel/pid_max");
+		return 0;
+	}
+
+	dir = opendir("/proc");
+	if (NULL == dir) {
+		warn("opendir: /proc");
+		return 0;
+	}
+
+	while (NULL != (dent = readdir(dir))) {
+		if (isdigit(*dent->d_name))
+			nprocs++;
+	}
+	closedir(dir);
+
+#ifdef DEBUG
+	warnx("procs: nprocs=%" PRIu64 " maxproc=%" PRIu64, nprocs, maxproc);
+#endif
+
+	p->nproc_pct = 100.0 * nprocs / (double)maxproc;
+
+	/*
+	 * FIXME: add rproc support
+	 */
+	p->rproc_pct = .0;
+
 	return 1;
 }
 
