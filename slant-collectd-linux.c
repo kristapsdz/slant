@@ -265,7 +265,8 @@ sysinfo_update_mem(struct sysinfo *p)
 	uint64_t memtotal, memfree;
 	char *ptr;
 
-	if (-1 == (rd = proc_read_buf("/proc/meminfo")))
+	rd = proc_read_buf("/proc/meminfo");
+	if (-1 == rd)
 		return 0;
 
 	if (NULL == (ptr = memmem(buf, rd, "MemTotal:", 9)))
@@ -293,10 +294,11 @@ errparse:
 static int
 sysinfo_update_nfiles(const struct syscfg *cfg, struct sysinfo *p)
 {
-	uint64_t allocfiles, unusedfiles, maxfiles;
-	ssize_t rd;
+	uint64_t	allocfiles, unusedfiles, maxfiles;
+	ssize_t		rd;
 
-	if (-1 == (rd = proc_read_buf("/proc/sys/fs/file-nr")))
+	rd = proc_read_buf("/proc/sys/fs/file-nr");
+	if (-1 == rd)
 		return 0;
 
 	if (3 != sscanf(buf, "%" SCNu64 " %" SCNu64 " %" SCNu64,
@@ -325,7 +327,8 @@ sysinfo_update_cpu(struct sysinfo *p)
 	int64_t	val;
 	ssize_t	rd;
 
-	if (-1 == (rd = proc_read_buf("/proc/stat")))
+	rd = proc_read_buf("/proc/stat");
+	if (-1 == rd)
 		return 0;
 
 	if (10 != sscanf(buf, "cpu"
@@ -359,7 +362,7 @@ sysinfo_update_cpu(struct sysinfo *p)
 #ifdef DEBUG
 	for (int i = 0; i < CPUSTATES; i++)
 		warnx("%d: cp_time=%ld cp_old=%ld cp_diff=%ld",
-		    i, p->cp_time[i], p->cp_old[i], p->cp_diff[i]);
+			i, p->cp_time[i], p->cp_old[i], p->cp_diff[i]);
 #endif
 
 	/* Update our averages. */
@@ -383,7 +386,8 @@ get_ifflags(int *fd, const char *ifname, short *ifflags)
 {
 	static struct	ifreq ifr;
 
-	if (-1 == *fd && -1 == (*fd = socket(AF_UNIX, SOCK_DGRAM, 0))) {
+	if (-1 == *fd &&
+	    -1 == (*fd = socket(AF_UNIX, SOCK_DGRAM, 0))) {
 		warn("socket");
 		return 0;
 	}
@@ -398,6 +402,7 @@ get_ifflags(int *fd, const char *ifname, short *ifflags)
 		warn("ioctl: SIOCGIFFLAGS");
 		return 0;
 	}
+
 	*ifflags = ifr.ifr_flags;
 
 	return 1;
@@ -548,10 +553,10 @@ err:
 }
 
 static int
-is_device(char *name)
+is_real_block_device(char *name)
 {
-	char path[PATH_MAX];
-	char *p;
+	char	 path[PATH_MAX];
+	char	*p;
 
 	/*
 	 * iostat replaces slashes in device names with `!`
@@ -578,7 +583,8 @@ sysinfo_update_disc(const struct syscfg *cfg, struct sysinfo *p)
 	uint64_t	 rs = 0, ws = 0;
 	uint64_t	 rb = 0, wb = 0;
 
-	if (-1 == (rd = proc_read_buf("/proc/diskstats")))
+	rd = proc_read_buf("/proc/diskstats");
+	if (-1 == rd)
 		return 0;
 
 	for (ptr = buf; ptr < buf+rd; ptr++) {
@@ -593,7 +599,7 @@ sysinfo_update_disc(const struct syscfg *cfg, struct sysinfo *p)
 			goto errparse;
 		if (NULL == (ptr = strchr(ptr, '\n')))
 			goto errparse;
-		if ( ! is_device(name))
+		if ( ! is_real_block_device(name))
 			continue;
 		rs += secrd;
 		ws += secwr;
