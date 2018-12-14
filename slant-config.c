@@ -367,13 +367,39 @@ parse_layout_host(struct parse *p, struct config *cfg)
 againline:
 		if (tok_eq_adv(p, "line1")) {
 			in_line = 1;
-			line = &b->line1;
+			line = &b->lines[0].line;
+			if (cfg->draw->maxline < 1)
+				cfg->draw->maxline = 1;
 		} else if (tok_eq_adv(p, "line2")) {
 			in_line = 1;
-			line = &b->line2;
+			line = &b->lines[1].line;
+			if (cfg->draw->maxline < 2)
+				cfg->draw->maxline = 2;
+		} else if (tok_eq_adv(p, "line3")) {
+			in_line = 1;
+			line = &b->lines[2].line;
+			if (cfg->draw->maxline < 3)
+				cfg->draw->maxline = 3;
+		} else if (tok_eq_adv(p, "line4")) {
+			in_line = 1;
+			line = &b->lines[3].line;
+			if (cfg->draw->maxline < 4)
+				cfg->draw->maxline = 4;
+		} else if (tok_eq_adv(p, "line5")) {
+			in_line = 1;
+			line = &b->lines[4].line;
+			if (cfg->draw->maxline < 5)
+				cfg->draw->maxline = 5;
+		} else if (tok_eq_adv(p, "line6")) {
+			in_line = 1;
+			line = &b->lines[5].line;
+			if (cfg->draw->maxline < 6)
+				cfg->draw->maxline = 6;
 		} else {
 			in_line = 0;
-			line = &b->line1;
+			line = &b->lines[0].line;
+			if (cfg->draw->maxline < 1)
+				cfg->draw->maxline = 1;
 		}
 
 		/* If multiple times, clear. */

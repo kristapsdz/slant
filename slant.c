@@ -354,6 +354,7 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 
 	if (NULL != cfg->draw && cfg->draw->boxsz) {
 		d->boxsz = cfg->draw->boxsz;
+		d->maxline = cfg->draw->maxline;
 		d->box = calloc(d->boxsz, sizeof(struct drawbox));
 		if (NULL == d->box)
 			return -1;
@@ -361,6 +362,7 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 			d->box[i] = cfg->draw->box[i];
 	} else {
 		d->boxsz = 8;
+		d->maxline = 1;
 		d->box = calloc(d->boxsz, sizeof(struct drawbox));
 		if (NULL == d->box)
 			return -1;
@@ -374,39 +376,41 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 		d->box[ORD_RPROCS].cat = DRAWCAT_RPROCS;
 		d->box[ORD_HOST].cat = DRAWCAT_HOST;
 
-		d->box[ORD_CPU].line1 = LINE_QMIN_BARS | 
+		d->box[ORD_CPU].lines[0].line = 
+			LINE_QMIN_BARS | LINE_QMIN | LINE_HOUR;
+		d->box[ORD_MEM].lines[0].line = 
+			LINE_QMIN_BARS | LINE_QMIN | LINE_HOUR;
+		d->box[ORD_NET].lines[0].line = 
 			LINE_QMIN | LINE_HOUR;
-		d->box[ORD_MEM].line1 = LINE_QMIN_BARS | 
+		d->box[ORD_DISC].lines[0].line = 
 			LINE_QMIN | LINE_HOUR;
-		d->box[ORD_NET].line1 = LINE_QMIN | LINE_HOUR;
-		d->box[ORD_DISC].line1 = LINE_QMIN | LINE_HOUR;
-		d->box[ORD_PROCS].line1 = LINE_QMIN_BARS | 
-			LINE_QMIN | LINE_HOUR;
-		d->box[ORD_LINK].line1 = LINK_IP | 
-			LINK_STATE | LINK_ACCESS;
-		d->box[ORD_RPROCS].line1 = LINE_QMIN;
-		d->box[ORD_HOST].line1 = HOST_RECORD;
+		d->box[ORD_PROCS].lines[0].line = 
+			LINE_QMIN_BARS | LINE_QMIN | LINE_HOUR;
+		d->box[ORD_LINK].lines[0].line = 
+			LINK_IP | LINK_STATE | LINK_ACCESS;
+		d->box[ORD_RPROCS].lines[0].line = LINE_QMIN;
+		d->box[ORD_HOST].lines[0].line = HOST_RECORD;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_CPU].line1 &= ~LINE_QMIN_BARS;
-		d->box[ORD_MEM].line1 &= ~LINE_QMIN_BARS;
-		d->box[ORD_PROCS].line1 &= ~LINE_QMIN_BARS;
+		d->box[ORD_CPU].lines[0].line &= ~LINE_QMIN_BARS;
+		d->box[ORD_MEM].lines[0].line &= ~LINE_QMIN_BARS;
+		d->box[ORD_PROCS].lines[0].line &= ~LINE_QMIN_BARS;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_CPU].line1 &= ~LINE_HOUR;
-		d->box[ORD_MEM].line1 &= ~LINE_HOUR;
-		d->box[ORD_NET].line1 &= ~LINE_HOUR;
-		d->box[ORD_DISC].line1 &= ~LINE_HOUR;
-		d->box[ORD_PROCS].line1 &= ~LINE_HOUR;
+		d->box[ORD_CPU].lines[0].line &= ~LINE_HOUR;
+		d->box[ORD_MEM].lines[0].line &= ~LINE_HOUR;
+		d->box[ORD_NET].lines[0].line &= ~LINE_HOUR;
+		d->box[ORD_DISC].lines[0].line &= ~LINE_HOUR;
+		d->box[ORD_PROCS].lines[0].line &= ~LINE_HOUR;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;
 
-		d->box[ORD_LINK].line1 &= ~(LINK_IP | LINK_STATE);
+		d->box[ORD_LINK].lines[0].line &= ~(LINK_IP | LINK_STATE);
 	}
 
 	return maxx > compute_width(n, nsz, d);

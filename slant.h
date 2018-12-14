@@ -52,20 +52,14 @@ enum	drawcat {
 };
 
 /*
- * A box (column) to draw in the output.
- * This (currently) can have two lines of content.
+ * Within a drawbox, a given line.
+ * There can be up to six lines per drawing box.
  */
-struct	drawbox {
-	enum drawcat	 cat; /* the box category */
-	size_t		 len; /* maximum length for contents */
-	size_t		 len1; /* length of line 1 */
-	size_t		 len2; /* length of line 2 */
-	size_t		 lastseen1; /* if >0, lastseen col in 1 */
-	size_t		 lastseen2; /* if >0, lastseen col in 2 */
-	size_t		 lastrecord1; /* if >0, lastrecord col in 1 */
-	size_t		 lastrecord2; /* if >0, lastrecord col in 2 */
-	unsigned int	 line1; /* what to show in 1 */
-	unsigned int	 line2; /* what to show in 2 */
+struct	drawboxln {
+	size_t		 len; /* length */
+	size_t		 lastseen; /* if >0, lastseen time */
+	size_t		 lastrecord; /* if >0, lastrecord time */
+	unsigned int	 line; /* line display bits */
 #define	LINE_QMIN	 0x0001
 #define	LINE_MIN	 0x0002
 #define	LINE_HOUR 	 0x0004
@@ -87,6 +81,16 @@ struct	drawbox {
 };
 
 /*
+ * A box (column) to draw in the output.
+ * This (currently) can have two lines of content.
+ */
+struct	drawbox {
+	enum drawcat	 cat; /* the box category */
+	size_t		 len; /* maximum length for contents */
+	struct drawboxln lines[6]; /* our drawables */
+};
+
+/*
  * We use this structure to keep track of key parts of our UI.
  * It lets us optimise repainting the screen per second to keep track of
  * our last-seen intervals.
@@ -99,6 +103,7 @@ struct	draw {
 	enum draword	 order; /* order of drawn hosts */
 	size_t		 maxipsz; /* of all IPs possible, length */
 	size_t		 maxhostsz; /* of all hosts possible, length */
+	size_t		 maxline; /* max boxes' nonempty lines */
 };
 
 /*
