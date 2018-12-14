@@ -17,33 +17,11 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-stopped=
-pgrep slant-collectd >/dev/null
-if [ $? -ne 1 ]
-then
-	echo "slant-collectd running: stopping it first" 1>&2
-	pkill slant-collectd
-	sleep 2
-	pgrep slant-collectd >/dev/null
-	if [ $? -ne 1 ]
-	then
-		echo "slant-collectd: not dying: trying again" 1>&2
-		pkill slant-collectd
-		sleep 5
-		pgrep slant-collectd >/dev/null
-		if [ $? -ne 1 ]
-		then
-			echo "slant-collectd: not dying" 1>&2
-			exit 1
-		fi
-	fi
-	stopped=1
-fi
-
-set -e
-
 if [ ! -f "@DATADIR@/slant.db" ]
 then
+	# If the database doesn't exist, obviously nothing's running.
+	# Simply install it and exit.
+	set -e
 	mkdir -p "@DATADIR@"
 	echo "@DATADIR@/slant.db: installing new"
 	kwebapp-sql "@SHAREDIR@/slant/slant.kwbp" | sqlite3 "@DATADIR@/slant.db"
@@ -53,6 +31,41 @@ then
 	chmod 555 "@CGIBIN@/slant-cgi"
 	exit 0
 fi
+
+# If the database exists, make sure we're not still writing to it.
+# First try to use rcctl; then make sure we're not running debug
+# instances.
+
+stopped=0
+rcctl check slant >/dev/null
+if [ $? -eq 0 ]
+then
+	echo "slant(rcctl) running: stopping it first" 1>&2
+	rcctl stop slant
+	if [ $? -ne 0 ]
+	then
+		echo "slant(rcctl) cannot be stopped" 1>&2
+		exit 1
+	fi
+	stopped=1
+else
+	pgrep slant-collectd >/dev/null
+	if [ $? -eq 0 ]
+	then
+		echo "slant-collectd running: stopping it first" 1>&2
+		stopped=2
+		pkill slant-collectd
+		sleep 2
+		pgrep slant-collectd >/dev/null
+		if [ $? -eq 0 ]
+		then
+			echo "slant-collectd cannot be stopped" 1>&2
+			exit 1
+		fi
+	fi
+fi
+
+set -e
 
 TMPFILE=`mktemp` || exit 1
 trap "rm -f $TMPFILE" ERR EXIT
@@ -75,7 +88,11 @@ chmod 555 "@CGIBIN@/slant-cgi"
 rm -f "@DATADIR@/slant-upgrade.sql"
 echo "@DATADIR@/slant.db: patch success"
 
-if [ -n "$stopped" ]
+if [ "$stopped" -eq 1 ]
 then
-	echo "slant-collectd should be restarted"
+	echo "slant(rcctl): restarting" 1>&2
+	rcctl start slant
+elif [ "$stopped" -eq 2 ]
+then
+	echo "slant-collectd must be manually restarted" 1>&2
 fi

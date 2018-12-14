@@ -26,9 +26,11 @@
 The
 .Nm
 utility upgrades or installs the database used by
-.Xr slant-collectd 8 .
+.Xr slant-collectd 8
+on
+.Ox .
 It accepts no arguments.
-This is usually run automatically by the packaging system, such as
+This is usually run automatically by
 .Xr pkg_add 1 .
 .Pp
 For new installations (i.e., without an existing database file), this
@@ -46,6 +48,9 @@ permissions to execute.
 If
 .Xr slant-collectd 8
 is running, it is terminated before upgrade or installation.
+If managed by
+.Xr rcctl 8 ,
+it is restarted before exiting (upon success).
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
