@@ -185,7 +185,7 @@ The column types and arguments are as follows:
 "net" [time_interval]+
 "disc" [time_interval]+
 "link" ["ip"|"state"|"access"]+
-"host" ["record"|"slant_version"]+
+"host" ["record"|"slant_version"|"uptime"]+
 "nprocs" [time_interval_bars|time_interval]+
 "rprocs" [time_interval_bars|time_interval]+
 "nfiles" [time_interval_bars|time_interval]+
@@ -289,6 +289,9 @@ If the amount indicates problems, it will be shown in red.
 The
 .Cm slant_version ,
 column argument prints the collector version.
+Lastly,
+.Cm uptime
+prints the uptime in days, hours, and minutes.
 .It Cm nprocs
 The number of running processes over the maximum configured amount.
 Summaries are in percentages.

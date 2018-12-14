@@ -430,8 +430,8 @@ againline:
 					*line |= HOST_RECORD;
 				else if (tok_eq_adv(p, "slant_version"))
 					*line |= HOST_SLANT_VERSION;
-				else if (tok_eq_adv(p, "boot_rel"))
-					*line |= HOST_BOOT_REL;
+				else if (tok_eq_adv(p, "uptime"))
+					*line |= HOST_UPTIME;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))

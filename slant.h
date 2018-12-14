@@ -83,7 +83,7 @@ struct	drawbox {
 #define LINK_ACCESS	 0x0004
 #define	HOST_RECORD	 0x0001
 #define HOST_SLANT_VERSION 0x0002
-#define HOST_BOOT_REL	 0x0004
+#define HOST_UPTIME	 0x0004
 };
 
 /*

@@ -441,8 +441,8 @@ size_host(unsigned int bits)
 		bits &= ~HOST_SLANT_VERSION;
 		sz += 8 + (bits ? 1 : 0);
 	}
-	if (HOST_BOOT_REL & bits) {
-		bits &= ~HOST_BOOT_REL;
+	if (HOST_UPTIME & bits) {
+		bits &= ~HOST_UPTIME;
 		sz += 10 + (bits ? 1 : 0);
 	}
 
@@ -815,8 +815,8 @@ draw_host(unsigned int bits, time_t timeo,
 		if (bits)
 			waddch(win, ' ');
 	}
-	if (HOST_BOOT_REL & bits) {
-		bits &= ~HOST_BOOT_REL;
+	if (HOST_UPTIME & bits) {
+		bits &= ~HOST_UPTIME;
 		if (NULL == n->recs) 
 			waddstr(win, "---d--h--m");
 		else
@@ -1079,8 +1079,12 @@ draw_header_box(struct out *out,
 		box->len2 = size_host(box->line2);
 		if (box->len2 > box->len)
 			box->len = box->len2;
-		wprintw(out->mainwin, "%*s", 
-			(int)box->len, "host");
+		if (box->len < 12)
+			wprintw(out->mainwin, "%*s", 
+				(int)box->len, "host");
+		else
+			wprintw(out->mainwin, "%*s", 
+				(int)box->len, "host state");
 		break;
 	}
 
