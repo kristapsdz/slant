@@ -142,20 +142,9 @@ for details on the
 .Li url
 field.
 .Bd -literal -offset indent
-"layout" {"
+"layout" "{"
   ["header" ";"]
-  ["host" "{"
-    [["cpu" [time_interval_bars|time_interval]+ |
-      "mem" [time_interval_bars|time_interval]+ |
-      "net" [time_interval]+ |
-      "disc" [time_interval]+ |
-      "link" ["ip"|"state"|"access"]+ |
-      "host" |
-      "nprocs" [time_interval_bars|time_interval]+ |
-      "rprocs" [time_interval_bars|time_interval]+ |
-      "nfiles" [time_interval_bars|time_interval]+ ]
-     ";"]*
-   "}" ";"]
+  ["host" "{" [column]+ "}" ";"
   ["errlog" NUM ";"]
 "}" ";"
 .Ed
@@ -169,11 +158,39 @@ is specified, a column header is shown at the top of the screen.
 If
 .Cm errlog
 is non-zero, it is the rows in the error/debug window.
-.Pp
 The
 .Cm host
-block consists of column (box) specifiers.
-These begin with a category followed by displayed fields within the box.
+block consists of a series of column types and arguments.
+Each column may have multiple lines of content, currently limited to
+three lines.
+If the column arguments do not have a line specification, they're
+assumed to be on the first line.
+In the event of duplicate lines, only the last is retained.
+A column for a host ends in a semicolon or the close-brace for the host
+layout block.
+.Bd -literal -offset indent
+"host" "{"
+ [ coltype
+   [ "line1" "{" colargs "}" |
+     "line2" "{" colargs "}" |
+     colargs
+   ] ";" ]+
+"}" ";"]
+.Ed
+.Pp
+The column types and arguments are as follows:
+.Bd -literal -offset indent
+"cpu" [time_interval_bars|time_interval]+
+"mem" [time_interval_bars|time_interval]+
+"net" [time_interval]+
+"disc" [time_interval]+
+"link" ["ip"|"state"|"access"]+
+"host" |
+"nprocs" [time_interval_bars|time_interval]+
+"rprocs" [time_interval_bars|time_interval]+
+"nfiles" [time_interval_bars|time_interval]+
+.Ed
+.Pp
 The
 .Cm time_interval_bars
 fields draw coloured bar graph when specifying
