@@ -379,22 +379,22 @@ sysinfo_update_cpu(struct sysinfo *p)
 }
 
 static int
-get_ifflags(const char *ifname, short *ifflags)
+get_ifflags(int *fd, const char *ifname, short *ifflags)
 {
-	static struct ifreq ifr;
-	static int sockfd = -1;
+	static struct	ifreq ifr;
 
-	if (sockfd == -1) {
-		sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-		if (sockfd == -1) {
-			warn("socket");
-			return 0;
-		}
+	if (-1 == *fd && -1 == (*fd = socket(AF_UNIX, SOCK_DGRAM, 0))) {
+		warn("socket");
+		return 0;
 	}
 
-	strlcpy(ifr.ifr_name, ifname, sizeof (ifr.ifr_name));
+	if (strlcpy(ifr.ifr_name, ifname, sizeof (ifr.ifr_name)) >=
+	    sizeof (ifr.ifr_name)) {
+		warnx("ifname too long");
+		return 0;
+	}
 
-	if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1) {
+	if (-1 == ioctl(*fd, SIOCGIFFLAGS, &ifr)) {
 		warn("ioctl: SIOCGIFFLAGS");
 		return 0;
 	}
@@ -406,14 +406,14 @@ get_ifflags(const char *ifname, short *ifflags)
 static int
 get_ifindex(struct if_nameindex *idx, const char *ifname, int *ifindex)
 {
-    struct if_nameindex *next;
-    for (next = idx; (next->if_index && next->if_name); next++) {
-	    if (strcmp(ifname, next->if_name) == 0) {
-		    *ifindex = next->if_index;
-		    return 1;
-	    }
-    }
-    return 0;
+	struct if_nameindex	*next;
+	for (next = idx; (next->if_index && next->if_name); next++) {
+		if (0 == strcmp(ifname, next->if_name)) {
+			*ifindex = next->if_index;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 #define UPDATE(x, y, up) \
@@ -429,33 +429,37 @@ get_ifindex(struct if_nameindex *idx, const char *ifname, int *ifindex)
 static int
 sysinfo_update_if(struct sysinfo *p)
 {
-	struct ifstat 	*newstats, *ifs;
-	char *ptr, *ifname;
-	struct ifcount ifctmp;
-	int ifindex;
-	int up;
-	short flags;
-	ssize_t rd;
+	struct ifcount		 ifctmp;
+	struct ifstat 		*newstats, *ifs;
+	struct if_nameindex	*idx;
+	char			*ptr, *ifname;
+	ssize_t			 rd;
+	int			 ifindex, up, sockfd = -1;
+	short			 flags;
 
-	struct if_nameindex *idx;
-
-	if (NULL == (idx = if_nameindex()))
+	idx = if_nameindex();
+	if (NULL == idx)
 		return 0;
 
-	if (-1 == (rd = proc_read_buf("/proc/net/dev")))
+	rd = proc_read_buf("/proc/net/dev");
+	if (-1 == rd)
 		goto err;
 
-	// skip header lines
+	/*
+	 * Skip two header lines
+	 */
 	if (NULL == (ptr = strchr(buf, '\n')) ||
-	    NULL == (ptr = strchr(ptr+1, '\n')))
+	    NULL == (ptr = strchr(ptr+1, '\n')) ||
+	    '\0' == *++ptr)
 		goto errparse;
-	ptr++;
 
-	// reset summary
+
 	memset(&p->ifsum, 0, sizeof(p->ifsum));
 
-	for (;ptr < buf+rd; ptr++) {
-		// get interface name
+	for (; ptr < buf+rd; ptr++) {
+		/*
+		 * Get interface name, skip leading spaces
+		 */
 		for (;*ptr == ' '; ptr++) ;
 		ifname = ptr;
 		if (NULL == (ptr = strchr(ptr, ':')))
@@ -492,7 +496,7 @@ sysinfo_update_if(struct sysinfo *p)
 		    &ifctmp.ifc_oe,
 		    &ifctmp.ifc_co);
 
-		if ( ! get_ifflags(ifname, &flags))
+		if ( ! get_ifflags(&sockfd, ifname, &flags))
 			goto err;
 
 		if ((unsigned int)ifindex >= p->ifstatsz) {
@@ -532,11 +536,13 @@ sysinfo_update_if(struct sysinfo *p)
 			goto errparse;
 	}
 
+	close(sockfd);
 	if_freenameindex(idx);
 	return 1;
 errparse:
 	warnx("error while parsing /proc/net/dev");
 err:
+	close(sockfd);
 	if_freenameindex(idx);
 	return 0;
 }
