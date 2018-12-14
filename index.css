@@ -27,8 +27,8 @@ body > header			{ display: flex;
 				  align-items: flex-end; }
 body > header > :first-child	{ flex: 1; }
 h1				{ font-weight: 100;
-				  line-height: 40pt;
-				  font-size: 48pt;
+				  line-height: 50pt;
+				  font-size: 58pt;
 				  margin: 0; }
 h2				{ font-weight: 500;
 				  text-align: center;
@@ -102,6 +102,10 @@ nav[data-sblg-nav] ul		{ list-style-type: none;
 nav[data-sblg-nav] header	{ opacity: 0.7;
 				  border-bottom: thin solid #aaa; }
 nav[data-sblg-nav] p		{ margin: 0.5em 0; }
+nav[data-sblg-nav] li		{ opacity: 0.75; }
+nav[data-sblg-nav] li:first-child
+				{ opacity: 1; 
+				  margin-bottom: 1em; }
 
 @media only screen and (max-width: 1280px), only screen and (max-device-width: 1280px) {
   body > header, 

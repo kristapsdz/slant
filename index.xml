@@ -13,7 +13,7 @@
 		<header>
 			<div>
 				<h1 itemprop="name">slant</h1>
-				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project</div>
+				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project by CAPEM</div>
 			</div>
 			<nav>
 				<a href="https://github.com/kristapsdz/slant"><i class="fa fa-fw fa-github"></i></a>
@@ -206,10 +206,7 @@
 		</article>
 		<footer>
 			<div>
-				&#169; 2018, 
-				<a itemprop="author" itemscope="itemscope" itemtype="http://schema.org/Person" rel="author" href="https://github.com/kristapsdz">
-					<span itemprop="name">Kristaps Dzonsons</span>
-				</a>
+				&#169; 2018, CAPEM Solutions Inc.
 			</div>
 		</footer>
 	</body>
