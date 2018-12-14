@@ -425,15 +425,21 @@ againline:
 					return tok_unknown(p);
 			break;
 		case DRAWCAT_HOST:
-			*line = HOST_ACCESS;
 			while (p->pos < p->toksz)
-				if (tok_eq(p, ";"))
+				if (tok_eq_adv(p, "record"))
+					*line = HOST_ACCESS;
+				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))
 					break;
 				else
 					return tok_unknown(p);
 			break;
+		}
+
+		if (0 == *line) {
+			warnx("%s: empty column arguments", p->fn);
+			return 0;
 		}
 
 		if (in_line && ! tok_expect_adv(p, "}"))

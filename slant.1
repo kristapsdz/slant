@@ -74,7 +74,7 @@ layout {
     disc qmin hour ;
     link ip state access ;
     rprocs qmin ;
-    host ;
+    host record ;
   } ;
 } ;
 .Ed
@@ -185,7 +185,7 @@ The column types and arguments are as follows:
 "net" [time_interval]+
 "disc" [time_interval]+
 "link" ["ip"|"state"|"access"]+
-"host" |
+"host" "record" |
 "nprocs" [time_interval_bars|time_interval]+
 "rprocs" [time_interval_bars|time_interval]+
 "nfiles" [time_interval_bars|time_interval]+
@@ -273,7 +273,9 @@ If a worrying amount of elapsed time has shown, the time will be shown
 in yellow.
 If the amount indicates problems, it will be shown in red.
 .It Cm host
-The last data collection time as recorded by the remote host's
+If
+.Cm record ,
+the last data collection time as recorded by the remote host's
 collection system.
 Shown as hours, minutes, seconds elapsed.
 If a worrying amount of elapsed time has shown, the time will be shown
