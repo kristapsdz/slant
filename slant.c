@@ -385,7 +385,7 @@ layout(struct config *cfg, struct out *out, size_t maxx,
 		d->box[ORD_LINK].line1 = LINK_IP | 
 			LINK_STATE | LINK_ACCESS;
 		d->box[ORD_RPROCS].line1 = LINE_QMIN;
-		d->box[ORD_HOST].line1 = HOST_ACCESS;
+		d->box[ORD_HOST].line1 = HOST_RECORD;
 
 		if (maxx > compute_width(n, nsz, d)) 
 			return 1;

@@ -425,6 +425,32 @@ size_pct(unsigned int bits)
 }
 
 /*
+ * Get column widths of the host box.
+ * Used with draw_host().
+ */
+static size_t
+size_host(unsigned int bits)
+{
+	size_t	 sz = 0;
+
+	if (HOST_RECORD & bits) {
+		bits &= ~HOST_RECORD;
+		sz += 9 + (bits ? 1 : 0);
+	}
+	if (HOST_SLANT_VERSION & bits) {
+		bits &= ~HOST_SLANT_VERSION;
+		sz += 8 + (bits ? 1 : 0);
+	}
+	if (HOST_BOOT_REL & bits) {
+		bits &= ~HOST_BOOT_REL;
+		sz += 10 + (bits ? 1 : 0);
+	}
+
+	assert(0 == bits);
+	return sz;
+}
+
+/*
  * Get column widths of the link box.
  * Used with draw_link().
  */
@@ -634,6 +660,50 @@ draw_pct(WINDOW *win, double vv)
 }
 
 /*
+ * Draw a long-term time span in days, hours, minutes.
+ */
+static void
+draw_elapsed_longterm(WINDOW *win, time_t span)
+{
+	time_t	 day, hr, min;
+
+	if (span < 0)
+		span = 0;
+
+	day = span / (24 * 60 * 60);
+	span -= day * 24 * 60 * 60;
+
+	hr = span / (60 * 60);
+	span -= hr * 60 * 60;
+
+	min = span / 60;
+	span -= min * 60;
+	wprintw(win, "%3lldd%.2lldh%.2lldm", 
+		(long long)day, (long long)hr, 
+		(long long)min);
+}
+
+/*
+ * Draw a time span in hours, minutes, seconds.
+ */
+static void
+draw_elapsed(WINDOW *win, time_t span)
+{
+	time_t	 hr, min;
+
+	if (span < 0)
+		span = 0;
+
+	hr = span / (60 * 60);
+	span -= hr * 60 * 60;
+	min = span / 60;
+	span -= min * 60;
+	wprintw(win, "%3lld:%.2lld:%.2lld", 
+		(long long)hr, (long long)min, 
+		(long long)span);
+}
+
+/*
  * Draw the amount of time elased from "last" to "now", unless "last" is
  * zero, in which case draw something that indicates no time exists.
  * Bound below at zero elapsed time.
@@ -644,7 +714,7 @@ static void
 draw_interval(WINDOW *win, time_t waittime, 
 	time_t timeo, time_t last, time_t now)
 {
-	time_t	 ospan, span, hr, min;
+	time_t	 ospan, span;
 	int	 attrs = 0, b1, b2;
 
 	if (0 == last) {
@@ -688,13 +758,7 @@ draw_interval(WINDOW *win, time_t waittime,
 			wattron(win, attrs = b1);
 	}
 
-	hr = span / (60 * 60);
-	span -= hr * 60 * 60;
-	min = span / 60;
-	span -= min * 60;
-	wprintw(win, "%3lld:%.2lld:%.2lld", 
-		(long long)hr, (long long)min, 
-		(long long)span);
+	draw_elapsed(win, span);
 
 	if (attrs)
 		wattroff(win, attrs);
@@ -722,6 +786,47 @@ draw_xfer(WINDOW *win, double vv, int left)
 		wprintw(win, "%-6s", nbuf);
 	else
 		wprintw(win, "%6s", nbuf);
+}
+
+static void
+draw_host(unsigned int bits, time_t timeo,
+	time_t t, WINDOW *win, const struct node *n, 
+	size_t *lastrecord, struct drawbox *box)
+{
+	int	 x, y;
+
+	*lastrecord = 0;
+
+	if (HOST_RECORD & bits) {
+		bits &= ~HOST_RECORD;
+		getyx(win, y, x);
+		*lastrecord = x;
+		draw_interval(win, 15, 
+			n->waittime, get_last(n), t);
+		if (bits)
+			waddch(win, ' ');
+	}
+	if (HOST_SLANT_VERSION & bits) {
+		bits &= ~HOST_SLANT_VERSION;
+		if (NULL == n->recs)
+			waddstr(win, "--------");
+		else
+			wprintw(win, "%8s", n->recs->version);
+		if (bits)
+			waddch(win, ' ');
+	}
+	if (HOST_BOOT_REL & bits) {
+		bits &= ~HOST_BOOT_REL;
+		if (NULL == n->recs) 
+			waddstr(win, "---d--h--m");
+		else
+			draw_elapsed_longterm(win, 
+				t - n->recs->system.boot);
+		if (bits)
+			waddch(win, ' ');
+	}
+
+	assert(0 == bits);
 }
 
 static void
@@ -970,8 +1075,12 @@ draw_header_box(struct out *out,
 				"link state", box->len);
 		break;
 	case DRAWCAT_HOST:
-		box->len = box->len1 = box->len2 = 9;
-		wprintw(out->mainwin, "%9s", "last");
+		box->len = box->len1 = size_host(box->line1);
+		box->len2 = size_host(box->line2);
+		if (box->len2 > box->len)
+			box->len = box->len2;
+		wprintw(out->mainwin, "%*s", 
+			(int)box->len, "host");
 		break;
 	}
 
@@ -1009,7 +1118,6 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 	unsigned int bits, size_t *lastseen, size_t *lastrecord,
 	size_t len, const struct draw *d, time_t t)
 {
-	int	 x, y;
 	size_t	 i, resid;
 
 	draw_main_separator(out->mainwin);
@@ -1052,10 +1160,8 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 			out->mainwin, n, lastseen, box);
 		break;
 	case DRAWCAT_HOST:
-		getyx(out->mainwin, y, x);
-		*lastrecord = x;
-		draw_interval(out->mainwin, 15, 
-			n->waittime, get_last(n), t);
+		draw_host(bits, n->waittime, t,
+			out->mainwin, n, lastrecord, box);
 		break;
 	case DRAWCAT_PROCS:
 		draw_procs(bits, out->mainwin, n);

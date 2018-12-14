@@ -427,7 +427,11 @@ againline:
 		case DRAWCAT_HOST:
 			while (p->pos < p->toksz)
 				if (tok_eq_adv(p, "record"))
-					*line = HOST_ACCESS;
+					*line |= HOST_RECORD;
+				else if (tok_eq_adv(p, "slant_version"))
+					*line |= HOST_SLANT_VERSION;
+				else if (tok_eq_adv(p, "boot_rel"))
+					*line |= HOST_BOOT_REL;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))

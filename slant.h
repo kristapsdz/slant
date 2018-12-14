@@ -78,12 +78,12 @@ struct	drawbox {
 #define	LINE_DAY_BARS	 0x0800
 #define	LINE_WEEK_BARS	 0x1000
 #define	LINE_YEAR_BARS	 0x2000
-
 #define	LINK_IP		 0x0001
 #define LINK_STATE	 0x0002
 #define LINK_ACCESS	 0x0004
-
-#define	HOST_ACCESS	 0x0001
+#define	HOST_RECORD	 0x0001
+#define HOST_SLANT_VERSION 0x0002
+#define HOST_BOOT_REL	 0x0004
 };
 
 /*
