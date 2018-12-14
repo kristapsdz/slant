@@ -2,6 +2,33 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.15</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-12-14">2018-12-14</time>
+		</header>
+		<aside>
+			<p>
+				Add multi-line column information with the 
+				<code>line1</code> and <code>line2</code> modifiers.
+				Now each column can have multiple lines (currently just 2).
+				Add the <code>slant_version</code> column argument to the
+				<code>host</code> column type.
+				Add the <code>uptime</code> column argument to the same, 
+				indicating time elapsed since boot.
+                        </p>
+                        <p>
+				The <code>host</code> column type in the configuration now requires 
+				an argument.
+				The default must now be explicitly listed as <code>record</code>.
+                        </p>
+			<p>
+				Lastly, use <a href="https://man.openbsd.org/rcctl.8">rcctl(8)</a>
+				when invoking the upgrade function.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.14</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-12-10">2018-12-10</time>
