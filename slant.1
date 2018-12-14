@@ -185,7 +185,7 @@ The column types and arguments are as follows:
 "net" [time_interval]+
 "disc" [time_interval]+
 "link" ["ip"|"state"|"access"]+
-"host" "record" |
+"host" ["record"|"slant_version"]+
 "nprocs" [time_interval_bars|time_interval]+
 "rprocs" [time_interval_bars|time_interval]+
 "nfiles" [time_interval_bars|time_interval]+
@@ -286,6 +286,9 @@ Shown as hours, minutes, seconds elapsed.
 If a worrying amount of elapsed time has shown, the time will be shown
 in yellow.
 If the amount indicates problems, it will be shown in red.
+The
+.Cm slant_version ,
+column argument prints the collector version.
 .It Cm nprocs
 The number of running processes over the maximum configured amount.
 Summaries are in percentages.
