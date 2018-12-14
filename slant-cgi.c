@@ -14,6 +14,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include "config.h"
+
 #include <sys/queue.h>
 
 #include <inttypes.h>
@@ -29,7 +31,6 @@
 #include <kcgijson.h>
 #include <ksql.h>
 
-#include "config.h"
 #include "extern.h"
 #include "db.h"
 #include "json.h"
@@ -133,11 +134,13 @@ main(void)
 	struct record_q	*rq;
 	struct system	*sys;
 
+#if HAVE_PLEDGE
 	if (-1 == pledge("stdio rpath "
 	    "cpath wpath flock fattr proc", NULL)) {
 		kutil_warn(NULL, NULL, "pledge");
 		return EXIT_FAILURE;
 	}
+#endif
 
 	er = khttp_parsex(&r, ksuffixmap,
              kmimetypes, KMIME__MAX, NULL, 0,
@@ -170,12 +173,14 @@ main(void)
 		return EXIT_SUCCESS;
 	}
 
+#if HAVE_PLEDGE
 	if (-1 == pledge("stdio", NULL)) {
 		kutil_warn(NULL, NULL, "pledge");
 		db_close(r.arg);
 		khttp_free(&r);
 		return EXIT_FAILURE;
 	}
+#endif
 
 	db_role(r.arg, ROLE_consume);
 
