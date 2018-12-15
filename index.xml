@@ -41,6 +41,10 @@
 					<div class="pop"><img src="screen1.jpg" alt="screenshot" /></div>
 					<img src="screen1.jpg" alt="screenshot" />
 				</div>
+				<div class="popup" id="screen3">
+					<div class="pop"><img src="screen3.jpg" alt="screenshot" /></div>
+					<img src="screen3.jpg" alt="screenshot" />
+				</div>
 			</figure>
 			<h2 id="overview">overview</h2>
 			<p>
@@ -54,10 +58,12 @@
 				For past behaviour, <span class="nm">slant</span> maintains a set of
 				time-interval-bound circular queues (hourly, daily, etc.) with
 				current data aggregated into each time series.
+				An important design decision of <span class="nm">slant</span> is
+				that each monitoring host retains its own [bounded] history.
 			</p>
 			<p>
-				It is <strong>not</strong> designed for detailed analysis: there are
-				plenty of other tools for that.  
+				<span class="nm">Slant</span> is <strong>not</strong> designed for 
+				detailed analysis: there are plenty of other tools for that.  
 				(<a href="https://mmonit.com/monit/">Monit</a>, 
 				 <a href="https://zabbix.org">zabbix</a>, etc.)
 			</p>

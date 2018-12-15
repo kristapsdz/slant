@@ -57,7 +57,9 @@ body > header .hilite:hover	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0);
 				  background-color: rgba(255, 165, 0, 0.1); }
 
 .screens div			{ flex: 1.01; }
-.screens div:last-child		{ flex: 2; 
+.screens div:nth-child(2)	{ flex: 2; 
+				  margin-left: 1rem; }
+.screens div:nth-child(3)	{ flex: 1.42; 
 				  margin-left: 1rem; }
 .screens img			{ box-shadow: 1px 1px 4px orange; 
 				  cursor: pointer;
@@ -84,6 +86,7 @@ strong				{ font-weight: 500;
 .popup .pop img			{ border: none; 
 				  width: 90%; }
 #screen2 img			{ max-width: 1024px; }
+#screen3 img,
 #screen1 img			{ max-width: 1280px; }
 .popup.shown .pop		{ position: fixed;
 				  width: 100%;
