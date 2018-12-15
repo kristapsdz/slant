@@ -2,6 +2,18 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.17</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-12-15">2018-12-15</time>
+		</header>
+		<aside>
+			<p>
+				Enable up to six lines of multi-line columns.
+                        </p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.16</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-12-14">2018-12-14</time>
