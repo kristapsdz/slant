@@ -1,3 +1,10 @@
+**Please do not make feature requests!  I'll just close the issue.
+Please don't take it the wrong way---if you want something, I'm happy to
+work with your efforts to patch the existing system.**
+
+**Alternatively, if you wish to fund development for particular
+features, please contact me privately.**
+
 ## Synopsis
 
 *slant* is a remote system monitor.  For the time being, it only works
