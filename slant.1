@@ -377,6 +377,32 @@ layout {
   }
 } ;
 .Ed
+.Pp
+A more vertical layout for the same is as follows.
+This stacks information using the multi-line features.
+.Bd -literal -offset indent
+layout {
+  host {
+    cpu
+      line1 { qmin_bars qmin }
+      line2 { min_bars min }
+      line3 { hour_bars hour }
+      line4 { day_bars day }
+      line5 { week_bars week }
+      line6 { year_bars year } ;
+    mem
+      line1 { qmin_bars qmin }
+      line2 { min_bars min }
+      line3 { hour_bars hour }
+      line4 { day_bars day }
+      line5 { week_bars week }
+      line6 { year_bars year } ;
+    link
+      line1 { access state }
+      line2 { ip } ;
+  }
+} ;
+.Ed
 .\" .Sh DIAGNOSTICS
 .\" For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 .\" .Sh ERRORS
