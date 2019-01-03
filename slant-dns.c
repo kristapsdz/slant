@@ -16,11 +16,15 @@
  */
 #include "config.h"
 
-#include <sys/queue.h>
+#if HAVE_SYS_QUEUE
+# include <sys/queue.h>
+#endif
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include <err.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <limits.h>
 #include <netdb.h>
 #include <ncurses.h>

@@ -16,10 +16,14 @@
  */
 #include "config.h"
 
-#include <sys/queue.h>
+#if HAVE_SYS_QUEUE
+# include <sys/queue.h>
+#endif
 
 #include <assert.h>
-#include <err.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
