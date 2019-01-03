@@ -29,7 +29,7 @@
 #include <kcgijson.h>
 #include <ksql.h>
 
-#include "config.h"
+#include "params.h"
 #include "extern.h"
 #include "db.h"
 #include "json.h"
