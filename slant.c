@@ -441,8 +441,10 @@ main(int argc, char *argv[])
 
 	/* Initial pledge. */
 
+#if HAVE_PLEDGE
 	if (-1 == pledge("cpath wpath tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
+#endif
 
 	memset(&out, 0, sizeof(struct out));
 	memset(&d, 0, sizeof(struct draw));
@@ -466,8 +468,10 @@ main(int argc, char *argv[])
 
 	/* Repledge by dropping the error log pledges. */
 
+#if HAVE_PLEDGE
 	if (-1 == pledge("tty rpath dns inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
+#endif
 
 	/* Start up TLS handling really early. */
 
@@ -628,8 +632,10 @@ main(int argc, char *argv[])
 	 * We can relieve this by pre-loading our certs.
 	 */
 
+#if HAVE_PLEDGE
 	if (-1 == pledge("tty rpath inet stdio", NULL))
 		err(EXIT_FAILURE, NULL);
+#endif
 
 	/* Main loop. */
 
