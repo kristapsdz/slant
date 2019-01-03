@@ -350,10 +350,12 @@ main(int argc, char *argv[])
 
 	/* FIXME: once we have unveil, this is moot. */
 
+#ifndef __linux__
 	if (-1 == chroot(_PATH_VAREMPTY))
 		err(EXIT_FAILURE, "%s", _PATH_VAREMPTY);
 	else if (-1 == chdir("/"))
 		err(EXIT_FAILURE, "/");
+#endif
 
 	if (NULL != db)
 		db_role(db, ROLE_produce);

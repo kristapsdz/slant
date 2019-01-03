@@ -1,3 +1,4 @@
+#ifdef __OpenBSD__
 /*	$Id$ */
 /*
  * A lot of this file is a restatement of OpenBSD's top(1) machine.c.
@@ -754,3 +755,4 @@ sysinfo_get_boottime(const struct sysinfo *p)
 
 	return p->boottime;
 }
+#endif
