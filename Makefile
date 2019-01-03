@@ -18,6 +18,13 @@ DATADIR	   = $(WPREFIX)/data
 DBFILE	   = /data/slant.db
 WWWDIR	   = /var/www/vhosts/kristaps.bsd.lv/htdocs/slant
 
+# Additional libraries required per component.
+# These should be set in Makefile.local.
+
+LDADD_SLANT_COLLECTD =
+LDADD_SLANT_CGI =
+LDADD_SLANT =
+
 sinclude Makefile.local
 
 VERSION	   = 0.0.17
@@ -111,18 +118,18 @@ installdb: slant.db
 	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
-	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
+	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
 
 params.h:
 	echo "#define DBFILE \"$(DBFILE)\"" > params.h
 
 slant-cgi: slant-cgi.o db.o json.o
-	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
+	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread $(LDADD_SLANT_CGI)
 
 slant-cgi.o: params.h
 
 slant: $(SLANT_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz $(LDADD_SLANT)
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
