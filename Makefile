@@ -1,5 +1,7 @@
 .SUFFIXES: .8 .8.html .1 .1.html .dot .svg .ts .js
 
+include Makefile.configure
+
 PREFIX	   = /usr/local
 WPREFIX	   = /var/www
 
@@ -111,24 +113,27 @@ installdb: slant.db
 slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
 	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 
 
-config.h:
-	echo "#define DBFILE \"$(DBFILE)\"" > config.h
+params.h:
+	echo "#define DBFILE \"$(DBFILE)\"" > params.h
 
 slant-cgi: slant-cgi.o db.o json.o
 	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread
 
-slant-cgi.o: config.h
+slant-cgi.o: params.h
 
 slant: $(SLANT_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_OBJS) -ltls -lncurses -lkcgijson -lkcgi -lz
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
-	rm -f db.o db.c db.h json.c json.o json.h extern.h config.h
+	rm -f db.o db.c db.h json.c json.o json.h extern.h params.h
 	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
 	rm -f slant-cgi slant-cgi.o
 	rm -f slant $(SLANT_OBJS)
 	rm -f $(WWW)
+
+distclean: clean
+	rm -f Makefile.configure config.h config.log
 
 slant.db: slant.sql
 	rm -f $@
