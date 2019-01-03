@@ -86,29 +86,86 @@ http_close_err(struct out *out, struct node *n, time_t t)
 	return 1;
 }
 
+/*
+ * After closing out a connection, we're ready to parse the HTTP buffer
+ * placed into n->xfer.
+ * Returns zero on failure (fatal), non-zero on success (or non-fatal
+ * errors in the data).
+ */
 static int
 http_close_done_ok(struct out *out, struct node *n, time_t t)
 {
-	char	*end, *sv, *start = n->xfer.rbuf;
+	char	*end, *sv, *start = n->xfer.rbuf, *val;
 	size_t	 len, sz = n->xfer.rbufsz;
 	int	 rc, httpok = 0;
 
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = t;
 
+	/*
+	 * Start with HTTP headers, reading up until the double CRLF.
+	 * We care about a few headers, such as the version response and
+	 * the date (maybe others in the future).
+	 */
+
 	while (NULL != (end = memmem(start, sz, "\r\n", 2))) {
+		/* 
+		 * NUL-terminate the current line.
+		 * Position the next line ("start") after the CRLF. 
+		 * Keep the current start of the line in "sv".
+		 * Adjust buffer size less current line and CRLF.
+		 */
+
+		*end = '\0';
 		sv = start;
 		len = end - start;
 		start = end + 2;
 		sz -= len + 2;
+
+		/* Not allowed, but harmless. */
+
 		if (0 == len)
 			break;
-		else if (len < 13)
-			continue;
-		if (0 == memcmp(sv, "HTTP/1.0 200 ", 13) ||
-		    0 == memcmp(sv, "HTTP/1.1 200 ", 13)) 
+
+		/* 
+		 * Do we have the status line?
+		 * If so, all we want to see is whether we have an
+		 * HTTP/200 or not.
+		 * XXX: if we were to have a redirect, that should be
+		 * handled here by re-initialising the URL and then
+		 * re-acquiring the IPs.
+		 * However, slant currently can't handle that because it
+		 * needs to have a subprocess for DNS (async DNS is too
+		 * damn complicated, and we'd rather not have a dns
+		 * pledge), which it doesn't have yet.
+		 */
+
+		if (len >= 13 &&
+		    (0 == memcmp(sv, "HTTP/1.0 200 ", 13) ||
+		     0 == memcmp(sv, "HTTP/1.1 200 ", 13))) {
 			httpok = 1;
+			continue;
+		}
+
+		/* 
+		 * Do we have an HTTP key/value pair? 
+		 * If not, the line is bogus (harmless) or a non-200.
+		 */
+
+		if (NULL == (val = strchr(sv, ':')))
+			continue;
+
+		*val = '\0';
+		val++;
+
+		/* TODO. */
 	}
+
+	/*
+	 * If we encountered an HTTP/200, then we're good to investigate
+	 * the message itself.
+	 * Otherwise, dump the entire HTTP response to our log file.
+	 */
 
 	if ( ! httpok) {
 		xwarnx(out, "bad HTTP response (%lld seconds): "
@@ -120,6 +177,11 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 		fflush(out->errs);
 		rc = 1;
 	} else if ((rc = json_parse(out, n, start, sz)) > 0) {
+		/*
+		 * XXX: should a bad (rc == 0) JSON parse really trigger
+		 * the fatal error condition?
+		 * First let's see if we pick this up in reality.
+		 */
 		n->dirty = 1;
 		n->lastseen = t;
 	}
