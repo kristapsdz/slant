@@ -61,6 +61,10 @@ SLANT_OBJS = slant.o \
 	     slant-http.o \
 	     slant-json.o \
 	     json.o
+OBJS	   = $(SLANT_OBJS) \
+	     slant-cgi.o  \
+	     slant-collectd.o \
+	     slant-collectd-openbsd.o
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
@@ -117,14 +121,14 @@ installdb: slant.db
 	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
 	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
-slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o
-	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o slant-collectd-openbsd.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
+slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o compats.o
+	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o compats.o slant-collectd-openbsd.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
 
 params.h:
 	echo "#define DBFILE \"$(DBFILE)\"" > params.h
 
-slant-cgi: slant-cgi.o db.o json.o
-	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread $(LDADD_SLANT_CGI)
+slant-cgi: slant-cgi.o db.o json.o compats.o
+	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o compats.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread $(LDADD_SLANT_CGI)
 
 slant-cgi.o: params.h
 
@@ -133,10 +137,9 @@ slant: $(SLANT_OBJS)
 
 clean:
 	rm -f slant.db slant.sql slant.tar.gz slant-upgrade
-	rm -f db.o db.c db.h json.c json.o json.h extern.h params.h
-	rm -f slant-collectd slant-collectd.o slant-collectd-openbsd.o
-	rm -f slant-cgi slant-cgi.o
-	rm -f slant $(SLANT_OBJS)
+	rm -f db.c db.h json.c json.h extern.h params.h
+	rm -f slant-collectd slant-cgi slant
+	rm -f $(OBJS) compats.o db.o json.o
 	rm -f $(WWW)
 
 distclean: clean
@@ -154,6 +157,8 @@ slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
 db.o slant-collectd.o slant-cgi.o: db.h
 
 json.o slant-cgi.o slant-json.o slant.o: json.h
+
+$(OBJS): config.h
 
 $(SLANT_OBJS): slant.h
 
