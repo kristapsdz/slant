@@ -39,6 +39,7 @@ WWW	   = index.html \
 DOTAR	   = Makefile \
 	     slant-cgi.c \
 	     slant-cgi.8 \
+	     slant-collectd-linux.c \
 	     slant-collectd-openbsd.c \
 	     slant-collectd.8 \
 	     slant-collectd.c \
@@ -64,6 +65,7 @@ SLANT_OBJS = slant.o \
 OBJS	   = $(SLANT_OBJS) \
 	     slant-cgi.o  \
 	     slant-collectd.o \
+	     slant-collectd-linux.o \
 	     slant-collectd-openbsd.o
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
@@ -121,8 +123,8 @@ installdb: slant.db
 	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
 	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
-slant-collectd: slant-collectd.o slant-collectd-openbsd.o db.o compats.o
-	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o compats.o slant-collectd-openbsd.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
+slant-collectd: slant-collectd.o slant-collectd-openbsd.o slant-collectd-linux.o db.o compats.o
+	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o compats.o slant-collectd-openbsd.o slant-collectd-linux.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
 
 params.h:
 	echo "#define DBFILE \"$(DBFILE)\"" > params.h
@@ -152,7 +154,7 @@ slant.db: slant.sql
 slant.sql: slant.kwbp
 	kwebapp-sql slant.kwbp > $@
 
-slant-collectd-openbsd.o slant-collectd.o: slant-collectd.h
+slant-collectd-openbsd.o slant-collectd-linux.o slant-collectd.o: slant-collectd.h
 
 db.o slant-collectd.o slant-cgi.o: db.h
 
