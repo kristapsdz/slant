@@ -77,7 +77,7 @@ installwww: www
 	mkdir -p $(WWWDIR)/snapshots
 	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots/slant-$(VERSION).tar.gz
 	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots
-	install -m 0444 $(WWW) index.css screen1.jpg screen2.jpg $(WWWDIR)
+	install -m 0444 $(WWW) index.css screen1.jpg screen2.jpg screen3.jpg $(WWWDIR)
 
 slant.tar.gz: $(DOTAR)
 	mkdir -p .dist/slant-$(VERSION)/
