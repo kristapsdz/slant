@@ -464,6 +464,8 @@ againline:
 					*line |= HOST_SLANT_VERSION;
 				else if (tok_eq_adv(p, "uptime"))
 					*line |= HOST_UPTIME;
+				else if (tok_eq_adv(p, "clock_drift"))
+					*line |= HOST_CLOCK_DRIFT;
 				else if (tok_eq(p, ";"))
 					break;
 				else if (tok_eq(p, "}"))

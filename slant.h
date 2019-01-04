@@ -78,6 +78,7 @@ struct	drawboxln {
 #define	HOST_RECORD	 0x0001
 #define HOST_SLANT_VERSION 0x0002
 #define HOST_UPTIME	 0x0004
+#define HOST_CLOCK_DRIFT 0x0008
 };
 
 /*
@@ -172,6 +173,7 @@ struct	node {
 	struct dns	 addrs; /* all possible IP addresses */
 	time_t		 waitstart; /* wait period start */
 	time_t		 lastseen; /* last sample data received */
+	time_t		 drift; /* time drift or zero (valid drift!) */
 	struct recset	*recs; /* results */
 	int		 dirty; /* new results */
 };

@@ -449,6 +449,10 @@ size_host(unsigned int bits)
 		bits &= ~HOST_UPTIME;
 		sz += 10 + (bits ? 1 : 0);
 	}
+	if (HOST_CLOCK_DRIFT & bits) {
+		bits &= ~HOST_CLOCK_DRIFT;
+		sz += 9 + (bits ? 1 : 0);
+	}
 
 	assert(0 == bits);
 	return sz;
@@ -688,6 +692,46 @@ draw_elapsed_longterm(WINDOW *win, time_t span)
 }
 
 /*
+ * Draw a time difference "span", which is [+-]hh:mm:ss.
+ * Colour it red if >60 seconds, yellow if >30 seconds.
+ */
+static void
+draw_time_diff(struct out *out, time_t span)
+{
+	time_t	 hr, min, sv;
+	int	 minus = span < 0;
+	char	 hrbuf[4];
+
+	sv = span = llabs(span);
+
+	if (sv > 60)
+		wattron(out->mainwin, A_BOLD | COLOR_PAIR(2));
+	else if (sv > 30)
+		wattron(out->mainwin, A_BOLD | COLOR_PAIR(1));
+
+	hr = span / (60 * 60);
+	span -= hr * 60 * 60;
+	min = span / 60;
+	span -= min * 60;
+
+	/* Truncate at 99 hours for two-digit hours. */
+
+	if (hr > 99)
+		hr = 99;
+
+	snprintf(hrbuf, sizeof(hrbuf), "%s%lld", 
+		0 == sv ? " " : (minus ? "-" : "+"),
+		(long long)hr);
+	wprintw(out->mainwin, "%3s:%.2lld:%.2lld", 
+		hrbuf, (long long)min, (long long)span);
+
+	if (sv > 60)
+		wattroff(out->mainwin, A_BOLD | COLOR_PAIR(2));
+	else if (sv > 30)
+		wattroff(out->mainwin, A_BOLD | COLOR_PAIR(1));
+}
+
+/*
  * Draw a time span in hours, minutes, seconds.
  */
 static void
@@ -794,10 +838,11 @@ draw_xfer(WINDOW *win, double vv, int left)
 
 static void
 draw_host(unsigned int bits, time_t timeo,
-	time_t t, WINDOW *win, const struct node *n, 
+	time_t t, struct out *out, const struct node *n, 
 	size_t *lastrecord, struct drawbox *box)
 {
 	int	 x, y;
+	WINDOW	*win = out->mainwin;
 
 	*lastrecord = 0;
 
@@ -826,6 +871,12 @@ draw_host(unsigned int bits, time_t timeo,
 		else
 			draw_elapsed_longterm(win, 
 				t - n->recs->system.boot);
+		if (bits)
+			waddch(win, ' ');
+	}
+	if (HOST_CLOCK_DRIFT & bits) {
+		bits &= ~HOST_CLOCK_DRIFT;
+		draw_time_diff(out, n->drift);
 		if (bits)
 			waddch(win, ' ');
 	}
@@ -1189,7 +1240,7 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 		break;
 	case DRAWCAT_HOST:
 		draw_host(bits, n->waittime, t,
-			out->mainwin, n, lastrecord, box);
+			out, n, lastrecord, box);
 		break;
 	case DRAWCAT_PROCS:
 		draw_procs(bits, out->mainwin, n);

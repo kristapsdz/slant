@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -99,9 +100,10 @@ http_close_err(struct out *out, struct node *n, time_t t)
 static int
 http_close_done_ok(struct out *out, struct node *n, time_t t)
 {
-	char	*end, *sv, *start = n->xfer.rbuf, *val;
-	size_t	 len, sz = n->xfer.rbufsz;
-	int	 rc, httpok = 0;
+	char		*end, *sv, *start = n->xfer.rbuf, *val;
+	size_t		 len, sz = n->xfer.rbufsz;
+	int		 rc, httpok = 0, dateok = 0;
+	struct tm	 tm;
 
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = t;
@@ -160,10 +162,37 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 			continue;
 
 		*val = '\0';
+		end = val - 1;
 		val++;
 
-		/* TODO. */
+		/* Spaces surrounding the colon. */
+
+		while (end > sv && isspace((unsigned char)*end)) {
+			*end = '\0';
+			end--;
+		}
+		while ('\0' != val && isspace((unsigned char)*val))
+			val++;
+
+		if (0 == strcmp(sv, "Date")) {
+			memset(&tm, 0, sizeof(struct tm));
+			dateok = NULL != strptime
+				(val, "%a, %d %b %Y %T %Z", &tm);
+		}
 	}
+
+	/* 
+	 * Compute our clock drift.
+	 * We do this regardless the return code if we actually have a
+	 * date that's been set.
+	 */
+
+	if (dateok) {
+		assert(t >= n->xfer.start);
+		n->drift = timegm(&tm) -
+			(t + (t - n->xfer.start) / 2);
+	} else
+		n->drift = 0;
 
 	/*
 	 * If we encountered an HTTP/200, then we're good to investigate
