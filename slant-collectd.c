@@ -44,6 +44,10 @@
 #include "extern.h"
 #include "db.h"
 
+#ifndef _PATH_VAREMPTY
+# define _PATH_VAREMPTY "/var/empty"
+#endif
+
 static	sig_atomic_t	doexit = 0;
 
 static void
