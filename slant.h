@@ -112,7 +112,11 @@ struct	draw {
  * This can be totally empty: we have no constraints.
  */
 struct	recset {
+	int		 has_version;
 	char		*version;
+	int		 has_timestamp;
+	int64_t		 timestamp;
+	int		 has_system;
 	struct system	 system;
 	struct record	*byqmin;
 	size_t		 byqminsz;
@@ -126,8 +130,6 @@ struct	recset {
 	size_t		 byweeksz;
 	struct record	*byyear;
 	size_t		 byyearsz;
-	int		 has_system;
-	int		 has_version;
 };
 
 enum	state {

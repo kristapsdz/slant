@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,6 +45,7 @@ json_parse_obj(struct out *out, const char *str,
 	const jsmntok_t *t, size_t pos, struct node *n, int toks)
 {
 	int	 rc = 0;
+	char	*buf;
 
 	if (jsmn_eq(str, &t[pos], "version")) {
 		if (n->recs->has_version) {
@@ -63,6 +65,42 @@ json_parse_obj(struct out *out, const char *str,
 			return -1;
 		}
 		n->recs->has_version = 1;
+		return 1;
+	} else if (jsmn_eq(str, &t[pos], "timestamp")) {
+		if (n->recs->has_timestamp) {
+			xwarnx(out, "JSON \"timestamp\" "
+				"duplicated: %s", n->host);
+			return 0;
+		} else if (JSMN_PRIMITIVE != t[++pos].type) {
+			xwarnx(out, "JSON \"timestamp\" node "
+				"not a primitive: %s", n->host);
+			return 0;
+		}
+
+		/*
+		 * This is clunky.
+		 * Integers are stored as just primitives, so we need to
+		 * parse them out of the stream.
+		 * To do so, convert into a temporary buffer, then
+		 * convert from the buffer.
+		 * To prevent the unlikely event of overflow, we only
+		 * require that ERANGE be satisfied.
+		 */
+
+		buf = strndup(str + t[pos].start,
+			 t[pos].end - t[pos].start);
+		if (NULL == buf) {
+			xwarn(out, NULL);
+			return -1;
+		}
+		errno = 0;
+		n->recs->timestamp = strtoll(buf, NULL, 10);
+		if (ERANGE != errno)
+			n->recs->has_timestamp = 1;
+		else
+			xwarnx(out, "JSON \"timestamp\" not "
+				"a valid number: %s", n->host);
+		free(buf);
 		return 1;
 	} else if (jsmn_eq(str, &t[pos], "system")) {
 		if (n->recs->has_system) {

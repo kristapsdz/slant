@@ -100,18 +100,16 @@ http_close_err(struct out *out, struct node *n, time_t t)
 static int
 http_close_done_ok(struct out *out, struct node *n, time_t t)
 {
-	char		*end, *sv, *start = n->xfer.rbuf, *val;
+	char		*end, *sv, *start = n->xfer.rbuf;
 	size_t		 len, sz = n->xfer.rbufsz;
-	int		 rc, httpok = 0, dateok = 0;
-	struct tm	 tm;
+	int		 rc, httpok = 0;
 
 	n->state = STATE_CONNECT_WAITING;
 	n->waitstart = t;
 
 	/*
 	 * Start with HTTP headers, reading up until the double CRLF.
-	 * We care about a few headers, such as the version response and
-	 * the date (maybe others in the future).
+	 * We care about the HTTP version only.
 	 */
 
 	while (NULL != (end = memmem(start, sz, "\r\n", 2))) {
@@ -153,46 +151,8 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 			continue;
 		}
 
-		/* 
-		 * Do we have an HTTP key/value pair? 
-		 * If not, the line is bogus (harmless) or a non-200.
-		 */
-
-		if (NULL == (val = strchr(sv, ':')))
-			continue;
-
-		*val = '\0';
-		end = val - 1;
-		val++;
-
-		/* Spaces surrounding the colon. */
-
-		while (end > sv && isspace((unsigned char)*end)) {
-			*end = '\0';
-			end--;
-		}
-		while ('\0' != val && isspace((unsigned char)*val))
-			val++;
-
-		if (0 == strcmp(sv, "Date")) {
-			memset(&tm, 0, sizeof(struct tm));
-			dateok = NULL != strptime
-				(val, "%a, %d %b %Y %T %Z", &tm);
-		}
+		/* Additional queries...? */
 	}
-
-	/* 
-	 * Compute our clock drift.
-	 * We do this regardless the return code if we actually have a
-	 * date that's been set.
-	 */
-
-	if (dateok) {
-		assert(t >= n->xfer.start);
-		n->drift = timegm(&tm) -
-			(t + (t - n->xfer.start) / 2);
-	} else
-		n->drift = 0;
 
 	/*
 	 * If we encountered an HTTP/200, then we're good to investigate
@@ -217,6 +177,18 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 		 */
 		n->dirty = 1;
 		n->lastseen = t;
+		
+		/* 
+		 * Compute drift given our transfer times and the
+		 * timestamp given in the JSON query.
+		 */
+
+		if (n->recs->has_timestamp) {
+			assert(t >= n->xfer.start);
+			n->drift = n->recs->timestamp -
+				(t + (t - n->xfer.start) / 2);
+		} else
+			n->drift = 0;
 	}
 
 	free(n->xfer.rbuf);
