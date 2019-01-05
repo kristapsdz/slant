@@ -52,14 +52,15 @@ Real-valued numbers
 .Pq Li real
 are serialised from double-precision numbers.
 .Bd -literal
-{ version: "x.y.z",
-   system: { system },
-     qmin: [ records... ],
-      min: [ records... ],
-     hour: [ records... ],
-      day: [ records... ],
-     week: [ records... ],
-     year: [ records... ] 
+{   version: "x.y.z",
+  timestamp: int,
+     system: { system },
+       qmin: [ records... ],
+        min: [ records... ],
+       hour: [ records... ],
+        day: [ records... ],
+       week: [ records... ],
+       year: [ records... ] 
 }
 .Ed
 .Pp
@@ -71,11 +72,11 @@ The
 .Li system ,
 pair consists of system information:
 .Bd -literal
-{ boottime: int }
+{ boot: int }
 .Ed
 .Pp
 For the time being it consists only of
-.Li boottime ,
+.Li boot ,
 the UNIX epoch value for when the system was last booted.
 .Pp
 The last six are the possibly-empty sets of records accumulated over a given
@@ -111,6 +112,7 @@ Each record consists of the following:
   discread: int,
  discwrite: int,
     nprocs: real,
+    rprocs: real,
     nfiles: real,
   interval: int,
         id: int 
@@ -138,6 +140,8 @@ bytes read per second over all configured devices
 bytes written per second over all configured devices
 .It Li nprocs
 number of running processes over all possible processes
+.It Li rprocs
+number of configured processes running over total configured
 .It Li nfiles
 number of open files over all possible open files
 .It Li interval

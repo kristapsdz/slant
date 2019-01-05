@@ -74,6 +74,8 @@ sendindex(struct kreq *r,
 	kjson_obj_open(&req);
 
 	kjson_putstringp(&req, "version", VERSION);
+	kjson_putintp(&req, "timestamp", time(NULL));
+
 	json_system_obj(&req, sys);
 
 	kjson_arrayp_open(&req, "qmin");
