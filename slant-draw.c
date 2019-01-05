@@ -842,43 +842,45 @@ draw_host(unsigned int bits, time_t timeo,
 	size_t *lastrecord, struct drawbox *box)
 {
 	int	 x, y;
-	WINDOW	*win = out->mainwin;
 
 	*lastrecord = 0;
 
 	if (HOST_RECORD & bits) {
 		bits &= ~HOST_RECORD;
-		getyx(win, y, x);
+		getyx(out->mainwin, y, x);
 		*lastrecord = x;
-		draw_interval(win, 15, 
+		draw_interval(out->mainwin, 15, 
 			n->waittime, get_last(n), t);
 		if (bits)
-			waddch(win, ' ');
+			waddch(out->mainwin, ' ');
 	}
 	if (HOST_SLANT_VERSION & bits) {
 		bits &= ~HOST_SLANT_VERSION;
 		if (NULL == n->recs)
-			waddstr(win, "--------");
+			waddstr(out->mainwin, "--------");
 		else
-			wprintw(win, "%8s", n->recs->version);
+			wprintw(out->mainwin, "%8s", n->recs->version);
 		if (bits)
-			waddch(win, ' ');
+			waddch(out->mainwin, ' ');
 	}
 	if (HOST_UPTIME & bits) {
 		bits &= ~HOST_UPTIME;
 		if (NULL == n->recs) 
-			waddstr(win, "---d--h--m");
+			waddstr(out->mainwin, "---d--h--m");
 		else
-			draw_elapsed_longterm(win, 
+			draw_elapsed_longterm(out->mainwin, 
 				t - n->recs->system.boot);
 		if (bits)
-			waddch(win, ' ');
+			waddch(out->mainwin, ' ');
 	}
 	if (HOST_CLOCK_DRIFT & bits) {
 		bits &= ~HOST_CLOCK_DRIFT;
-		draw_time_diff(out, n->drift);
+		if (NULL == n->recs || ! n->recs->has_timestamp)
+			waddstr(out->mainwin, "---------");
+		else
+			draw_time_diff(out, n->drift);
 		if (bits)
-			waddch(win, ' ');
+			waddch(out->mainwin, ' ');
 	}
 
 	assert(0 == bits);
