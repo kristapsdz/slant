@@ -34,11 +34,17 @@ enum	interval {
 struct	system {
 	field boot epoch comment
 		"When the system was last booted.";
+	field machine text null comment
+		"Machine hardware platform.";
+	field osversion text null comment
+		"Version level of the operating system.";
+	field osrelease text null comment
+		"Release level of the operating system.";
 	field id int unique default 1;
 
 	insert;
 
-	update boot: id: name all;
+	update boot, machine, osversion, osrelease: id: name all;
 
 	search id: name id;
 

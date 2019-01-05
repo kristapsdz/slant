@@ -19,6 +19,7 @@
 #if HAVE_SYS_QUEUE
 # include <sys/queue.h>
 #endif
+#include <sys/utsname.h>
 
 #include <assert.h>
 #if HAVE_ERR
@@ -123,22 +124,47 @@ print(const struct sysinfo *p)
 		sysinfo_get_nfiles(p));
 }
 
-static void
+/*
+ * Initialise the database by updating our runtime information in the
+ * "system" table.
+ * Return zero on failure, non-zero on success.
+ */
+static int
 init(struct kwbp *db, const struct sysinfo *p)
 {
 	struct system	*s;
+	struct utsname	 uts;
+	const char	*mach, *ver, *rel;
+
+	if (-1 == uname(&uts)) {
+		warn(NULL);
+		return 0;
+	}
+
+	mach = uts.machine;
+	ver = uts.version;
+	rel = uts.release;
 
 	db_trans_open(db, 1, 0);
 
 	if (NULL != (s = db_system_get_id(db, 1))) {
-		db_system_update_all
-			(db, sysinfo_get_boottime(p), 1);
+		db_system_update_all(db, 
+			sysinfo_get_boottime(p), /* boot */
+			&mach,	/* machine */
+			&ver,	/* version */
+			&rel,	/* release */
+			1	/* id */ );
 		db_system_free(s);
 	} else
-		db_system_insert
-			(db, sysinfo_get_boottime(p), 1);
+		db_system_insert(db, 
+			sysinfo_get_boottime(p), /* boot */
+			&mach,	/* machine */
+			&ver,	/* version */
+			&rel,	/* release */
+			1	/* id */ );
 
 	db_trans_commit(db, 1);
+	return 1;
 }
 
 /*
@@ -450,8 +476,9 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (NULL != db)
-		init(db, info);
+	if (NULL != db && ! init(db, info))
+		goto out;
+
 	if (verb)
 		printinit(info);
 
