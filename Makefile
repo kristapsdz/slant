@@ -39,6 +39,7 @@ WWW	   = index.html \
 DOTAR	   = Makefile \
 	     slant-cgi.c \
 	     slant-cgi.8 \
+	     slant-collectd-freebsd.c \
 	     slant-collectd-linux.c \
 	     slant-collectd-openbsd.c \
 	     slant-collectd.8 \
@@ -62,11 +63,22 @@ SLANT_OBJS = slant.o \
 	     slant-http.o \
 	     slant-json.o \
 	     json.o
-OBJS	   = $(SLANT_OBJS) \
-	     slant-cgi.o  \
+SLANT_COLLECTD_OBJS = \
+	     compats.o \
+	     db.o \
 	     slant-collectd.o \
+	     slant-collectd-freebsd.o \
 	     slant-collectd-linux.o \
 	     slant-collectd-openbsd.o
+OBJS	   = $(SLANT_OBJS) \
+	     slant-cgi.o \
+	     slant-collectd.o \
+	     slant-collectd-freebsd.o \
+	     slant-collectd-linux.o \
+	     slant-collectd-openbsd.o
+
+# Needed on FreeBSD.
+CFLAGS += $(CPPFLAGS)
 
 all: slant.db slant-collectd slant-cgi slant slant-upgrade
 
@@ -123,8 +135,8 @@ installdb: slant.db
 	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
 	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
-slant-collectd: slant-collectd.o slant-collectd-openbsd.o slant-collectd-linux.o db.o compats.o
-	$(CC) -o $@ $(LDFLAGS) slant-collectd.o db.o compats.o slant-collectd-openbsd.o slant-collectd-linux.o -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
+slant-collectd: $(SLANT_COLLECTD_OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_COLLECTD_OBJS) -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
 
 params.h:
 	echo "#define DBFILE \"$(DBFILE)\"" > params.h
