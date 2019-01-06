@@ -79,6 +79,9 @@ struct	drawboxln {
 #define HOST_SLANT_VERSION 0x0002
 #define HOST_UPTIME	 0x0004
 #define HOST_CLOCK_DRIFT 0x0008
+#define HOST_MACHINE	 0x0010
+#define HOST_OSVERSION	 0x0020
+#define HOST_OSRELEASE	 0x0040
 };
 
 /*

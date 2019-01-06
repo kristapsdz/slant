@@ -239,6 +239,39 @@ parse_server_args(struct parse *p, struct config *cfg, size_t count)
 }
 
 /*
+ * Parse host related bits.
+ * Returns 0 on failure, <0 to stop parsing the current block (not an
+ * error), or >0 if the parse should continue.
+ */
+static int
+parse_layout_host_bits(struct parse *p, unsigned int *val)
+{
+
+	if (tok_eq_adv(p, "record"))
+		*val |= HOST_RECORD;
+	else if (tok_eq_adv(p, "slant_version"))
+		*val |= HOST_SLANT_VERSION;
+	else if (tok_eq_adv(p, "uptime"))
+		*val |= HOST_UPTIME;
+	else if (tok_eq_adv(p, "clock_drift"))
+		*val |= HOST_CLOCK_DRIFT;
+	else if (tok_eq_adv(p, "machine"))
+		*val |= HOST_MACHINE;
+	else if (tok_eq_adv(p, "osversion"))
+		*val |= HOST_OSVERSION;
+	else if (tok_eq_adv(p, "osrelease"))
+		*val |= HOST_OSRELEASE;
+	else if (tok_eq(p, ";"))
+		return -1;
+	else if (tok_eq(p, "}"))
+		return -1;
+	else
+		return tok_unknown(p);
+	
+	return 1;
+}
+
+/*
  * Parse rate-data related bits.
  * Returns 0 on failure, <0 to stop parsing the current block (not an
  * error), or >0 if the parse should continue.
@@ -457,21 +490,13 @@ againline:
 					return tok_unknown(p);
 			break;
 		case DRAWCAT_HOST:
-			while (p->pos < p->toksz)
-				if (tok_eq_adv(p, "record"))
-					*line |= HOST_RECORD;
-				else if (tok_eq_adv(p, "slant_version"))
-					*line |= HOST_SLANT_VERSION;
-				else if (tok_eq_adv(p, "uptime"))
-					*line |= HOST_UPTIME;
-				else if (tok_eq_adv(p, "clock_drift"))
-					*line |= HOST_CLOCK_DRIFT;
-				else if (tok_eq(p, ";"))
+			while (p->pos < p->toksz) {
+				rc = parse_layout_host_bits(p, line);
+				if (rc < 0)
 					break;
-				else if (tok_eq(p, "}"))
-					break;
-				else
-					return tok_unknown(p);
+				else if (0 == rc)
+					return rc;
+			}
 			break;
 		}
 
