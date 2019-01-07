@@ -21,6 +21,7 @@
 #endif
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #if HAVE_ERR
 # include <err.h>

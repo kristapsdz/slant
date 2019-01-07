@@ -22,6 +22,7 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -161,8 +162,8 @@ http_close_done_ok(struct out *out, struct node *n, time_t t)
 	 */
 
 	if ( ! httpok) {
-		xwarnx(out, "bad HTTP response (%lld seconds): "
-			"%s", t - n->xfer.start, n->host);
+		xwarnx(out, "bad HTTP response (%lld seconds): %s", 
+			(long long)t - n->xfer.start, n->host);
 		fprintf(out->errs, "------>------\n");
 		fprintf(out->errs, "%.*s\n", (int)n->xfer.rbufsz, 
 			n->xfer.rbuf);
@@ -397,12 +398,12 @@ http_connect(struct out *out, struct node *n, time_t t)
 	if ((POLLNVAL & n->xfer.pfd->revents) ||
 	    (POLLERR & n->xfer.pfd->revents)) {
 		xwarn(out, "poll (connect): %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
 		xwarnx(out, "poll hup (connect): %lld seconds, %s: %s",
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	} 
@@ -410,7 +411,7 @@ http_connect(struct out *out, struct node *n, time_t t)
 	assert(t >= n->xfer.lastio);
 	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "connect timeout: %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	}
@@ -468,7 +469,7 @@ http_write(struct out *out, struct node *n, time_t t)
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
 		xwarnx(out, "poll hup (write): %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	}
@@ -476,7 +477,7 @@ http_write(struct out *out, struct node *n, time_t t)
 	assert(t >= n->xfer.lastio);
 	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "write timeout: %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	}
@@ -557,7 +558,7 @@ http_read(struct out *out, struct node *n, time_t t)
 		return 0;
 	} else if (POLLHUP & n->xfer.pfd->revents) {
 		xwarnx(out, "poll hup (read): %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	}
@@ -565,7 +566,7 @@ http_read(struct out *out, struct node *n, time_t t)
 	assert(t >= n->xfer.lastio);
 	if (t - n->xfer.lastio > n->timeout) {
 		xwarnx(out, "read timeout: %lld seconds, %s: %s", 
-			t - n->xfer.start, n->host, 
+			(long long)t - n->xfer.start, n->host, 
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		return http_close_err(out, n, t);
 	}
