@@ -8,15 +8,16 @@ features, please contact me privately.**
 ## Synopsis
 
 *slant* is a remote system monitor.  For the time being, it only works
-with OpenBSD hosts.
+with OpenBSD hosts, though Linux is technically working (if still under
+development).
 
 The website has all the information you might need, and the manpages
-document the system itself.
+document the system itself.  The GitHub site is for issues and pull
+requests, as the source code is versioned in a private
+[BSD.lv](https://bsd.lv) repository.
 
-The GitHub site is for issues and pull requests: source code is
-versioned in a private [BSD.lv](https://bsd.lv) repository.
-
-If you'd like to help out, please e-mail the author.
+If you'd like to help out, please e-mail me or just dive right in with a
+pull request.
 
 ## License
 
