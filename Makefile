@@ -27,7 +27,7 @@ LDADD_SLANT =
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.19
+VERSION	   = 0.0.20
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
@@ -36,7 +36,9 @@ WWW	   = index.html \
 	     slant.1.html \
 	     slant-cgi.8.html \
 	     slant-collectd.8.html 
-DOTAR	   = Makefile \
+DOTAR	   = compats.c \
+	     tests.c \
+	     Makefile \
 	     slant-cgi.c \
 	     slant-cgi.8 \
 	     slant-collectd-freebsd.c \
@@ -91,7 +93,7 @@ installwww: www
 	$(INSTALL_DATA) slant.tar.gz $(WWWDIR)/snapshots
 	$(INSTALL_DATA) $(WWW) index.css screen1.jpg screen2.jpg screen3.jpg $(WWWDIR)
 
-slant.tar.gz: $(DOTAR)
+slant.tar.gz: $(DOTAR) configure
 	mkdir -p .dist/slant-$(VERSION)/
 	install -m 0777 configure .dist/slant-$(VERSION)
 	install -m 0644 $(DOTAR) .dist/slant-$(VERSION)
