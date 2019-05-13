@@ -22,6 +22,7 @@
 .Nd upgrade or install slant database
 .Sh SYNOPSIS
 .Nm slant-update
+.Op Fl f Ar config
 .Sh DESCRIPTION
 The
 .Nm
@@ -29,19 +30,23 @@ utility upgrades or installs the database used by
 .Xr slant-collectd 8
 on
 .Ox .
-It accepts no arguments.
-This is usually run automatically by
+It accepts the
+.Fl f
+argument, which may be used to override the installed configuration.
+.Pp
+.Nm
+is usually run automatically by
 .Xr pkg_add 1 .
 .Pp
 For new installations (i.e., without an existing database file), this
 utility creates a database from the
-.Xr kwebapp 5
-configuration and enables the CGI script.
+.Xr ort 5
+configuration.
 .Pp
 For upgrades, it patches the existing database file from both the
-existing and new
-.Xr kwebapp 5
-configuration and enables the CGI script.
+installed and new
+.Xr ort 5
+configuration.
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
