@@ -50,6 +50,13 @@ then
 	exit 0
 fi
 
+cmp -s "$KWBP" "@DATADIR@/slant.kwbp"
+if [ $? -eq 0 ]
+then
+	echo "@DATADIR@/slant.db: already up to date"
+	exit 0
+fi
+
 set -e
 TMPFILE=`mktemp` || exit 1
 trap "rm -f $TMPFILE" ERR EXIT
