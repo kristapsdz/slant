@@ -27,7 +27,7 @@ LDADD_SLANT =
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.17
+VERSION	   = 0.0.18
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
