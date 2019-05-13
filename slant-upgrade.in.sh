@@ -36,8 +36,6 @@ do
         esac
 done
 
-echo "$KWBP"
-
 if [ ! -f "@DATADIR@/slant.db" ]
 then
 	# If the database doesn't exist, obviously nothing's running.
