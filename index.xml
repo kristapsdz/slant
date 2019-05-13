@@ -77,7 +77,7 @@
 			<p>
 				<span class="nm">Slant</span> currently runs on <a
 					href="https://www.openbsd.org">OpenBSD</a> only.  It's
-				relatively easy to port to other UNIX (especially BSD) systems.
+				currently being ported to some other UNIX (especially BSD) systems.
 				The source code is in clean, well-documented C code.
 			</p>
 			<p>
@@ -157,7 +157,9 @@
 			</ul>
 			<p>
 				Beyond numerical (<q>aggregatable</q>) data, <span
-					class="nm">slant</span> also records the system boot time.
+					class="nm">slant</span> also records the system boot time, operating
+				system information (architecture, version, release), and timestamp for 
+				computing clock drift.
 			</p>
 			<p>
 				Data represented by <span class="nm">slant</span> has three types.
@@ -176,13 +178,13 @@
 			<p>
 				The current version is always available at <a itemprop="downloadURL"
 					href="snapshots/slant.tar.gz">snapshots/slant.tar.gz</a>.
-				Just unpack the source and run <code>make</code>.
-				For default OpenBSD installations, just run <code>make
-					install</code> as root.
+				Just unpack the source, configure with <code>./configure</code>, then 
+				run <code>make</code>.
+				Lastly, run <code>make install</code> as root.
 				Then make sure the collector, <a
 					href="slant-collectd.8.html">slant-collectd</a> is running
-				and <a href="https://man.openbsd.org/slowcgi">slowcgi</a> is
-				properly configured.
+				and <a href="https://man.openbsd.org/slowcgi">slowcgi</a> (for 
+				OpenBSD) is properly configured.
 				You'll need <a
 					href="https://kristaps.bsd.lv/kwebapp">kwebapp</a>
 				to build the system.
