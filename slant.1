@@ -188,7 +188,7 @@ The column types and arguments are as follows:
 "net" [time_interval]+
 "disc" [time_interval]+
 "link" ["ip"|"state"|"access"]+
-"host" ["record"|"slant_version"|"uptime"]+
+"host" ["record"|"slant_version"|"uptime"|"clock_drift"|uname]+
 "nprocs" [time_interval_bars|time_interval]+
 "rprocs" [time_interval_bars|time_interval]+
 "nfiles" [time_interval_bars|time_interval]+
@@ -225,6 +225,16 @@ for the weekly summary; or
 .Cm year ,
 for the yearly summary.
 These summaries depend upon the category.
+.Pp
+The
+.Cm uname
+fields may be
+.Cm machine ,
+for host hardware;
+.Cm osversion ,
+for OS-specific version; and
+.Cm osrelease ,
+for OS-specific release.
 .Bl -tag -width Ds
 .It Cm cpu
 CPU time averaged across all cores/CPUs on the system.
