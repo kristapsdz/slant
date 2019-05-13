@@ -164,7 +164,7 @@ slant.db: slant.sql
 	sqlite3 $@ < slant.sql
 
 slant.sql: slant.kwbp
-	kwebapp-sql slant.kwbp > $@
+	ort-sql slant.kwbp > $@
 
 slant-collectd-openbsd.o slant-collectd-linux.o slant-collectd.o: slant-collectd.h
 
@@ -183,19 +183,19 @@ json.h: extern.h
 slant.h: extern.h
 
 extern.h: slant.kwbp
-	kwebapp-c-header -s -g EXTERN_H -Nd slant.kwbp > $@
+	ort-c-header -s -g EXTERN_H -Nd slant.kwbp > $@
 
 db.h: slant.kwbp
-	kwebapp-c-header -s -Nb slant.kwbp > $@
+	ort-c-header -s -Nb slant.kwbp > $@
 
 json.h: slant.kwbp
-	kwebapp-c-header -s -g JSON_H -jJ -Nbd slant.kwbp > $@
+	ort-c-header -s -g JSON_H -jJ -Nbd slant.kwbp > $@
 
 db.c: slant.kwbp
-	kwebapp-c-source -s -h extern.h,db.h slant.kwbp > $@
+	ort-c-source -s -h extern.h,db.h slant.kwbp > $@
 
 json.c: slant.kwbp
-	kwebapp-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
+	ort-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
 
 index.html: index.xml versions.xml
 	sblg -o $@ -t index.xml versions.xml
