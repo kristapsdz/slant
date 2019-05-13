@@ -87,9 +87,9 @@ www: slant.tar.gz $(WWW)
 installwww: www
 	mkdir -p $(WWWDIR)
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots/slant-$(VERSION).tar.gz
-	install -m 0444 slant.tar.gz $(WWWDIR)/snapshots
-	install -m 0444 $(WWW) index.css screen1.jpg screen2.jpg screen3.jpg $(WWWDIR)
+	$(INSTALL_DATA) slant.tar.gz $(WWWDIR)/snapshots/slant-$(VERSION).tar.gz
+	$(INSTALL_DATA) slant.tar.gz $(WWWDIR)/snapshots
+	$(INSTALL_DATA) $(WWW) index.css screen1.jpg screen2.jpg screen3.jpg $(WWWDIR)
 
 slant.tar.gz: $(DOTAR)
 	mkdir -p .dist/slant-$(VERSION)/
@@ -103,12 +103,12 @@ install: slant-collectd slant-cgi slant slant-upgrade
 	mkdir -p $(DESTDIR)$(SBINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(CGIBIN)
-	install -m 0444 slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
-	install -m 0555 slant-cgi $(DESTDIR)$(CGIBIN)
-	install -m 0555 slant-collectd slant-upgrade $(DESTDIR)$(SBINDIR)
-	install -m 0555 slant $(DESTDIR)$(BINDIR)
-	install -m 0444 slant.1 $(DESTDIR)$(MANDIR)/man1
-	install -m 0444 slant-cgi.8 slant-collectd.8 slant-upgrade.8 $(DESTDIR)$(MANDIR)/man8
+	$(INSTALL_DATA) slant.kwbp $(DESTDIR)$(SHAREDIR)/slant
+	$(INSTALL_PROGRAM) slant-cgi $(DESTDIR)$(CGIBIN)
+	$(INSTALL_PROGRAM) slant-collectd slant-upgrade $(DESTDIR)$(SBINDIR)
+	$(INSTALL_PROGRAM) slant $(DESTDIR)$(BINDIR)
+	$(INSTALL_MAN) slant.1 $(DESTDIR)$(MANDIR)/man1
+	$(INSTALL_MAN) slant-cgi.8 slant-collectd.8 slant-upgrade.8 $(DESTDIR)$(MANDIR)/man8
 
 uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/slant/slant.kwbp
@@ -126,14 +126,6 @@ slant-upgrade: slant-upgrade.in.sh
 	sed -e "s!@DATADIR@!$(DATADIR)!g" \
 	    -e "s!@CGIBIN@!$(CGIBIN)!g" \
 	    -e "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
-
-# Only run this for development.
-# Real systems will install with slant-upgrade(8).
-
-installdb: slant.db
-	mkdir -p $(DESTDIR)$(DATADIR)
-	install -m 0666 slant.db $(DESTDIR)$(DATADIR)
-	install -m 0444 slant.kwbp $(DESTDIR)$(DATADIR)
 
 slant-collectd: $(SLANT_COLLECTD_OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(SLANT_COLLECTD_OBJS) -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
