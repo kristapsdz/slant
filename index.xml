@@ -186,7 +186,7 @@
 				and <a href="https://man.openbsd.org/slowcgi">slowcgi</a> (for 
 				OpenBSD) is properly configured.
 				You'll need <a
-					href="https://kristaps.bsd.lv/kwebapp">kwebapp</a>
+					href="https://kristaps.bsd.lv/openradtool">openradtool</a>
 				to build the system.
 			</p>
 			<p>
