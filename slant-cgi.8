@@ -68,19 +68,33 @@ The
 .Li version
 is the software suite version.
 This is informational.
+.Pp
 The
-.Li system ,
-pair consists of system information:
+.Li system
+object consists of system information:
 .Bd -literal
-{ boot: int }
+{      boot: int,
+    machine: string,
+  osversion: string,
+  osrelease: string,
+    sysname: string
+}
 .Ed
 .Pp
-For the time being it consists only of
+It consists only of
 .Li boot ,
 the UNIX epoch value for when the system was last booted.
+The
+.Li machine ,
+.Li osversion ,
+.Li osrelease ,
+and
+.Li sysname
+mirror the return values of
+.Xr uname 1 .
 .Pp
-The last six are the possibly-empty sets of records accumulated over a given
-interval of time in quarter-minute quanta.
+The remaining values are the possibly-empty sets of records accumulated
+over a given interval of time in quarter-minute quanta.
 So each
 .Li qmin
 record consists of exactly one entry; each
