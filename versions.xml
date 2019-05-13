@@ -2,6 +2,33 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.18</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2019-01-05">2019-01-05</time>
+		</header>
+		<aside>
+			<p>
+				Start with basic Linux support.
+				Since the underlying support stack (via <a
+					href="https://kristaps.bsd.lv/openradtool">openradtool</a>)
+				doesn't support Linux as a first-class citizen, this is a work in
+				progress.
+                        </p>
+                        <p>
+				Add in clock-drift display.
+				This is useful for seeing whether systems' clocks are not being
+				properly updated.
+                        </p>
+			<p>
+				Add support for 
+				<a href="https://man.openbsd.org/uname.3">uname(3)</a>
+				information, to see whether your OpenBSD box is currently up
+				to spec with its syspatches.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.17</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2018-12-15">2018-12-15</time>
