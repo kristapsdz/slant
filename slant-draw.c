@@ -849,15 +849,15 @@ draw_xfer(WINDOW *win, double vv, int left)
 }
 
 static void
-draw_host(unsigned int bits, time_t timeo,
-	time_t t, struct out *out, const struct node *n, 
+draw_host(unsigned int bits, const struct draw *d,
+	time_t timeo, time_t t, struct out *out, const struct node *n, 
 	size_t *lastrecord, struct drawbox *box)
 {
 	int	 x, y;
 
 	*lastrecord = 0;
 
-	if (HOST_RECORD & bits) {
+	if ((bits & HOST_RECORD)) {
 		bits &= ~HOST_RECORD;
 		getyx(out->mainwin, y, x);
 		*lastrecord = x;
@@ -866,7 +866,7 @@ draw_host(unsigned int bits, time_t timeo,
 		if (bits)
 			waddch(out->mainwin, ' ');
 	}
-	if (HOST_SLANT_VERSION & bits) {
+	if ((bits & HOST_SLANT_VERSION)) {
 		bits &= ~HOST_SLANT_VERSION;
 		if (NULL == n->recs)
 			waddstr(out->mainwin, "--------");
@@ -875,7 +875,7 @@ draw_host(unsigned int bits, time_t timeo,
 		if (bits)
 			waddch(out->mainwin, ' ');
 	}
-	if (HOST_UPTIME & bits) {
+	if ((bits & HOST_UPTIME)) {
 		bits &= ~HOST_UPTIME;
 		if (NULL == n->recs) 
 			waddstr(out->mainwin, "---d--h--m");
@@ -885,7 +885,7 @@ draw_host(unsigned int bits, time_t timeo,
 		if (bits)
 			waddch(out->mainwin, ' ');
 	}
-	if (HOST_CLOCK_DRIFT & bits) {
+	if ((bits & HOST_CLOCK_DRIFT)) {
 		bits &= ~HOST_CLOCK_DRIFT;
 		if (NULL == n->recs || ! n->recs->has_timestamp)
 			waddstr(out->mainwin, "---------");
@@ -894,13 +894,49 @@ draw_host(unsigned int bits, time_t timeo,
 		if (bits)
 			waddch(out->mainwin, ' ');
 	}
+	if ((bits & HOST_MACHINE)) {
+		bits &= ~HOST_MACHINE;
+		if (n->recs == NULL || 
+		    !n->recs->has_system ||
+		    !n->recs->system.has_machine)
+			waddstr(out->mainwin, "---");
+		else
+			wprintw(out->mainwin, "%*s", (int)d->maxmachsz,
+				n->recs->system.machine);
+		if (bits)
+			waddstr(out->mainwin, " ");
+	}
+	if ((bits & HOST_OSVERSION)) {
+		bits &= ~HOST_OSVERSION;
+		if (n->recs == NULL || 
+		    !n->recs->has_system ||
+		    !n->recs->system.has_osversion)
+			waddstr(out->mainwin, "---");
+		else
+			wprintw(out->mainwin, "%*s", (int)d->maxosversz,
+				n->recs->system.osversion);
+		if (bits)
+			waddstr(out->mainwin, " ");
+	}
+	if ((bits & HOST_OSRELEASE)) {
+		bits &= ~HOST_OSRELEASE;
+		if (n->recs == NULL || 
+		    !n->recs->has_system ||
+		    !n->recs->system.has_osrelease)
+			waddstr(out->mainwin, "---");
+		else
+			wprintw(out->mainwin, "%*s", (int)d->maxosrelsz,
+				n->recs->system.osrelease);
+		if (bits)
+			waddstr(out->mainwin, " ");
+	}
 
 	assert(0 == bits);
 }
 
 static void
-draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
-	time_t t, WINDOW *win, const struct node *n, 
+draw_link(unsigned int bits, const struct draw *d, 
+	time_t timeo, time_t t, WINDOW *win, const struct node *n, 
 	size_t *lastseen, struct drawbox *box)
 {
 	int	 x, y;
@@ -909,7 +945,7 @@ draw_link(unsigned int bits, size_t maxipsz, time_t timeo,
 
 	if (LINK_IP & bits) {
 		bits &= ~LINK_IP;
-		wprintw(win, "%*s", (int)maxipsz,
+		wprintw(win, "%*s", (int)d->maxipsz,
 			n->addrs.addrs[n->addrs.curaddr].ip);
 		if (LINK_STATE & bits)
 			waddstr(win, ":");
@@ -1030,7 +1066,7 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	/* Machine. */
 
-	for (d->maxmachsz = i = 0; i < nsz; i++)
+	for (d->maxmachsz = 3, i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
 			sz = n[i].recs->system.has_machine ?
 				strlen(n[i].recs->system.machine) : 0;
@@ -1040,7 +1076,7 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	/* OS version. */
 
-	for (d->maxosversz = i = 0; i < nsz; i++)
+	for (d->maxosversz = 3, i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
 			sz = n[i].recs->system.has_osversion ?
 				strlen(n[i].recs->system.osversion) : 0;
@@ -1050,7 +1086,7 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	/* OS release. */
 
-	for (d->maxosrelsz = i = 0; i < nsz; i++)
+	for (d->maxosrelsz = 3, i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
 			sz = n[i].recs->system.has_osrelease ?
 				strlen(n[i].recs->system.osrelease) : 0;
@@ -1282,11 +1318,11 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 		draw_disc(bits, out->mainwin, n);
 		break;
 	case DRAWCAT_LINK:
-		draw_link(bits, d->maxipsz, n->waittime, t, 
+		draw_link(bits, d, n->waittime, t, 
 			out->mainwin, n, lastseen, box);
 		break;
 	case DRAWCAT_HOST:
-		draw_host(bits, n->waittime, t,
+		draw_host(bits, d, n->waittime, t,
 			out, n, lastrecord, box);
 		break;
 	case DRAWCAT_PROCS:
