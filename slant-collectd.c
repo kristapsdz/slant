@@ -138,7 +138,7 @@ init(struct ort *db, const struct sysinfo *p)
 {
 	struct system	*s;
 	struct utsname	 uts;
-	const char	*mach, *ver, *rel;
+	const char	*mach, *ver, *rel, *sys;
 
 	if (-1 == uname(&uts)) {
 		warn(NULL);
@@ -148,6 +148,7 @@ init(struct ort *db, const struct sysinfo *p)
 	mach = uts.machine;
 	ver = uts.version;
 	rel = uts.release;
+	sys = uts.sysname;
 
 	db_trans_open(db, 1, 0);
 
@@ -155,16 +156,18 @@ init(struct ort *db, const struct sysinfo *p)
 		db_system_update_all(db, 
 			sysinfo_get_boottime(p), /* boot */
 			&mach,	/* machine */
-			&ver,	/* version */
-			&rel,	/* release */
+			&ver,	/* osversion */
+			&rel,	/* osrelease */
+			&sys,	/* sysname */
 			1	/* id */ );
 		db_system_free(s);
 	} else
 		db_system_insert(db, 
 			sysinfo_get_boottime(p), /* boot */
 			&mach,	/* machine */
-			&ver,	/* version */
-			&rel,	/* release */
+			&ver,	/* osversion */
+			&rel,	/* osrelease */
+			&sys,	/* sysname */
 			1	/* id */ );
 
 	db_trans_commit(db, 1);

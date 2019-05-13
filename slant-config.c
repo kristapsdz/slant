@@ -261,6 +261,8 @@ parse_layout_host_bits(struct parse *p, unsigned int *val)
 		*val |= HOST_OSVERSION;
 	else if (tok_eq_adv(p, "osrelease"))
 		*val |= HOST_OSRELEASE;
+	else if (tok_eq_adv(p, "osname"))
+		*val |= HOST_OSSYSNAME;
 	else if (tok_eq(p, ";"))
 		return -1;
 	else if (tok_eq(p, "}"))

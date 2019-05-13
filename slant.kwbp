@@ -40,11 +40,13 @@ struct	system {
 		"Version level of the operating system.";
 	field osrelease text null comment
 		"Release level of the operating system.";
+	field sysname text null comment
+		"Operating system name.";
 	field id int unique default 1;
 
 	insert;
 
-	update boot, machine, osversion, osrelease: id: name all;
+	update boot, machine, osversion, osrelease, sysname: id: name all;
 
 	search id: name id;
 

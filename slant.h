@@ -82,6 +82,7 @@ struct	drawboxln {
 #define HOST_MACHINE	 0x0010
 #define HOST_OSVERSION	 0x0020
 #define HOST_OSRELEASE	 0x0040
+#define HOST_OSSYSNAME	 0x0080
 };
 
 /*
@@ -110,6 +111,7 @@ struct	draw {
 	size_t		 maxmachsz; /* ... machine... */
 	size_t		 maxosversz; /* ... OS versions... */
 	size_t		 maxosrelsz; /* ... OS release... */
+	size_t		 maxosnamesz; /* ... OS sysname... */
 	size_t		 maxline; /* max boxes' nonempty lines */
 };
 

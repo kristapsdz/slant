@@ -465,6 +465,10 @@ size_host(const struct draw *d, unsigned int bits)
 		bits &= ~HOST_OSRELEASE;
 		sz += d->maxosrelsz + (bits ? 1 : 0);
 	}
+	if ((bits & HOST_OSSYSNAME)) {
+		bits &= ~HOST_OSSYSNAME;
+		sz += d->maxosnamesz + (bits ? 1 : 0);
+	}
 
 	assert(bits == 0);
 	return sz;
@@ -930,6 +934,18 @@ draw_host(unsigned int bits, const struct draw *d,
 		if (bits)
 			waddstr(out->mainwin, " ");
 	}
+	if ((bits & HOST_OSSYSNAME)) {
+		bits &= ~HOST_OSSYSNAME;
+		if (n->recs == NULL || 
+		    !n->recs->has_system ||
+		    !n->recs->system.has_sysname)
+			waddstr(out->mainwin, "---");
+		else
+			wprintw(out->mainwin, "%*s", (int)d->maxosnamesz,
+				n->recs->system.sysname);
+		if (bits)
+			waddstr(out->mainwin, " ");
+	}
 
 	assert(0 == bits);
 }
@@ -1092,6 +1108,16 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 				strlen(n[i].recs->system.osrelease) : 0;
 			if (sz > d->maxosrelsz)
 				d->maxosrelsz = sz;
+		}
+
+	/* OS name. */
+
+	for (d->maxosnamesz = 3, i = 0; i < nsz; i++)
+		if (n[i].recs != NULL && n[i].recs->has_system) {
+			sz = n[i].recs->system.has_sysname ?
+				strlen(n[i].recs->system.sysname) : 0;
+			if (sz > d->maxosnamesz)
+				d->maxosnamesz = sz;
 		}
 }
 
