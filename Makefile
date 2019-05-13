@@ -27,7 +27,7 @@ LDADD_SLANT =
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.18
+VERSION	   = 0.0.19
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
@@ -93,6 +93,7 @@ installwww: www
 
 slant.tar.gz: $(DOTAR)
 	mkdir -p .dist/slant-$(VERSION)/
+	install -m 0777 configure .dist/slant-$(VERSION)
 	install -m 0644 $(DOTAR) .dist/slant-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
