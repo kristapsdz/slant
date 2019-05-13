@@ -1032,7 +1032,8 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	for (d->maxmachsz = i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
-			sz = strlen(n[i].recs->system.machine);
+			sz = n[i].recs->system.has_machine ?
+				strlen(n[i].recs->system.machine) : 0;
 			if (sz > d->maxmachsz)
 				d->maxmachsz = sz;
 		}
@@ -1041,7 +1042,8 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	for (d->maxosversz = i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
-			sz = strlen(n[i].recs->system.osversion);
+			sz = n[i].recs->system.has_osversion ?
+				strlen(n[i].recs->system.osversion) : 0;
 			if (sz > d->maxosversz)
 				d->maxosversz = sz;
 		}
@@ -1050,7 +1052,8 @@ compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
 
 	for (d->maxosrelsz = i = 0; i < nsz; i++)
 		if (n[i].recs != NULL && n[i].recs->has_system) {
-			sz = strlen(n[i].recs->system.osrelease);
+			sz = n[i].recs->system.has_osrelease ?
+				strlen(n[i].recs->system.osrelease) : 0;
 			if (sz > d->maxosrelsz)
 				d->maxosrelsz = sz;
 		}
