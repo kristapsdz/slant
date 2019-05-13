@@ -680,7 +680,7 @@ main(int argc, char *argv[])
 		 */
 
 		if ((c || first) && now > last) {
-			draw(&out, &d, first, n, cfg.urlsz, now);
+			draw(&out, &d, n, cfg.urlsz, now);
 			for (i = 0; i < cfg.urlsz; i++) 
 				n[i].dirty = 0;
 			wrefresh(out.mainwin);

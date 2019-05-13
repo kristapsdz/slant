@@ -58,7 +58,7 @@ sig(int sig)
 }
 
 static void
-update_interval(struct kwbp *db, time_t span, 
+update_interval(struct ort *db, time_t span, 
 	size_t have, size_t allowed,
 	const struct record *first, const struct record *last, 
 	enum interval ival, time_t now, const struct record *r)
@@ -134,7 +134,7 @@ print(const struct sysinfo *p)
  * Return zero on failure, non-zero on success.
  */
 static int
-init(struct kwbp *db, const struct sysinfo *p)
+init(struct ort *db, const struct sysinfo *p)
 {
 	struct system	*s;
 	struct utsname	 uts;
@@ -176,7 +176,7 @@ init(struct kwbp *db, const struct sysinfo *p)
  * existing database records "rq".
  */
 static void
-update(struct kwbp *db, const struct sysinfo *p, 
+update(struct ort *db, const struct sysinfo *p, 
 	const struct record_q *rq)
 {
 	size_t	 	 bymin = 0, byhour = 0, byqmin = 0,
@@ -317,7 +317,7 @@ cfg_free(struct syscfg *cfg)
 int
 main(int argc, char *argv[])
 {
-	struct kwbp	*db = NULL;
+	struct ort	*db = NULL;
 	struct record_q	*rq;
 	struct sysinfo	*info;
 	int		 c, rc = 0, noop = 0, verb = 0;

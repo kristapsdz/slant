@@ -433,28 +433,40 @@ size_pct(unsigned int bits)
  * Used with draw_host().
  */
 static size_t
-size_host(unsigned int bits)
+size_host(const struct draw *d, unsigned int bits)
 {
 	size_t	 sz = 0;
 
-	if (HOST_RECORD & bits) {
+	if ((bits & HOST_RECORD)) {
 		bits &= ~HOST_RECORD;
 		sz += 9 + (bits ? 1 : 0);
 	}
-	if (HOST_SLANT_VERSION & bits) {
+	if ((bits & HOST_SLANT_VERSION)) {
 		bits &= ~HOST_SLANT_VERSION;
 		sz += 8 + (bits ? 1 : 0);
 	}
-	if (HOST_UPTIME & bits) {
+	if ((bits & HOST_UPTIME)) {
 		bits &= ~HOST_UPTIME;
 		sz += 10 + (bits ? 1 : 0);
 	}
-	if (HOST_CLOCK_DRIFT & bits) {
+	if ((bits & HOST_CLOCK_DRIFT)) {
 		bits &= ~HOST_CLOCK_DRIFT;
 		sz += 9 + (bits ? 1 : 0);
 	}
+	if ((bits & HOST_MACHINE)) {
+		bits &= ~HOST_MACHINE;
+		sz += d->maxmachsz + (bits ? 1 : 0);
+	}
+	if ((bits & HOST_OSVERSION)) {
+		bits &= ~HOST_OSVERSION;
+		sz += d->maxosversz + (bits ? 1 : 0);
+	}
+	if ((bits & HOST_OSRELEASE)) {
+		bits &= ~HOST_OSRELEASE;
+		sz += d->maxosrelsz + (bits ? 1 : 0);
+	}
 
-	assert(0 == bits);
+	assert(bits == 0);
 	return sz;
 }
 
@@ -463,13 +475,13 @@ size_host(unsigned int bits)
  * Used with draw_link().
  */
 static size_t
-size_link(size_t maxipsz, unsigned int bits)
+size_link(const struct draw *d, unsigned int bits)
 {
 	size_t	 sz = 0;
 
 	if (LINK_IP & bits) {
 		bits &= ~LINK_IP;
-		sz += maxipsz + ((bits & LINK_STATE) ? 1 : 0);
+		sz += d->maxipsz + ((bits & LINK_STATE) ? 1 : 0);
 	}
 	if (LINK_STATE & bits) {
 		bits &= ~LINK_STATE;
@@ -957,7 +969,7 @@ draw_centre(WINDOW *win, const char *v, size_t sz)
  */
 static size_t
 compute_width_box(const struct drawbox *box, unsigned int bits,
-	size_t maxipsz)
+	const struct draw *d)
 {
 	size_t	 sz = 0;
 
@@ -970,37 +982,80 @@ compute_width_box(const struct drawbox *box, unsigned int bits,
 
 	switch (box->cat) {
 	case DRAWCAT_CPU:
-		sz += size_pct(bits);
-		break;
+	case DRAWCAT_FILES:
 	case DRAWCAT_MEM:
-		sz += size_pct(bits);
-		break;
 	case DRAWCAT_PROCS:
-		sz += size_pct(bits);
-		break;
 	case DRAWCAT_RPROCS:
 		sz += size_pct(bits);
 		break;
-	case DRAWCAT_FILES:
-		sz += size_pct(bits);
-		break;
+	case DRAWCAT_DISC:
 	case DRAWCAT_NET:
 		sz += size_rate(bits);
 		break;
-	case DRAWCAT_DISC:
-		sz += size_rate(bits);
-		break;
 	case DRAWCAT_LINK:
-		sz += size_link(maxipsz, bits);
+		sz += size_link(d, bits);
 		break;
 	case DRAWCAT_HOST:
-		/* "Last" time. */
-		sz += 9;
+		sz += size_host(d, bits);
 		break;
 	}
 
 	return sz;
 }
+
+/* 
+ * We'll need to recompute our known column widths if any dynamic data
+ * has changed.
+ * FIXME: this whole section is quite expensive and should cache
+ * information more intelligently.
+ */
+static void
+compute_max_dyncol(struct draw *d, const struct node *n, size_t nsz)
+{
+	size_t	 i, sz;
+
+	/* Start with the hostname (has a default size). */
+
+	for (d->maxhostsz = strlen("hostname"), i = 0; i < nsz; i++)
+		if ((sz = strlen(n[i].host)) > d->maxhostsz)
+			d->maxhostsz = sz;
+
+	/* IP address. */
+
+	for (d->maxipsz = i = 0; i < nsz; i++) {
+		sz = strlen(n[i].addrs.addrs[n[i].addrs.curaddr].ip);
+		if (sz > d->maxipsz)
+			d->maxipsz = sz;
+	}
+
+	/* Machine. */
+
+	for (d->maxmachsz = i = 0; i < nsz; i++)
+		if (n[i].recs != NULL && n[i].recs->has_system) {
+			sz = strlen(n[i].recs->system.machine);
+			if (sz > d->maxmachsz)
+				d->maxmachsz = sz;
+		}
+
+	/* OS version. */
+
+	for (d->maxosversz = i = 0; i < nsz; i++)
+		if (n[i].recs != NULL && n[i].recs->has_system) {
+			sz = strlen(n[i].recs->system.osversion);
+			if (sz > d->maxosversz)
+				d->maxosversz = sz;
+		}
+
+	/* OS release. */
+
+	for (d->maxosrelsz = i = 0; i < nsz; i++)
+		if (n[i].recs != NULL && n[i].recs->has_system) {
+			sz = strlen(n[i].recs->system.osrelease);
+			if (sz > d->maxosrelsz)
+				d->maxosrelsz = sz;
+		}
+}
+
 
 /*
  * Compute the width of all drawn boxes.
@@ -1014,32 +1069,19 @@ size_t
 compute_width(const struct node *n, 
 	size_t nsz, const struct draw *d)
 {
-	size_t	 sz, maxhostsz, maxipsz, i, j, line, maxline;
+	size_t	 	sz, i, j, line, maxline;
+	struct draw	dummy;
 
-	/* We always show our hostname. */
-
-	maxhostsz = strlen("hostname");
-	for (i = 0; i < nsz; i++)
-		if ((sz = strlen(n[i].host)) > maxhostsz)
-			maxhostsz = sz;
-
-	/* We conditionally show our IPV4/IPV6 address. */
-
-	maxipsz = strlen("address");
-	for (i = 0; i < nsz; i++)
-		for (j = 0; j < n[i].addrs.addrsz; j++) {
-			sz = strlen(n[i].addrs.addrs[j].ip);
-			if (sz > maxipsz)
-				maxipsz = sz;
-		}
+	memset(&dummy, 0, sizeof(struct draw));
+	compute_max_dyncol(&dummy, n, nsz);
 
 	/* Look for the maximum length of all lines. */
 
-	for (sz = maxhostsz + 1, i = 0; i < d->boxsz; i++) {
+	for (sz = dummy.maxhostsz + 1, i = 0; i < d->boxsz; i++) {
 		maxline = 0;
 		for (j = 0; j < 6; j++) {
 			line = compute_width_box(&d->box[i], 
-				 d->box[i].lines[j].line, maxipsz);
+				 d->box[i].lines[j].line, &dummy);
 			if (line > maxline)
 				maxline = line;
 		}
@@ -1093,15 +1135,15 @@ draw_header_box(struct out *out,
 	case DRAWCAT_LINK:
 		for (i = 0; i < 6; i++) {
 			box->lines[i].len = size_link
-				(d->maxipsz, box->lines[i].line);
+				(d, box->lines[i].line);
 			if (box->lines[i].len > box->len)
 				box->len = box->lines[i].len;
 		}
 		break;
 	case DRAWCAT_HOST:
 		for (i = 0; i < 6; i++) {
-			box->lines[i].len = 
-				size_host(box->lines[i].line);
+			box->lines[i].len = size_host
+				(d, box->lines[i].line);
 			if (box->lines[i].len > box->len)
 				box->len = box->lines[i].len;
 		}
@@ -1259,10 +1301,10 @@ draw_box(struct out *out, const struct node *n, struct drawbox *box,
 }
 
 void
-draw(struct out *out, struct draw *d, int redraw_header,
+draw(struct out *out, struct draw *d,
 	const struct node *n, size_t nsz, time_t t)
 {
-	size_t		 i, j, k, l, sz, maxsz;
+	size_t		 i, j, k, l;
 	int		 maxy, maxx;
 
 	/* Don't let us run off the window. */
@@ -1271,41 +1313,9 @@ draw(struct out *out, struct draw *d, int redraw_header,
 	if (nsz * d->maxline > (size_t)maxy - 1)
 		nsz = (maxy - 1) / d->maxline;
 
-	/* 
-	 * We'll need to recompute our known column widths if any
-	 * dynamic data has changed, which is now limited to maximum
-	 * hostname and IP address size.
-	 * We only use the current IP address and the hosts that are
-	 * shown (remember, there may be more hosts than rows).
-	 * If these are different from the existing sizes, then we'll
-	 * need to redraw our header and recompute the column widths.
-	 */
+	compute_max_dyncol(d, n, nsz);
 
-	maxsz = strlen("hostname");
-	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].host); /* FIXME: cache. */
-		if (sz > maxsz)
-			maxsz = sz;
-	}
-	if (maxsz != d->maxhostsz) {
-		redraw_header = 1;
-		d->maxhostsz = maxsz;
-	}
-
-	maxsz = strlen("address");
-	for (i = 0; i < nsz; i++) {
-		sz = strlen(n[i].addrs.addrs[n[i].addrs.curaddr].ip);
-		if (sz > maxsz)
-			maxsz = sz;
-	}
-	if (maxsz != d->maxipsz) {
-		redraw_header = 1;
-		d->maxipsz = maxsz;
-	}
-
-	/* Conditionally draw (or redraw) the header. */
-
-	if (d->header && redraw_header)
+	if (d->header)
 		draw_header(out, d);
 
 	for (i = j = 0; i < nsz; i++, j += d->maxline) {

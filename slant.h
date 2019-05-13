@@ -107,6 +107,9 @@ struct	draw {
 	enum draword	 order; /* order of drawn hosts */
 	size_t		 maxipsz; /* of all IPs possible, length */
 	size_t		 maxhostsz; /* of all hosts possible, length */
+	size_t		 maxmachsz; /* ... machine... */
+	size_t		 maxosversz; /* ... OS versions... */
+	size_t		 maxosrelsz; /* ... OS release... */
 	size_t		 maxline; /* max boxes' nonempty lines */
 };
 
@@ -235,7 +238,7 @@ int	 http_connect(struct out *, struct node *, time_t);
 int	 http_write(struct out *, struct node *, time_t);
 int	 http_read(struct out *, struct node *, time_t);
 
-void	 draw(struct out *, struct draw *, int,
+void	 draw(struct out *, struct draw *,
 		const struct node *, size_t, time_t);
 void	 drawtimes(struct out *, const struct draw *, 
 		const struct node *, size_t, time_t);
