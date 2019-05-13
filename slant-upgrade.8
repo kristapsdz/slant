@@ -42,15 +42,6 @@ For upgrades, it patches the existing database file from both the
 existing and new
 .Xr kwebapp 5
 configuration and enables the CGI script.
-It's assumed that the packaging system installs the CGI script without
-permissions to execute.
-.Pp
-If
-.Xr slant-collectd 8
-is running, it is terminated before upgrade or installation.
-If managed by
-.Xr rcctl 8 ,
-it is restarted before exiting (upon success).
 .\" The following requests should be uncommented and used where appropriate.
 .\" .Sh CONTEXT
 .\" For section 9 functions only.
