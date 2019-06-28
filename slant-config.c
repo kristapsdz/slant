@@ -653,8 +653,6 @@ config_cmdline(struct config *cfg, int argc, char *argv[])
 {
 	size_t	 i;
 
-	assert(argc);
-
 	if (0 == argc)
 		return 1;
 
