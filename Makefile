@@ -95,7 +95,7 @@ installwww: www
 
 slant.tar.gz: $(DOTAR) configure
 	mkdir -p .dist/slant-$(VERSION)/
-	install -m 0777 configure .dist/slant-$(VERSION)
+	install -m 0755 configure .dist/slant-$(VERSION)
 	install -m 0644 $(DOTAR) .dist/slant-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
