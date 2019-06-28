@@ -2,6 +2,18 @@
 <articles>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
+			<h1>0.0.21</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2019-06-28">2019-06-28</time>
+		</header>
+		<aside>
+			<p>
+				Don't segfault when given no URLs.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
 			<h1>0.0.20</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2019-05-13">2019-05-13</time>
