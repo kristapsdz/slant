@@ -1,34 +1,40 @@
-html				{ font-family: 'Alegreya sans', sans-serif; 
+html, body			{ margin: 0;
+				  height: 100%; }
+body				{ font-family: "Alegreya sans", sans-serif; 
 				  font-weight: 400;
-				  height: 100%;
 				  color: #444;
-				  font-size: 14pt; }
-body				{ margin: 0 auto; 
-				  height: 100%;
-				  position: relative; }
-
-code				{ font-size: 12pt; }
-body > header, 
-article,
-footer				{ padding-left: 25%;
-				  padding-right: 25%; }
+				  font-size: 14pt;
+			  	  position: relative; }
+code				{ font-size: smaller; }
+article > nav,
+article > div,
+article > p,
+article > h2,
+article > h3,
+article > figure,
+article > ul,
+body > header > div,
+body > header > nav		{ width: 66rem;
+				  max-width: 98%;
+				  margin-left: auto;
+				  margin-right: auto; }
 footer				{ text-align: center; 
 				  font-size: smaller;
 				  opacity: 0.75;
-				  margin: 3rem 0; }
+				  padding: 3rem; }
 a				{ text-decoration: none; }
-
-body > header			{ display: flex; 
-				  background-color: #2c363f;
+body > header 			{ background-color: #2c363f;
 				  padding-top: 6rem;
 				  padding-bottom: 1rem;
 				  box-shadow: 0px 1px 3px #8f6500;
-				  color: #fff;
+				  color: #fff; }
+body > header > div		{ display: flex; 
 				  align-items: flex-end; }
-body > header > :first-child	{ flex: 1; }
+body > header > div > :first-child	
+				{ flex: 1; }
 h1				{ font-weight: 100;
 				  line-height: 50pt;
-				  font-size: 58pt;
+				  font-size: 375%;
 				  margin: 0; }
 h2				{ font-weight: 500;
 				  text-align: center;
@@ -39,7 +45,7 @@ h3				{ font-weight: inherit;
 				  text-align: center;
 				  color: #000;
 				  margin: 1.7em 0;
-				  font-size: 16pt;
+				  font-size: 125%;
 				  font-variant: small-caps; }
 body > header .title		{ color: #aaa; }
 body > header .title a		{ color: #fff; 
@@ -48,13 +54,13 @@ body > header nav a		{ color: #ffc530;
 				  display: inline-block;
 				  font-weight: 500; }
 body > header nav a + a		{ margin-left: 0.5rem; }
-body > header nav .hilite	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0); 
+body > header nav .hilite	{ border: thin solid rgba(255, 165, 0, 0.5);
+				  transition: border 0.2s linear;
 				  border-radius: 24pt;
 				  padding: 0.1em 0.4em; }
 body > header a:hover		{ text-decoration: underline; }
 body > header a.hilite:hover	{ text-decoration: none; }
-body > header .hilite:hover	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0); 
-				  background-color: rgba(255, 165, 0, 0.1); }
+body > header .hilite:hover	{ border: thin solid rgba(255, 165, 0, 1.0); }
 
 .screens div			{ flex: 1.01; }
 .screens div:nth-child(2)	{ flex: 2; 
@@ -64,15 +70,13 @@ body > header .hilite:hover	{ box-shadow: 0 0 4px rgba(255, 165, 0, 1.0);
 .screens img			{ box-shadow: 1px 1px 4px orange; 
 				  cursor: pointer;
 				  width: 100%; }
-.screens			{ display: flex;
-				  margin: 0;
-				  width: 100%; }
+.screens			{ display: flex; }
 .graphs				{ text-align: center; }
 .graphs img			{ width: 100%; }
 #index1 img			{ max-width: 450px; }
 .tagline			{ margin-top: 4rem; 
 				  text-align: center;
-				  font-size: 20pt;
+				  font-size: 150%;
 				  color: #2c363f; }
 .version			{ margin-bottom: 4rem; 
 			 	  text-align: center;
@@ -110,21 +114,10 @@ nav[data-sblg-nav] li:first-child
 				{ opacity: 1; 
 				  margin-bottom: 1em; }
 
-@media only screen and (max-width: 1280px), only screen and (max-device-width: 1280px) {
-  body > header, 
-  article,
-  footer			{ padding-left: 10%;
-				  padding-right: 10%; }
-}
-
 @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
-  body > header, 
-  article,
-  footer			{ padding-left: 0.5rem;
-				  padding-right: 0.5rem; }
   .tagline			{ font-size: inherit; }
-  header			{ padding-top: 3rem; }
-  header nav a			{ margin: 0 0.5em; }
-  header nav a + a		{ margin-left: 0; }
-  header nav 			{ text-align: right; }
-}
+  body > header > div		{ display: block; }
+  article > ul 			{ padding: 0; }
+  body > header 		{ padding-top: 2rem; 
+	  			  padding-bottom: 0.5rem; }
+  body > header nav		{ padding-top: 1rem; }

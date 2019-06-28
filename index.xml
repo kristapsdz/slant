@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta charset="utf-8" /> 
 		<title>slant: remote system monitor</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
@@ -12,16 +12,18 @@
 	<body itemscope="itemscope" itemtype="http://schema.org/SoftwareApplication">
 		<header>
 			<div>
-				<h1 itemprop="name">slant</h1>
-				<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project by CAPEM</div>
+				<div>
+					<h1 itemprop="name">slant</h1>
+					<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project by CAPEM</div>
+				</div>
+				<nav>
+					<a href="https://github.com/kristapsdz/slant"><i class="fa fa-fw fa-github"></i></a>
+					<a href="#overview">overview</a>
+					<a href="#news">news</a>
+					<a href="#about">about</a>
+					<a class="hilite" href="#download">download</a>
+				</nav>
 			</div>
-			<nav>
-				<a href="https://github.com/kristapsdz/slant"><i class="fa fa-fw fa-github"></i></a>
-				<a href="#overview">overview</a>
-				<a href="#news">news</a>
-				<a href="#about">about</a>
-				<a class="hilite" href="#download">download</a>
-			</nav>
 		</header>
 		<article>
 			<div class="tagline" itemprop="description">
@@ -214,7 +216,7 @@
 		</article>
 		<footer>
 			<div>
-				&#169; 2018, CAPEM Solutions Inc.
+				&#169; 2018&#8211;2019, CAPEM Solutions Inc.
 			</div>
 		</footer>
 	</body>
