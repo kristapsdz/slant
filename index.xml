@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: http://ogp.me/ns#">
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta charset="utf-8" /> 
 		<title>slant: remote system monitor</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100,400,400italic,500" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
+		<link rel="stylesheet" href="https://bsd.lv/css/style.css" />
 		<link rel="stylesheet" href="index.css" />
+		<meta property="og:title" content="slant: remote system monitor" />
+		<meta property="og:url" content="https://kristaps.bsd.lv/slant/index.html" />
+		<meta property="og:type" content="website" />
+		<meta property="og:description" content="A minimal and open source remote system monitor." />
+		<meta name="description" content="A minimal and open source remote system monitor." />
 		<script src="index.js"></script>
 	</head>
 	<body itemscope="itemscope" itemtype="http://schema.org/SoftwareApplication">
 		<header>
-			<div>
+			<div class="text">
 				<div>
 					<h1 itemprop="name">slant</h1>
 					<div class="title">a <a href="https://bsd.lv">BSD.lv</a> project by CAPEM</div>
@@ -25,7 +31,7 @@
 				</nav>
 			</div>
 		</header>
-		<article>
+		<article class="text">
 			<div class="tagline" itemprop="description">
 				a minimal open source system monitor for remote <span itemprop="operatingSystem">UNIX</span> machines
 			</div>
@@ -98,7 +104,7 @@
 				the database to clients.
 				The collector is a simple daemon that interacts with an <a
 					href="https://sqlite.org">SQLite</a> database via <a
-					href="https://kristaps.bsd.lv/ksql">ksql</a>.
+					href="https://kristaps.bsd.lv/sqlbox">sqlbox</a>.
 				The database is well-documented and consists of a set of circular
 				buffers for accumulating historical data.
 				(There is also an instantaneous buffer, which <q>averages</q> only
@@ -214,9 +220,9 @@
 				Development is generously sponsored by CAPEM Solutions, Inc.&#8212;thank you!
 			</p>
 		</article>
-		<footer>
+		<footer class="text">
 			<div>
-				&#169; 2018&#8211;2019, CAPEM Solutions Inc.
+				&#169; 2018&#8211;2020, CAPEM Solutions Inc.
 			</div>
 		</footer>
 	</body>
