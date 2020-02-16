@@ -75,8 +75,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <ksql.h>
-
 #include "slant-collectd.h"
 #include "extern.h"
 #include "db.h"
