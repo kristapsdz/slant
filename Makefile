@@ -169,25 +169,25 @@ json.h: extern.h
 slant.h: extern.h
 
 extern.h: slant.kwbp
-	ort-c-header -s -g EXTERN_H -Nd slant.kwbp > $@
+	ort-c-header -g EXTERN_H -Nd slant.kwbp > $@
 
 db.h: slant.kwbp
-	ort-c-header -s -Nb slant.kwbp > $@
+	ort-c-header -Nb slant.kwbp > $@
 
 json.h: slant.kwbp
-	ort-c-header -s -g JSON_H -jJ -Nbd slant.kwbp > $@
+	ort-c-header -g JSON_H -jJ -Nbd slant.kwbp > $@
 
 db.c: slant.kwbp
-	ort-c-source -s -h extern.h,db.h slant.kwbp > $@
+	ort-c-source -h extern.h,db.h slant.kwbp > $@
 
 json.c: slant.kwbp
-	ort-c-source -s -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
+	ort-c-source -Ij -jJ -Nd -h extern.h,json.h slant.kwbp > $@
 
 index.html: index.xml versions.xml
 	sblg -o $@ -t index.xml versions.xml
 
 .8.8.html .1.1.html:
-	mandoc -Thtml $< >$@
+	mandoc -Ostyle=https://bsd.lv/css/mandoc.css -Thtml $< >$@
 
 .dot.svg:
 	dot -Tsvg $< | xsltproc --novalid notugly.xsl - >$@
