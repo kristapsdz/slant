@@ -148,7 +148,7 @@ init(struct ort *db, const struct sysinfo *p)
 	rel = uts.release;
 	sys = uts.sysname;
 
-	db_trans_open(db, 1, 0);
+	db_trans_open(db, 2, 0);
 
 	if (NULL != (s = db_system_get_id(db, 1))) {
 		db_system_update_all(db, 
@@ -168,7 +168,7 @@ init(struct ort *db, const struct sysinfo *p)
 			&sys,	/* sysname */
 			1	/* id */ );
 
-	db_trans_commit(db, 1);
+	db_trans_commit(db, 2);
 	return 1;
 }
 
@@ -251,7 +251,7 @@ update(struct ort *db, const struct sysinfo *p,
 			break;
 		}
 
-	db_trans_open(db, 0, 0);
+	db_trans_open(db, 1, 0);
 
 	/* 40 (10 minute) backlog of quarter-minute entries. */
 
@@ -298,7 +298,7 @@ update(struct ort *db, const struct sysinfo *p,
 		SIZE_MAX, first_byyear, last_byyear, 
 		INTERVAL_byyear, t, &rr);
 
-	db_trans_commit(db, 0);
+	db_trans_commit(db, 1);
 }
 
 static void
@@ -376,7 +376,8 @@ main(int argc, char *argv[])
 	if (SIG_ERR == signal(SIGTERM, SIG_IGN))
 		err(EXIT_FAILURE, "signal");
 
-	if ( ! noop && NULL == (db = db_open(dbfile)))
+	if (! noop && 
+	    (db = db_open_logging(dbfile, NULL, warnx, NULL)) == NULL)
 		errx(EXIT_FAILURE, "%s", dbfile);
 
 	/* FIXME: once we have unveil, this is moot. */
