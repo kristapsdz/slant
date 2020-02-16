@@ -2,16 +2,7 @@
 
 include Makefile.configure
 
-PREFIX	   = /usr/local
 WPREFIX	   = /var/www
-
-CFLAGS	  += -g -W -Wall -Wextra -Wmissing-prototypes
-CFLAGS	  += -Wstrict-prototypes -Wwrite-strings -Wno-unused-parameter
-
-BINDIR     = $(PREFIX)/bin
-SBINDIR    = $(PREFIX)/sbin
-MANDIR	   = $(PREFIX)/man
-SHAREDIR   = $(PREFIX)/share
 CGIBIN	   = $(WPREFIX)/cgi-bin
 DATADIR	   = $(WPREFIX)/data
 
@@ -27,7 +18,7 @@ LDADD_SLANT =
 
 sinclude Makefile.local
 
-VERSION	   = 0.0.21
+VERSION	   = 0.0.22
 CPPFLAGS   += -DVERSION=\"$(VERSION)\"
 
 WWW	   = index.html \
