@@ -131,13 +131,13 @@ slant-upgrade: slant-upgrade.in.sh
 	    -e "s!@SHAREDIR@!$(SHAREDIR)!g" slant-upgrade.in.sh >$@
 
 slant-collectd: $(SLANT_COLLECTD_OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(SLANT_COLLECTD_OBJS) -lksql -lsqlite3 $(LDADD_SLANT_COLLECTD)
+	$(CC) -o $@ $(LDFLAGS) $(SLANT_COLLECTD_OBJS) -lsqlbox -lsqlite3 $(LDADD_SLANT_COLLECTD)
 
 params.h:
 	echo "#define DBFILE \"$(DBFILE)\"" > params.h
 
 slant-cgi: slant-cgi.o db.o json.o compats.o
-	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o compats.o -lkcgi -lkcgijson -lz -lksql -lsqlite3 -lm -lpthread $(LDADD_SLANT_CGI)
+	$(CC) -static -o $@ $(LDFLAGS) slant-cgi.o db.o json.o compats.o -lkcgi -lkcgijson -lz -lsqlbox -lsqlite3 -lm -lpthread $(LDADD_SLANT_CGI)
 
 slant-cgi.o: params.h
 
