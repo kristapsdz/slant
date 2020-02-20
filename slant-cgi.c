@@ -31,7 +31,6 @@
 
 #include <kcgi.h>
 #include <kcgijson.h>
-#include <ksql.h>
 
 #include "params.h"
 #include "extern.h"
